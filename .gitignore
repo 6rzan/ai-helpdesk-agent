@@ -1,0 +1,42 @@
+# Personal/admin documents — not part of the project source
+TAHA_FAHD_AHMED_MOHAMMED_THABIT_MR_TP078281_APU3F2601CS_CS.pdf
+Cover Page with SDG.docx
+New FYP Structure Guidelines - updated 7Oct2024.pdf
+SEM_2_SESSION_1_TO_2_FYP_DOCUMENT_PREPARATION.pdf
+SEM_2_SESSION_3_PRESENTATION_FYP_PRESENTATION.pdf
+
+# Local tool caches / state
+.tokensave/
+{out}
+graphify-out/
+backend/tests/.results/
+
+# Local development tooling — not part of the published project
+.specify/extensions.yml
+.specify/init-options.json
+.specify/integration.json
+.specify/integrations/
+.specify/workflows/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+coverage/
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+*.log
+
+# OS cruft
+.DS_Store
+Thumbs.db
