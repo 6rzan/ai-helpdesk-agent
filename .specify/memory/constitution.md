@@ -1,7 +1,27 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.0.1 → 1.0.2 (PATCH, 2026-07-11): agent-tooling references in
+Version change: 1.0.2 → 1.1.0 (MINOR, 2026-07-11): new Principle VIII
+(Agent Core & Prompt Engineering Discipline) added, distilled from two external
+references supplied by the developer:
+  - asgeirtj/system_prompts_leaks (production system-prompt archive) → layered,
+    versioned, regression-tested prompt modules; prompt-injection data/instruction
+    separation; prompt safety complements (never replaces) code-level enforcement.
+  - Moh4696/build-ai-agents-free (minimal agent-construction curriculum) → explicit
+    bounded plan→act→observe loop, schema+description tool registry, persistent
+    per-thread conversation memory, ordered provider fallback chain, hosted-provider
+    data-retention caution.
+Modified sections: Technology Stack table ("Agent core" row enriched; "Prompts" row
+added); Governance Constitution Check scope I–VII → I–VIII.
+Templates:
+  - ✅ .specify/templates/tasks-template.md — Tests note extended: prompt-module
+    changes ship/refresh classification + guardrail regression tests (Principle VIII)
+  - ✅ .specify/templates/plan-template.md — no change (generic Constitution Check
+    gate is populated per-plan from this document)
+  - ✅ .specify/templates/spec-template.md — no change needed
+  - ✅ .specify/templates/checklist-template.md — no change needed
+Follow-up TODOs: none
+Previous: 1.0.1 → 1.0.2 (PATCH, 2026-07-11): agent-tooling references in
 Development Workflow and Governance reworded to be tool-agnostic; no principle,
 gate, or obligation changed.
 Previous: 1.0.0 → 1.0.1 (PATCH, 2026-07-10): frontend design-skill clause
@@ -222,6 +242,60 @@ Chapter 3, realised as speckit cycles.
 **Rationale**: RUP is the methodology the IR justifies and markers will expect to see
 enacted; speckit cycles are its concrete, auditable implementation in this repository.
 
+### VIII. Agent Core & Prompt Engineering Discipline
+
+The agent's anatomy and its prompts are engineered artifacts held to the same standards
+as code.
+
+**Agent core (loop, tools, memory, providers):**
+
+- The agent core MUST implement an explicit **plan → act → observe** loop: the model
+  plans, at most one policy-checked tool call executes per step, and the observed result
+  feeds the next step. The loop MUST enforce a hard iteration cap per user turn; hitting
+  the cap or detecting no progress triggers escalation (FR-7), never a silent retry.
+- Every capability exposed to the model MUST be a **registered tool** with a zod schema
+  and a natural-language description. Descriptions are load-bearing interface — the
+  model selects tools by reading them — so they MUST stay accurate and version-controlled.
+  Side-effecting tools map 1:1 onto Principle II whitelist policy entries.
+- Conversation memory MUST be **persisted per conversation/thread ID in MongoDB** —
+  never RAM-only — so context survives restarts and transfers intact onto the ticket at
+  escalation (Principle III handover).
+- The provider abstraction (Principle VI) MUST implement an **ordered fallback chain**
+  (reference config: local Ollama primary; alternates enabled purely by configuration).
+  Total provider failure MUST degrade visibly: the user is told the assistant is
+  degraded and the request escalates to staff — it MUST NOT error silently. No module
+  may hardcode a single provider.
+- When a hosted (non-local) provider is configured, prompts MUST be treated as
+  potentially retained by that provider: only ticket-necessary information may be sent
+  (NFR-5), and the reference configuration keeps all inference local.
+
+**Prompt engineering (modelled on documented production assistants):**
+
+- System prompts are **versioned repository artifacts** — dedicated prompt modules under
+  backend source — never inline string literals scattered through code. Every prompt
+  change is code-reviewed and traceable in git history.
+- Prompts follow the layered structure of production assistants: (1) identity/persona
+  layer (help-desk role; plain, jargon-free tone per NFR-2), (2) safety layer (refusal
+  rules, out-of-scope handling, escalation triggers), (3) per-tool usage instructions
+  co-located with tool definitions, (4) output-format layer. Mode-specific variants
+  (classification, guided troubleshooting, escalation summary) MUST branch from the
+  shared core, never fork it.
+- Prompt-level safety instructions **complement but never replace** code-level
+  enforcement (Principle II): the whitelist and schema validation remain the actual
+  guarantee. User messages and any retrieved content MUST be delimited as data inside
+  prompts and never concatenated as instructions (prompt-injection defence).
+- Prompt changes are **regression-tested**: the classification test set and guardrail
+  tests (refusal and escalation behaviours) MUST pass before a prompt change merges.
+  A prompt regression is a real regression — Principle IV applies in full.
+
+**Rationale**: A bounded agent loop, described tools, persistent per-thread memory, and
+provider fallback are the minimum viable anatomy of a working agent (per the
+build-ai-agents-free curriculum, Moh4696/build-ai-agents-free); layered, versioned,
+testable prompt modules are how every production assistant documented in the
+system-prompt archive (asgeirtj/system_prompts_leaks) manages the same problems at
+scale. Adopting both keeps the agent demonstrable on the demo machine, defensible
+line-by-line in the viva, and safe under Principle II.
+
 ## Technology Stack & Constraints
 
 | Concern | Committed choice | Notes |
@@ -232,7 +306,8 @@ enacted; speckit cycles are its concrete, auditable implementation in this repos
 | Database | MongoDB Community + Mongoose | Tickets, conversations, audit log (IR §2.4.5) |
 | LLM | Provider abstraction; default self-hosted Ollama | Alternates: own API key / OAuth providers |
 | Speech-to-text | Local-capable engine behind abstraction | Voice → text before analysis (FR-1) |
-| Agent core | Custom orchestration on open-source tooling | Intent → policy check → tool call → audit; no heavyweight agent framework |
+| Agent core | Custom bounded plan→act→observe loop | Intent → policy check → tool call → observe → audit; iteration-capped; no heavyweight agent framework (Principle VIII) |
+| Prompts | Versioned, layered prompt modules in repo | Persona / safety / per-tool / format layers; mode variants share one core; regression-tested (Principle VIII) |
 | Testing | Vitest (unit + integration) + supertest | Exports to Chapter 5 TC tables |
 | Remediation targets | Registered isolated/virtual test endpoints only | SSH / local script runners; never production (NFR-3) |
 | Dev & demo machine | HP Victus 16 — Ryzen 5 8645HS, 16 GB RAM, RTX 4050, Windows 11 | Everything MUST install, run, and demo on this one machine; model sizes chosen to fit |
@@ -277,7 +352,7 @@ docs in `docs/` and specs in `specs/`.
   change; MINOR: principle/section added or materially expanded; PATCH: clarification or
   wording), refresh the Sync Impact Report, and propagate changes to dependent templates
   in `.specify/templates/`.
-- Every `/speckit-plan` MUST evaluate its Constitution Check against Principles I–VII;
+- Every `/speckit-plan` MUST evaluate its Constitution Check against Principles I–VIII;
   violations proceed only with explicit justification in Complexity Tracking.
 - Any change that would breach Principle I (scope) is a **project scope change** and
   additionally requires the supervisor's agreement before implementation.
@@ -286,4 +361,4 @@ docs in `docs/` and specs in `specs/`.
 - Runtime development guidance for agents lives in repository-local agent instruction
   files; where they conflict, this constitution wins.
 
-**Version**: 1.0.2 | **Ratified**: 2026-07-07 | **Last Amended**: 2026-07-11
+**Version**: 1.1.0 | **Ratified**: 2026-07-07 | **Last Amended**: 2026-07-11

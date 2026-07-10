@@ -9,7 +9,7 @@ description: "Task list template for feature implementation"
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: REQUIRED for every feature (Constitution Principle IV). Safety-critical components (whitelist policy engine, command executor, escalation logic) MUST be test-first: their test tasks precede implementation tasks. All other features ship automated tests within the same story. Name tests so results map to the FYP Chapter 5 TC-table format.
+**Tests**: REQUIRED for every feature (Constitution Principle IV). Safety-critical components (whitelist policy engine, command executor, escalation logic) MUST be test-first: their test tasks precede implementation tasks. All other features ship automated tests within the same story. Tasks that add or change prompt modules MUST include a task to add/refresh the classification and guardrail regression tests (Constitution Principle VIII). Name tests so results map to the FYP Chapter 5 TC-table format.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
