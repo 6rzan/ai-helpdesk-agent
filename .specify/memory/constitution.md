@@ -1,7 +1,24 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.0.2 → 1.1.0 (MINOR, 2026-07-11): new Principle VIII
+Version change: 1.1.0 → 1.1.1 (PATCH, 2026-07-11): Principle VII delivery order
+amended — voice input (IR FR-1 voice path: speech-to-text feeding the existing
+conversation pipeline unchanged) slotted after "service status" and before
+"constrained remediation". Voice was the only IR functional requirement with no
+scheduled slot in the delivery order; this aligns Principle VII with Principle I
+(IR Fidelity). No gate, obligation, or other principle changed.
+Templates:
+  - ✅ .specify/templates/plan-template.md — no change (generic Constitution Check
+    gate is populated per-plan from this document)
+  - ✅ .specify/templates/spec-template.md — no change needed
+  - ✅ .specify/templates/tasks-template.md — no change needed
+  - ✅ .specify/templates/checklist-template.md — no change needed
+Other artifacts:
+  - ✅ README.md Roadmap — already lists voice input as a planned increment
+  - ✅ specs/001-.../spec.md — voice deferral assumption already points to a
+    "later input feature"; now backed by a concrete slot in Principle VII
+Follow-up TODOs: none
+Previous: 1.0.2 → 1.1.0 (MINOR, 2026-07-11): new Principle VIII
 (Agent Core & Prompt Engineering Discipline) added, distilled from two external
 references supplied by the developer:
   - asgeirtj/system_prompts_leaks (production system-prompt archive) → layered,
@@ -231,8 +248,10 @@ Chapter 3, realised as speckit cycles.
 - User stories MUST be independently implementable, testable, and demoable increments
   (MVP-first), so a working demo exists from the earliest iteration onward.
 - Priority order follows survey frequency and IR emphasis: password/login → network →
-  printer → peripherals & slow performance → service status → constrained remediation →
-  dashboard & polish. Core conversational + ticketing foundation precedes all categories.
+  printer → peripherals & slow performance → service status → voice input (the deferred
+  IR FR-1 voice path: speech-to-text feeding the existing conversation pipeline
+  unchanged) → constrained remediation → dashboard & polish. Core conversational +
+  ticketing foundation precedes all categories.
 - Transition-phase activities — user trials, feedback-driven tuning within experimental
   boundaries, and role-specific user guidance drafts — are scheduled work items, not
   afterthoughts.
@@ -361,4 +380,4 @@ docs in `docs/` and specs in `specs/`.
 - Runtime development guidance for agents lives in repository-local agent instruction
   files; where they conflict, this constitution wins.
 
-**Version**: 1.1.0 | **Ratified**: 2026-07-07 | **Last Amended**: 2026-07-11
+**Version**: 1.1.1 | **Ratified**: 2026-07-07 | **Last Amended**: 2026-07-11
