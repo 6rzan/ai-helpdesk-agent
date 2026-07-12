@@ -338,3 +338,9 @@ Each arrives as its own independently testable increment; the roadmap itself may
 B.Sc. (Hons) Computer Science — Asia Pacific University (APU)
 
 © 2026 Taha Fahd Ahmed Mohammed Thabit. All rights reserved.
+
+## License
+
+This project is **not open source**.
+
+The source code is published for educational, reference, and portfolio purposes only. All rights are reserved by the copyright holder. See the `LICENSE` file for the complete terms.
