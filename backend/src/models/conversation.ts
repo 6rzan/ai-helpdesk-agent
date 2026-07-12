@@ -1,5 +1,5 @@
 import { Schema, model, Types, type InferSchemaType } from "mongoose";
-import { CONVERSATION_STATES, ISSUE_CATEGORIES } from "./enums.js";
+import { CONVERSATION_STATES } from "./enums.js";
 
 const conversationSchema = new Schema(
   {
@@ -29,7 +29,7 @@ const conversationSchema = new Schema(
     pendingDuplicate: {
       type: new Schema(
         {
-          category: { type: String, enum: ISSUE_CATEGORIES, required: true },
+          category: { type: String, required: true },
           confidence: { type: Number, required: true },
           description: { type: String, required: true },
           reply: { type: String, required: true },

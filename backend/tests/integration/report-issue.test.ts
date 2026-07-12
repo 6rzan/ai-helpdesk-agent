@@ -32,6 +32,27 @@ async function waitForTicket(conversationId: string, timeoutMs = 2000) {
   throw new Error("Timed out waiting for ticket creation");
 }
 
+// Ticket creation and the agent's confirmation reply are two separate async
+// writes (the reply follows guided-session setup) — poll rather than assuming
+// the reply is already persisted the instant the ticket is.
+async function waitForAgentReplyContaining(
+  conversationId: string,
+  substring: string,
+  timeoutMs = 2000,
+) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const match = await Message.findOne({ conversationId, author: "agent", text: new RegExp(escapeRegex(substring)) });
+    if (match) return match;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error("Timed out waiting for agent reply");
+}
+
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 describe("Report issue journey", () => {
   let ctx: TestContext;
 
@@ -55,13 +76,8 @@ describe("Report issue journey", () => {
     const ticket = await waitForTicket(session.conversationId);
     expect(ticket.category).toBe("password_login");
 
-    const agentReplies = await Message.find({
-      conversationId: session.conversationId,
-      author: "agent",
-    }).sort({ sentAt: 1 });
-    const confirmation = agentReplies.find((m) => m.text.includes(ticket.reference));
-    expect(confirmation).toBeDefined();
-    expect(confirmation?.text.toLowerCase()).toContain("password login");
+    const confirmation = await waitForAgentReplyContaining(session.conversationId, ticket.reference);
+    expect(confirmation.text.toLowerCase()).toContain("password login");
   });
 
   it("TC-013: a classified ticket records timestamp, category, description, and reporter identity (US1-AS2)", async () => {

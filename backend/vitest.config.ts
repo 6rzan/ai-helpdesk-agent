@@ -6,6 +6,7 @@ export default defineConfig({
     env: {
       APP_MODE: "test",
       LLM_PROVIDER: "mock",
+      MAINTAINER_KEY: "test-maintainer-key",
     },
     reporters: ["default", "json"],
     outputFile: {

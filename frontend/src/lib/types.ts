@@ -19,6 +19,11 @@ export type Actor = "agent" | "user" | "system" | "staff";
 
 export type EscalationReason = "user_request" | "low_confidence" | "out_of_scope" | "llm_unavailable";
 
+export interface MessageGuidance {
+  stepIndex: number;
+  stepCount: number;
+}
+
 export interface Message {
   _id: string;
   conversationId: string;
@@ -26,6 +31,7 @@ export interface Message {
   text: string;
   inputOrigin: InputOrigin;
   sentAt: string;
+  guidance?: MessageGuidance;
 }
 
 export interface TransitionRecord {

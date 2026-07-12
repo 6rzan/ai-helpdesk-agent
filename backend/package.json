@@ -16,6 +16,7 @@
     "test:watch": "vitest --exclude \"**/benchmark/**\"",
     "test:benchmark": "vitest run tests/benchmark",
     "tc-tables": "tsx scripts/tc-tables.ts",
+    "seed:guides": "tsx src/scripts/seed-guides.ts",
     "availability-probe": "tsx scripts/availability-probe.ts"
   },
   "dependencies": {

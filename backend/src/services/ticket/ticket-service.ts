@@ -1,4 +1,4 @@
-import type { Types } from "mongoose";
+import type { HydratedDocument, Types } from "mongoose";
 import { ForbiddenError, NotFoundError } from "../../lib/errors.js";
 import { nextTicketReference } from "./counter.js";
 import { Message } from "../../models/message.js";
@@ -6,6 +6,8 @@ import { Ticket, type TicketDoc } from "../../models/ticket.js";
 import type { Actor, EscalationReason, HandlingMode, IssueCategory, TicketStatus } from "../../models/enums.js";
 import { askResolutionConfirmation, notifyTicketUpdated } from "./notifications.js";
 import { transitionHandlingMode, transitionStatus, type TransitionableTicket } from "./state-machine.js";
+import { GuidedSession } from "../../models/guided-session.js";
+import { Guide } from "../../models/guide.js";
 
 export interface CreateTicketInput {
   reporterId: Types.ObjectId;
@@ -18,7 +20,7 @@ export interface CreateTicketInput {
   escalationReason?: EscalationReason;
 }
 
-export async function createTicket(input: CreateTicketInput): Promise<TicketDoc> {
+export async function createTicket(input: CreateTicketInput): Promise<HydratedDocument<TicketDoc>> {
   const reference = await nextTicketReference();
   const ticket = await Ticket.create({
     reference,
@@ -32,7 +34,7 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketDoc>
     escalated: input.escalated,
     escalationReason: input.escalationReason ?? null,
   });
-  return ticket as unknown as TicketDoc;
+  return ticket as unknown as HydratedDocument<TicketDoc>;
 }
 
 export function toTicketSummary(ticket: TicketDoc) {
@@ -49,6 +51,7 @@ export function toTicketSummary(ticket: TicketDoc) {
 
 export async function toTicketDetail(ticket: TicketDoc) {
   const transcript = await Message.find({ conversationId: ticket.conversationId }).sort({ sentAt: 1 });
+  const guidance = await buildGuidanceBlock(ticket._id);
   return {
     ...toTicketSummary(ticket),
     escalationReason: ticket.escalationReason ?? null,
@@ -66,6 +69,28 @@ export async function toTicketDetail(ticket: TicketDoc) {
       text: message.text,
       inputOrigin: message.inputOrigin,
       sentAt: message.sentAt,
+    })),
+    ...(guidance ? { guidance } : {}),
+  };
+}
+
+// Resolves instruction text from the pinned guide version (FR-017), so a
+// mid-session guide edit never retroactively changes what an old attempt shows.
+async function buildGuidanceBlock(ticketId: Types.ObjectId) {
+  const session = await GuidedSession.findOne({ ticketId }).sort({ createdAt: -1 });
+  if (!session) {
+    return null;
+  }
+  const guide = await Guide.findOne({ categoryName: session.categoryName, version: session.guideVersion });
+  return {
+    categoryName: session.categoryName,
+    guideVersion: session.guideVersion,
+    state: session.state,
+    stepAttempts: session.stepAttempts.map((attempt) => ({
+      stepIndex: attempt.stepIndex,
+      outcome: attempt.outcome,
+      at: attempt.at,
+      instruction: guide?.steps[attempt.stepIndex]?.instruction ?? null,
     })),
   };
 }

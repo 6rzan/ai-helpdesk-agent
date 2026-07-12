@@ -1,13 +1,19 @@
-export const ISSUE_CATEGORIES = [
+// R2: the mandated six seed the `categories` collection (backend/src/scripts/seed-guides.ts)
+// but classification is no longer restricted to this literal union — new categories
+// added via the maintainer API classify without a code change (FR-014). `unclassified`
+// is the one hardcoded fallback pseudo-category (safety default, FR-012).
+export const MANDATED_CATEGORIES = [
   "password_login",
   "network",
   "printer",
   "peripherals",
   "performance",
   "service_status",
-  "unclassified",
 ] as const;
-export type IssueCategory = (typeof ISSUE_CATEGORIES)[number];
+export const UNCLASSIFIED_CATEGORY = "unclassified" as const;
+/** @deprecated kept for the mock provider's static keyword table; prefer the categories collection. */
+export const ISSUE_CATEGORIES = [...MANDATED_CATEGORIES, UNCLASSIFIED_CATEGORY] as const;
+export type IssueCategory = string;
 
 export const TICKET_STATUSES = ["open", "in_progress", "resolved", "closed"] as const;
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
@@ -26,6 +32,8 @@ export const ESCALATION_REASONS = [
   "low_confidence",
   "out_of_scope",
   "llm_unavailable",
+  "no_guide",
+  "guidance_exhausted",
 ] as const;
 export type EscalationReason = (typeof ESCALATION_REASONS)[number];
 

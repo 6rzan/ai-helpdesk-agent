@@ -1,67 +1,66 @@
 import { config } from "../../config/index.js";
 import { logger } from "../../lib/logger.js";
-import { classificationOutputSchema } from "./schema.js";
+import { CHAT_SYSTEM_PROMPT } from "./prompts/core.js";
+import { buildClassificationPrompt } from "./prompts/classification.js";
+import { buildStepReplyPrompt } from "./prompts/guidance.js";
+import { classificationOutputSchema, stepReplyOutputSchema, STEP_REPLY_OUTCOMES } from "./schema.js";
 import type {
+  ClassificationCategoryOption,
   ClassifyAndReplyInput,
   ClassifyAndReplyResult,
+  InterpretStepReplyInput,
+  InterpretStepReplyResult,
   LlmProvider,
   StreamReplyInput,
 } from "./types.js";
 
-const CLASSIFICATION_SYSTEM_PROMPT =
-  "You are an IT help desk assistant. Classify the user's issue into exactly one category:\n" +
-  "- password_login: passwords, account lockouts, sign-in failures\n" +
-  "- network: any connectivity problem — no internet (even for a whole floor or office), Wi-Fi, " +
-  "VPN, connection timeouts, network drives failing to connect or map\n" +
-  "- printer: printers, printing, or scanners/copiers attached to printers\n" +
-  "- peripherals: mice, keyboards, monitors, headsets, or other attached input/display devices " +
-  "(never printers or scanners). A misbehaving mouse or keyboard is peripherals even if it freezes\n" +
-  "- performance: the whole machine running slow, freezing, or crashing — not a single device\n" +
-  "- service_status: asking whether a hosted service or application (email, portal, shared drive) " +
-  "is down or degraded for everyone — the service itself is out while connectivity otherwise works\n" +
-  "- unclassified: none of the above fit\n" +
-  "Confidence rules: if the report is vague and does not name a concrete symptom, device, or service " +
-  '(e.g. "my computer is acting weird", "things are off today"), you MUST set confidence below 0.5. ' +
-  "Only use confidence 0.8 or above when the category is unmistakable.\n" +
-  'Respond with strict JSON only: {"category": string, "confidence": number between 0 and 1, ' +
-  '"reply": string}. The reply must be a short, friendly message to the user; when confidence is ' +
-  "low, the reply should ask one clarifying question.";
-
-const CHAT_SYSTEM_PROMPT = "You are a concise, friendly IT help desk assistant.";
-
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 
 // json_schema (not json_object): required by LM Studio, also supported by OpenAI.
-const CLASSIFICATION_RESPONSE_FORMAT = {
-  type: "json_schema",
-  json_schema: {
-    name: "classification",
-    strict: true,
-    schema: {
-      type: "object",
-      properties: {
-        category: {
-          type: "string",
-          enum: [
-            "password_login",
-            "network",
-            "printer",
-            "peripherals",
-            "performance",
-            "service_status",
-            "unclassified",
-          ],
+// Category enum is data-driven (R2) so new categories classify without a code change.
+function buildClassificationResponseFormat(categories: ClassificationCategoryOption[]) {
+  return {
+    type: "json_schema",
+    json_schema: {
+      name: "classification",
+      strict: true,
+      schema: {
+        type: "object",
+        properties: {
+          category: {
+            type: "string",
+            enum: [...categories.map((c) => c.name), "unclassified"],
+          },
+          confidence: { type: "number" },
+          reply: { type: "string" },
         },
-        confidence: { type: "number" },
-        reply: { type: "string" },
+        required: ["category", "confidence", "reply"],
       },
-      required: ["category", "confidence", "reply"],
     },
-  },
-} as const;
+  } as const;
+}
+
+function buildStepReplyResponseFormat() {
+  return {
+    type: "json_schema",
+    json_schema: {
+      name: "step_reply",
+      strict: true,
+      schema: {
+        type: "object",
+        properties: {
+          outcome: { type: "string", enum: [...STEP_REPLY_OUTCOMES] },
+          confidence: { type: "number" },
+          reply: { type: "string" },
+        },
+        required: ["outcome", "confidence", "reply"],
+      },
+    },
+  } as const;
+}
 
 function buildMessages(
-  input: ClassifyAndReplyInput | StreamReplyInput,
+  input: ClassifyAndReplyInput | StreamReplyInput | InterpretStepReplyInput,
   systemPrompt: string,
 ): { role: string; content: string }[] {
   const historyMessages = input.history.map((turn) => ({
@@ -117,8 +116,8 @@ export class OpenAiCompatProvider implements LlmProvider {
         body: JSON.stringify({
           model: config.LLM_MODEL,
           temperature: 0,
-          response_format: CLASSIFICATION_RESPONSE_FORMAT,
-          messages: buildMessages(input, CLASSIFICATION_SYSTEM_PROMPT),
+          response_format: buildClassificationResponseFormat(input.categories),
+          messages: buildMessages(input, buildClassificationPrompt(input.categories)),
         }),
       });
 
@@ -150,6 +149,62 @@ export class OpenAiCompatProvider implements LlmProvider {
       return { ok: true, ...parsed.data };
     } catch (err) {
       logger.warn({ err }, "openai-compat classification call errored");
+      return { ok: false, reason: "llm_unavailable" };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async interpretStepReply(input: InterpretStepReplyInput): Promise<InterpretStepReplyResult> {
+    if (!this.apiKey) {
+      logger.warn("openai-compat provider has no LLM_API_KEY configured");
+      return { ok: false, reason: "llm_unavailable" };
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), config.LLM_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: this.headers(),
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: config.LLM_MODEL,
+          temperature: 0,
+          response_format: buildStepReplyResponseFormat(),
+          messages: buildMessages(input, buildStepReplyPrompt(input.stepInstruction, input.successHint)),
+        }),
+      });
+
+      if (!response.ok) {
+        logger.warn({ status: response.status }, "openai-compat step-reply request failed");
+        return { ok: false, reason: "llm_unavailable" };
+      }
+
+      const body = (await response.json()) as OpenAiChatCompletion;
+      const raw = body.choices?.[0]?.message?.content ?? "";
+
+      let candidate: unknown;
+      try {
+        candidate = JSON.parse(raw);
+      } catch (parseErr) {
+        logger.warn({ err: parseErr }, "openai-compat step-reply output was not valid JSON");
+        return { ok: false, reason: "llm_unavailable" };
+      }
+
+      const parsed = stepReplyOutputSchema.safeParse(candidate);
+      if (!parsed.success) {
+        logger.warn(
+          { error: parsed.error.message },
+          "openai-compat step-reply output failed schema validation",
+        );
+        return { ok: false, reason: "llm_unavailable" };
+      }
+
+      return { ok: true, ...parsed.data };
+    } catch (err) {
+      logger.warn({ err }, "openai-compat step-reply call errored");
       return { ok: false, reason: "llm_unavailable" };
     } finally {
       clearTimeout(timer);

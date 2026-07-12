@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { X } from "@phosphor-icons/react";
 import { EscalationNotice } from "../components/EscalationNotice";
 import { MessageBubble } from "../components/MessageBubble";
+import { QuickReplies } from "../components/QuickReplies";
 import { SessionForm } from "../components/SessionForm";
 import { TicketCard } from "../components/TicketCard";
 import { VoiceControl } from "../components/VoiceControl";
@@ -96,8 +97,42 @@ export function ChatPage() {
     setHasTranscriptContent(false);
   }, []);
 
+  const submitMessage = useCallback(
+    (text: string, origin: InputOrigin) => {
+      if (!session || text.trim().length === 0) {
+        return;
+      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          _id: crypto.randomUUID(),
+          conversationId: session.conversationId,
+          author: "user",
+          text,
+          inputOrigin: origin,
+          sentAt: new Date().toISOString(),
+        },
+      ]);
+      sendMessage(session.conversationId, session.sessionId, text, origin).catch((err: unknown) => {
+        const errorText = err instanceof Error ? err.message : "Failed to send message, please try again.";
+        setMessages((prev) => [
+          ...prev,
+          {
+            _id: crypto.randomUUID(),
+            conversationId: session.conversationId,
+            author: "system",
+            text: errorText,
+            inputOrigin: "typed",
+            sentAt: new Date().toISOString(),
+          },
+        ]);
+      });
+    },
+    [session],
+  );
+
   const handleSend = useCallback(() => {
-    if (!session || draft.trim().length === 0) {
+    if (draft.trim().length === 0) {
       return;
     }
     const text = draft.trim();
@@ -105,32 +140,15 @@ export function ChatPage() {
     setDraft("");
     setHasTypedContent(false);
     setHasTranscriptContent(false);
-    setMessages((prev) => [
-      ...prev,
-      {
-        _id: crypto.randomUUID(),
-        conversationId: session.conversationId,
-        author: "user",
-        text,
-        inputOrigin: origin,
-        sentAt: new Date().toISOString(),
-      },
-    ]);
-    sendMessage(session.conversationId, session.sessionId, text, origin).catch((err: unknown) => {
-      const errorText = err instanceof Error ? err.message : "Failed to send message, please try again.";
-      setMessages((prev) => [
-        ...prev,
-        {
-          _id: crypto.randomUUID(),
-          conversationId: session.conversationId,
-          author: "system",
-          text: errorText,
-          inputOrigin: "typed",
-          sentAt: new Date().toISOString(),
-        },
-      ]);
-    });
-  }, [session, draft, hasTypedContent, hasTranscriptContent]);
+    submitMessage(text, origin);
+  }, [draft, hasTypedContent, hasTranscriptContent, submitMessage]);
+
+  const handleQuickReply = useCallback(
+    (text: string) => {
+      submitMessage(text, "typed");
+    },
+    [submitMessage],
+  );
 
   if (!session) {
     return <SessionForm onSubmit={handleStart} isSubmitting={isStarting} error={sessionError} />;
@@ -145,9 +163,23 @@ export function ChatPage() {
         references={tickets.filter((t) => t.handlingMode === "human_involved").map((t) => t.reference)}
       />
       <section className="flex flex-1 flex-col gap-2 overflow-y-auto rounded border border-gray-200 p-3">
-        {messages.map((message) => (
-          <MessageBubble key={message._id} author={message.author} text={message.text} />
-        ))}
+        {messages.map((message, index) => {
+          const alignment =
+            message.author === "user" ? "self-end" : message.author === "system" ? "self-center" : "self-start";
+          return (
+            <div key={message._id} className={`flex flex-col gap-1 ${alignment}`}>
+              {message.guidance && (
+                <span className="text-xs font-medium text-gray-500">
+                  Step {message.guidance.stepIndex + 1} of {message.guidance.stepCount}
+                </span>
+              )}
+              <MessageBubble author={message.author} text={message.text} />
+              {!streaming && index === messages.length - 1 && message.author === "agent" && message.guidance && (
+                <QuickReplies onSend={handleQuickReply} />
+              )}
+            </div>
+          );
+        })}
         {streaming && <MessageBubble author="agent" text={streaming.text} isStreaming />}
       </section>
       <div className="mt-4 flex flex-col gap-2">

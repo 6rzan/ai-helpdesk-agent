@@ -52,6 +52,20 @@ export class PayloadTooLargeError extends AppError {
   }
 }
 
+export class UnauthorizedError extends AppError {
+  constructor(message: string, code = "UNAUTHORIZED") {
+    super(401, code, message);
+    this.name = "UnauthorizedError";
+  }
+}
+
+export class UnprocessableEntityError extends AppError {
+  constructor(message: string, code = "UNPROCESSABLE_ENTITY") {
+    super(422, code, message);
+    this.name = "UnprocessableEntityError";
+  }
+}
+
 export function isAppError(err: unknown): err is AppError {
   return err instanceof AppError;
 }

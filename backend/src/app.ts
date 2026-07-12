@@ -4,6 +4,7 @@ import { pinoHttp } from "pino-http";
 import { config } from "./config/index.js";
 import { logger } from "./lib/logger.js";
 import { errorHandler, notFoundHandler } from "./api/middleware/error-handler.js";
+import { adminGuidesRouter } from "./api/routes/admin-guides.js";
 import { conversationsRouter } from "./api/routes/conversations.js";
 import { eventsRouter } from "./api/sse/events-route.js";
 import { healthRouter } from "./api/routes/health.js";
@@ -32,6 +33,12 @@ export function createApp(): Express {
   app.use("/api", transcriptionsRouter);
   if (config.APP_MODE === "demo" || config.APP_MODE === "test") {
     app.use("/api", testSupportRouter);
+  }
+  // Routes absent entirely (not just guarded) when no key is configured (contracts/api.md).
+  // Mounted at /api/admin (not /api) so its blanket maintainerAuth middleware
+  // never intercepts unrelated /api/* traffic like /api/tickets/...
+  if (config.MAINTAINER_KEY) {
+    app.use("/api/admin", adminGuidesRouter);
   }
 
   app.use(notFoundHandler);

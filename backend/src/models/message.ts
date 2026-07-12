@@ -31,6 +31,16 @@ const messageSchema = new Schema(
       required: true,
       default: () => new Date(),
     },
+    guidance: {
+      type: new Schema(
+        {
+          stepIndex: { type: Number, required: true },
+          stepCount: { type: Number, required: true },
+        },
+        { _id: false },
+      ),
+      required: false,
+    },
   },
   { timestamps: true },
 );

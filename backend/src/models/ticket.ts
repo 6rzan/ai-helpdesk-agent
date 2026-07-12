@@ -1,11 +1,5 @@
 import { Schema, model, Types, type InferSchemaType } from "mongoose";
-import {
-  ACTORS,
-  ESCALATION_REASONS,
-  HANDLING_MODES,
-  ISSUE_CATEGORIES,
-  TICKET_STATUSES,
-} from "./enums.js";
+import { ACTORS, ESCALATION_REASONS, HANDLING_MODES, TICKET_STATUSES } from "./enums.js";
 
 const transitionRecordSchema = new Schema(
   {
@@ -42,8 +36,9 @@ const ticketSchema = new Schema(
       required: true,
     },
     category: {
+      // Runtime-validated against the categories collection (+ "unclassified")
+      // before a ticket is created — see services/classification/classifier.ts.
       type: String,
-      enum: ISSUE_CATEGORIES,
       required: true,
     },
     classificationConfidence: {

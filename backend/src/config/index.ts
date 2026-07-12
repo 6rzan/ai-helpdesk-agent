@@ -24,6 +24,7 @@ const envSchema = z.object({
   STT_OPENAI_API_KEY: z.string().optional(),
   STT_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
   VOICE_MAX_SECONDS: z.coerce.number().int().positive().default(120),
+  MAINTAINER_KEY: z.string().optional(),
 });
 
 export type AppMode = z.infer<typeof appModeSchema>;
