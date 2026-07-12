@@ -259,7 +259,7 @@ Development is specification-first: every feature starts from a written specific
 The current codebase is the conversational and ticketing **foundation** plus **voice input** (✅ shipped — speech transcribed fully locally and fed through the same conversation pipeline). Planned next, in priority order:
 
 1. **Guided troubleshooting** — step-by-step guidance per support category, starting with password/login.
-2. **Staff dashboard** — web dashboard for IT staff to view tickets, take over escalated cases, and resolve them, with role-restricted access.
+2. **Staff dashboard & user accounts** — web dashboard for IT staff to view tickets, take over escalated cases, and resolve them, with role-restricted access. Includes user accounts with self-service profiles: users sign in and maintain their own support details (remote-access ID such as TeamViewer/UltraViewer, location/desk, hardware), IT staff can append further details to any user's profile, and escalated tickets surface the reporter's profile automatically so staff never have to search for a user's location, machine, or remote-access ID.
 3. **Constrained automated remediation** — strictly whitelisted, fully audited actions against designated isolated test endpoints only.
 
 Each arrives as its own independently testable increment; the roadmap itself may be reordered or revised by the author at any time.
