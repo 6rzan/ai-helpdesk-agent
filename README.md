@@ -125,6 +125,74 @@ Open `http://localhost:5173`, enter a display name and an organisational ID, and
 
 Health check: `curl http://localhost:3000/api/health` → reports overall status plus LLM and database reachability.
 
+## How to use
+
+> This section is kept current: it is updated every time a feature ships.
+
+### 1. The first screen — identifying yourself
+
+The app asks for two things before the chat opens:
+
+| Field | What to enter | Rules | Examples |
+|---|---|---|---|
+| **Organisation ID** | Any identifier for the team/company you're reporting under. There is no registration — the first use of an ID creates it. Reusing the same ID (with the same name) later brings back your open tickets. | 3–32 characters; letters, digits, `.`, `_`, `-` only; no spaces | `apu-demo`, `acme.it`, `dept_042` |
+| **Display name** | The name the agent should call you. | 1–60 characters | `Taha`, `Sarah K.` |
+
+For a quick local try-out, `demo-org` + your first name is all you need.
+
+### 2. Reporting a problem
+
+Type the problem the way you'd tell a colleague — no forms, no keywords required. One problem per message works best. Examples that map to each support category:
+
+| You type… | Category |
+|---|---|
+| "I can't log into my account, it says my password is wrong" | Password / login |
+| "The Wi-Fi keeps dropping every few minutes" | Internet & network connectivity |
+| "The printer on the 3rd floor says paper jam but there is no jam" | Printer |
+| "My second monitor is flickering and goes black" | Peripheral devices |
+| "My laptop takes five minutes to open anything" | Slow device performance |
+| "Is the file server down right now?" | Basic service status |
+
+The agent replies in the chat, opens a ticket automatically, and shows you its reference (e.g. `HD-0012`). If it isn't confident about the category it asks a clarifying question instead of guessing; after two rounds it hands the case to a human with the whole conversation attached.
+
+### 3. Talking to the agent after that
+
+| You want to… | Just say… |
+|---|---|
+| Check progress | "What's happening with my ticket?" or "Any update on HD-0012?" |
+| Reach a human | "Can I just talk to IT staff?" — escalates immediately |
+| Confirm a fix | When a ticket is marked *Resolved* the agent asks; reply "yes, it's fixed" to close it |
+| Reopen | "It's still broken" — reopens the resolved ticket |
+| Withdraw | "Never mind, it fixed itself" |
+
+Status changes (Open → In Progress → Resolved → Closed) appear in the conversation in real time — no refreshing.
+
+### 4. Voice input
+
+Click the **microphone button** next to the message box:
+
+- Speak your report (up to **2 minutes**; a warning appears 15 seconds before the cap, then recording stops on its own).
+- Click stop, and the transcript appears **as an editable draft** — nothing is sent until you press send, so you can fix names or wording first, or clear it and start over.
+- You can mix typing and voice: type half a sentence, record the rest, and it lands in the same draft.
+- Audio is transcribed **locally** and discarded immediately — only the final text is stored.
+
+Voice needs a one-time model download (~700 MB, gitignored): get the *sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8* export from the sherpa-onnx releases and extract it into `backend/models/stt/` (exact URL pinned in `.env.example`). Without it, the mic button degrades gracefully — typing always works. Full setup detail: [`specs/002-voice-input/quickstart.md`](specs/002-voice-input/quickstart.md).
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Page loads but sending a message fails / spinner forever | Backend not running or not on `:3000` | Start `cd backend; npm run dev`; check `curl http://localhost:3000/api/health` |
+| "Organisation ID" rejected on the first screen | Invalid characters or length | 3–32 chars, only letters/digits/`.`/`_`/`-`, no spaces — e.g. `demo-org` |
+| Backend exits immediately on start | MongoDB not running | Start MongoDB, then `mongosh --eval "db.runCommand({ping:1})"` should succeed |
+| Every report becomes an unclassified, human-flagged ticket | LLM unreachable (this is the designed fallback) | Check the `llm` field in `/api/health`; start Ollama / LM Studio, verify `LLM_PROVIDER`, `LLM_MODEL`, and `OLLAMA_URL`/`LLM_BASE_URL` in `backend/.env` |
+| LM Studio specifically not answering | Wrong base URL or no model loaded | `LLM_PROVIDER=openai_compat`, `LLM_BASE_URL=http://127.0.0.1:1234/v1`, any non-empty `LLM_API_KEY`, and a model actually loaded in LM Studio |
+| Mic button shows "The microphone is not available" | Browser permission denied or no input device | Allow microphone access for `localhost:5173` in the browser's site settings; typing is unaffected |
+| Recording works but transcription returns an error (503) | STT model files missing | Download the model into `backend/models/stt/` (see *Voice input* above); confirm `STT_MODEL_DIR` points at it |
+| Transcript comes back empty | Silence or no speech detected | The agent says so explicitly — try again closer to the mic, or type instead |
+| Port already in use (`3000` or `5173`) | Another process holding the port | `netstat -ano | findstr :3000` then stop that process, or change `PORT` in `backend/.env` |
+| Tests fail with worker/network errors on first run | `mongodb-memory-server` downloading its binary | Re-run once the download completes; no real MongoDB is needed for tests |
+
 ### Configuration
 
 All settings are environment variables (see `.env.example`); every one has a default, so the app runs with no `.env` at all.
@@ -143,6 +211,10 @@ All settings are environment variables (see `.env.example`); every one has a def
 | `CONFIDENCE_THRESHOLD` | `0.7` | Minimum classification confidence to accept a category |
 | `MAX_CLARIFICATION_ROUNDS` | `2` | Clarifying questions asked before escalating |
 | `SESSION_INACTIVITY_MINUTES` | `30` | Chat session expiry (tickets and conversations persist) |
+| `STT_PROVIDERS` | `local` | Speech-to-text provider order: `local` and/or `openai_compat` (comma-separated) |
+| `STT_MODEL_DIR` | `./models/stt` | Directory holding the local STT model files |
+| `STT_OPENAI_BASE_URL` | — | OpenAI-compatible STT fallback (e.g. a whisper.cpp server) |
+| `VOICE_MAX_SECONDS` | `120` | Recording duration cap; keep frontend `VITE_VOICE_MAX_SECONDS` in sync |
 
 ## API surface
 
@@ -150,7 +222,8 @@ All settings are environment variables (see `.env.example`); every one has a def
 |---|---|
 | `POST /api/sessions` | Start or resume a session (display name + organisational ID); returns open tickets |
 | `GET /api/events?sessionId=…` | SSE stream: streamed reply tokens, agent messages, ticket created/updated events |
-| `POST /api/conversations/:conversationId/messages` | Send a chat message |
+| `POST /api/conversations/:conversationId/messages` | Send a chat message (carries `inputOrigin`: typed / voice / mixed) |
+| `POST /api/sessions/:sessionId/transcriptions` | Transcribe a recorded voice clip to text (audio is never persisted) |
 | `GET /api/tickets` | List the reporter's tickets with status and handling mode |
 | `GET /api/tickets/:reference` | Ticket detail including full state history and conversation transcript |
 | `PATCH /api/tickets/:reference/state` | Drive a state transition — available only in `demo`/`test` mode |
@@ -183,12 +256,11 @@ Development is specification-first: every feature starts from a written specific
 
 ## Roadmap
 
-The current codebase is the conversational and ticketing **foundation**. Planned next, in priority order:
+The current codebase is the conversational and ticketing **foundation** plus **voice input** (✅ shipped — speech transcribed fully locally and fed through the same conversation pipeline). Planned next, in priority order:
 
 1. **Guided troubleshooting** — step-by-step guidance per support category, starting with password/login.
-2. **Voice input** — speech transcribed to text and fed through the same conversation pipeline, with a fully local option.
-3. **Staff dashboard** — web dashboard for IT staff to view tickets, take over escalated cases, and resolve them, with role-restricted access.
-4. **Constrained automated remediation** — strictly whitelisted, fully audited actions against designated isolated test endpoints only.
+2. **Staff dashboard** — web dashboard for IT staff to view tickets, take over escalated cases, and resolve them, with role-restricted access.
+3. **Constrained automated remediation** — strictly whitelisted, fully audited actions against designated isolated test endpoints only.
 
 Each arrives as its own independently testable increment; the roadmap itself may be reordered or revised by the author at any time.
 
