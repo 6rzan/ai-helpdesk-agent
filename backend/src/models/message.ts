@@ -1,5 +1,5 @@
 import { Schema, model, Types, type InferSchemaType } from "mongoose";
-import { MESSAGE_AUTHORS } from "./enums.js";
+import { INPUT_ORIGINS, MESSAGE_AUTHORS } from "./enums.js";
 
 const messageSchema = new Schema(
   {
@@ -19,6 +19,12 @@ const messageSchema = new Schema(
       required: true,
       minlength: 1,
       maxlength: 4000,
+    },
+    inputOrigin: {
+      type: String,
+      enum: INPUT_ORIGINS,
+      required: true,
+      default: "typed",
     },
     sentAt: {
       type: Date,

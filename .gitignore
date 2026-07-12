@@ -11,6 +11,9 @@ SEM_2_SESSION_3_PRESENTATION_FYP_PRESENTATION.pdf
 graphify-out/
 backend/tests/.results/
 
+# Speech-to-text model bundle (large binary, downloaded per .env.example instructions)
+backend/models/stt/
+
 # Local development tooling — not part of the published project
 .specify/extensions.yml
 .specify/init-options.json

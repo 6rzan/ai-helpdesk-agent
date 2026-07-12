@@ -10,6 +10,7 @@ import { healthRouter } from "./api/routes/health.js";
 import { sessionsRouter } from "./api/routes/sessions.js";
 import { testSupportRouter } from "./api/routes/test-support.js";
 import { ticketsRouter } from "./api/routes/tickets.js";
+import { transcriptionsRouter } from "./api/routes/transcriptions.js";
 
 export function createApp(): Express {
   const app = express();
@@ -28,6 +29,7 @@ export function createApp(): Express {
   app.use("/api", sessionsRouter);
   app.use("/api", conversationsRouter);
   app.use("/api", ticketsRouter);
+  app.use("/api", transcriptionsRouter);
   if (config.APP_MODE === "demo" || config.APP_MODE === "test") {
     app.use("/api", testSupportRouter);
   }

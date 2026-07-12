@@ -2,6 +2,7 @@ import { Router } from "express";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { ForbiddenError, NotFoundError, ValidationError } from "../../lib/errors.js";
+import { INPUT_ORIGINS } from "../../models/enums.js";
 import { Conversation } from "../../models/conversation.js";
 import { validate } from "../middleware/validate.js";
 import { handleIncomingMessage } from "../../services/conversation/conversation-service.js";
@@ -10,14 +11,18 @@ import { getSession, touchSession } from "../../services/session/session-service
 export const conversationsRouter = Router();
 
 const paramsSchema = z.object({ conversationId: z.string().min(1) });
-const bodySchema = z.object({ sessionId: z.string().min(1), text: z.string() });
+const bodySchema = z.object({
+  sessionId: z.string().min(1),
+  text: z.string(),
+  inputOrigin: z.enum(INPUT_ORIGINS).default("typed"),
+});
 
 conversationsRouter.post(
   "/conversations/:conversationId/messages",
   validate({ params: paramsSchema, body: bodySchema }),
   (req, res, next) => {
     const { conversationId } = req.params as z.infer<typeof paramsSchema>;
-    const { sessionId, text } = req.body as z.infer<typeof bodySchema>;
+    const { sessionId, text, inputOrigin } = req.body as z.infer<typeof bodySchema>;
 
     (async () => {
       const trimmed = text.trim();
@@ -52,6 +57,7 @@ conversationsRouter.post(
         conversationId: conversation._id,
         reporterId: session.reporterId,
         text,
+        inputOrigin,
       });
 
       res.status(202).json(result);

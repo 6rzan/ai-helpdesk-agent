@@ -31,3 +31,6 @@ export type EscalationReason = (typeof ESCALATION_REASONS)[number];
 
 export const CONVERSATION_STATES = ["active", "ended"] as const;
 export type ConversationState = (typeof CONVERSATION_STATES)[number];
+
+export const INPUT_ORIGINS = ["typed", "voice", "mixed"] as const;
+export type InputOrigin = (typeof INPUT_ORIGINS)[number];

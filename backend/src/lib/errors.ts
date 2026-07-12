@@ -45,6 +45,13 @@ export class ServiceUnavailableError extends AppError {
   }
 }
 
+export class PayloadTooLargeError extends AppError {
+  constructor(message: string, code = "PAYLOAD_TOO_LARGE") {
+    super(413, code, message);
+    this.name = "PayloadTooLargeError";
+  }
+}
+
 export function isAppError(err: unknown): err is AppError {
   return err instanceof AppError;
 }

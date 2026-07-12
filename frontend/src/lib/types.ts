@@ -13,6 +13,8 @@ export type HandlingMode = "automated" | "waiting_on_user" | "human_involved";
 
 export type MessageAuthor = "user" | "agent" | "system";
 
+export type InputOrigin = "typed" | "voice" | "mixed";
+
 export type Actor = "agent" | "user" | "system" | "staff";
 
 export type EscalationReason = "user_request" | "low_confidence" | "out_of_scope" | "llm_unavailable";
@@ -22,6 +24,7 @@ export interface Message {
   conversationId: string;
   author: MessageAuthor;
   text: string;
+  inputOrigin: InputOrigin;
   sentAt: string;
 }
 
@@ -64,6 +67,12 @@ export interface CreateSessionResponse {
 
 export interface SendMessageResponse {
   messageId: string;
+}
+
+export interface TranscriptionResponse {
+  transcript: string;
+  durationSeconds: number;
+  provider: "local" | "openai_compat";
 }
 
 export interface ApiErrorBody {

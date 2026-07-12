@@ -64,6 +64,7 @@ export async function toTicketDetail(ticket: TicketDoc) {
       _id: message._id.toString(),
       author: message.author,
       text: message.text,
+      inputOrigin: message.inputOrigin,
       sentAt: message.sentAt,
     })),
   };

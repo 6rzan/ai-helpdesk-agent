@@ -3,7 +3,7 @@ import { config } from "../../config/index.js";
 import { clock } from "../../lib/clock.js";
 import { logger } from "../../lib/logger.js";
 import { Conversation, type ConversationDoc } from "../../models/conversation.js";
-import type { IssueCategory } from "../../models/enums.js";
+import type { InputOrigin, IssueCategory } from "../../models/enums.js";
 import { Message, type MessageDoc } from "../../models/message.js";
 import { Ticket, type TicketDoc } from "../../models/ticket.js";
 import { classify } from "../classification/classifier.js";
@@ -109,6 +109,7 @@ export interface HandleIncomingMessageInput {
   conversationId: Types.ObjectId;
   reporterId: Types.ObjectId;
   text: string;
+  inputOrigin?: InputOrigin;
 }
 
 export interface HandleIncomingMessageResult {
@@ -125,9 +126,14 @@ interface ReplyContext {
 export async function handleIncomingMessage(
   input: HandleIncomingMessageInput,
 ): Promise<HandleIncomingMessageResult> {
-  const { sessionId, conversationId, reporterId, text } = input;
+  const { sessionId, conversationId, reporterId, text, inputOrigin } = input;
 
-  const userMessage = await Message.create({ conversationId, author: "user", text });
+  const userMessage = await Message.create({
+    conversationId,
+    author: "user",
+    text,
+    ...(inputOrigin ? { inputOrigin } : {}),
+  });
   await Conversation.findByIdAndUpdate(conversationId, { lastActivityAt: clock.now() });
 
   void processReply({ sessionId, conversationId, reporterId, text }).catch((err: unknown) => {
@@ -460,6 +466,7 @@ function toMessageJson(message: MessageDoc) {
     conversationId: message.conversationId.toString(),
     author: message.author,
     text: message.text,
+    inputOrigin: message.inputOrigin,
     sentAt: message.sentAt,
   };
 }

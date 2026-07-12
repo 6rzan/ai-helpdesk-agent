@@ -250,6 +250,71 @@ export function getReporterIdFromSession(sessionId: string): Types.ObjectId {
 }
 ```
 
+### Voice Input: STT Provider Chain with Timeout and Degradation
+
+**File**: `backend/src/services/stt/stt-service.ts` (TC-061–064, TC-072)
+
+Speech-to-text runs a configurable, ordered provider chain (`local` then `openai_compat` by default). Each provider call is wrapped in a per-provider timeout; on failure the service falls through to the next provider and only throws once the entire chain is exhausted, logging a distinct degradation line so the failure is never silent (Principle VIII).
+
+```typescript
+function withTimeout(provider: SttProvider, request: TranscriptionRequest): Promise<TranscriptionResult> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new SttProviderError(provider.name, `${provider.name} timed out after ${config.STT_TIMEOUT_MS}ms`, "timeout"));
+    }, config.STT_TIMEOUT_MS);
+
+    provider.transcribe(request).then(
+      (result) => { clearTimeout(timer); resolve(result); },
+      (err) => { clearTimeout(timer); reject(err); },
+    );
+  });
+}
+
+export async function transcribe(
+  request: TranscriptionRequest,
+  chain: SttProvider[] = getProviderChain(),
+): Promise<TranscriptionResult> {
+  if (chain.length === 0) {
+    throw new ServiceUnavailableError("Voice transcription is not configured, please type your message", "STT_UNAVAILABLE");
+  }
+
+  const attempted: string[] = [];
+  for (const provider of chain) {
+    attempted.push(provider.name);
+    try {
+      const result = await withTimeout(provider, request);
+      logger.info({ provider: provider.name, latencyMs: /* ... */ 0 }, "stt.transcribe.success");
+      return result;
+    } catch (err) {
+      const kind = err instanceof SttProviderError ? err.kind : "unavailable";
+      logger.warn({ provider: provider.name, kind }, "stt.transcribe.provider_failed");
+      // fall through to the next provider in the chain
+    }
+  }
+
+  // Every provider in the chain failed — this is the visible-degradation line
+  logger.error({ attemptedProviders: attempted }, "stt.transcribe.chain_exhausted");
+  throw new ServiceUnavailableError("Voice transcription is temporarily unavailable, please type your message", "STT_UNAVAILABLE");
+}
+```
+
+Error classification is carried as a `kind` on `SttProviderError` (`"unavailable" | "timeout" | "invalid_input"`), so `stt.transcribe.provider_failed` distinguishes *why* a given provider failed without needing to inspect the error message text:
+
+```typescript
+export type SttProviderErrorKind = "unavailable" | "timeout" | "invalid_input";
+
+export class SttProviderError extends Error {
+  constructor(
+    public readonly provider: SttProviderName,
+    message: string,
+    public readonly kind: SttProviderErrorKind = "unavailable",
+  ) {
+    super(message);
+    this.name = "SttProviderError";
+  }
+}
+```
+
 ---
 
 ## Design Principles

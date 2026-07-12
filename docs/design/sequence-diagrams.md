@@ -143,3 +143,60 @@ sequenceDiagram
     Ticket->>DB: save Ticket(escalationReason=llm_unavailable, handlingMode=human_involved)
     Note over Ticket,DB: Intake never fully fails — a degraded LLM still yields<br/>a saved, human-flagged ticket with a quotable reference (TC-016)
 ```
+
+## 5. Voice Input: Record → Transcribe → Review → Send
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Mic as VoiceControl
+    participant Audio as audio.ts (capture)
+    participant UI as ChatPage (composer)
+    participant API as Express Routes
+    participant Stt as SttService
+    participant Local as SherpaLocalProvider
+    participant Cloud as OpenAiCompatSttProvider
+    participant Conv as Conversation Service
+
+    User->>Mic: click mic button
+    Mic->>Audio: requestMicAccess() + startRecording()
+    Audio-->>Mic: MediaStream (or permission-denied error)
+    Mic-->>User: recording indicator, timer, stop/cancel controls
+
+    alt User clicks Stop
+        User->>Mic: click Stop
+        Mic->>Audio: stopRecording() → PCM samples
+        Mic->>API: POST /api/sessions/:id/transcriptions (multipart WAV)
+        API->>Stt: transcribe(request)
+        Stt->>Local: transcribe(request) [first in chain]
+        alt local succeeds within STT_TIMEOUT_MS
+            Local-->>Stt: { transcript, durationSeconds, provider: "local" }
+        else local times out or fails
+            Local--xStt: SttProviderError(kind: timeout | unavailable)
+            Stt->>Cloud: transcribe(request) [fallback]
+            alt cloud succeeds
+                Cloud-->>Stt: { transcript, durationSeconds, provider: "openai_compat" }
+            else every provider in the chain fails
+                Cloud--xStt: SttProviderError
+                Stt-->>API: throw ServiceUnavailableError (503 STT_UNAVAILABLE)
+                Note over Stt: logs stt.transcribe.chain_exhausted (Principle VIII visible degradation)
+                API-->>Mic: 503 { message: "Voice transcription is temporarily unavailable, please type your message" }
+                Mic-->>UI: plain-language failure notice, draft text preserved
+            end
+        end
+        Stt-->>API: TranscriptionResult
+        API-->>Mic: 200 { transcript, durationSeconds, provider }
+        Mic-->>UI: appended transcript into composer draft (origin=voice, or mixed if typed text present)
+        UI-->>User: editable draft in composer, ready for review
+    else User clicks Cancel
+        User->>Mic: click Cancel
+        Mic->>Audio: stopRecording() and discard samples
+        Mic-->>UI: returns to idle, no request sent
+    end
+
+    Note over User,UI: Review step — user may edit the transcript like typed text
+    User->>UI: edits draft, then presses Send
+    UI->>API: POST /api/conversations/:id/messages { text, inputOrigin }
+    API->>Conv: handleMessage(text, inputOrigin)
+    Note over Conv: inputOrigin (typed | voice | mixed) is persisted on the Message<br/>and carried into the ticket transcript DTO, but never changes<br/>classification/escalation outcome (TC-073 equivalence)
+```

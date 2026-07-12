@@ -85,3 +85,55 @@
 | TC-054 | denying a duplicate is the same problem opens a second ticket | tests/integration/edge-cases.test.ts | Passed | 141.3 |
 | TC-055 | vowel-less gibberish input is treated as content-free and creates no ticket | tests/integration/edge-cases.test.ts | Passed | 43.8 |
 | TC-056 | punctuation-only input is treated as content-free and creates no ticket | tests/integration/edge-cases.test.ts | Passed | 48.5 |
+| TC-057 | accepts inputOrigin=typed and persists it on the stored message | tests/integration/messages-origin.test.ts | Passed | 379.8 |
+| TC-057 | accepts inputOrigin=voice and persists it on the stored message | tests/integration/messages-origin.test.ts | Passed | 34.3 |
+| TC-057 | accepts inputOrigin=mixed and persists it on the stored message | tests/integration/messages-origin.test.ts | Passed | 38.3 |
+| TC-058 | defaults inputOrigin to typed when omitted from the request body | tests/integration/messages-origin.test.ts | Passed | 32.5 |
+| TC-059 | rejects an invalid inputOrigin value with a validation error | tests/integration/messages-origin.test.ts | Passed | 33.9 |
+| TC-060 | returns inputOrigin in the ticket transcript DTO for both user and agent messages | tests/integration/messages-origin.test.ts | Passed | 63.6 |
+| TC-061 | returns the result from the first provider that succeeds | tests/unit/stt-service.test.ts | Passed | 2.0 |
+| TC-062 | falls through to the next provider when the first one fails | tests/unit/stt-service.test.ts | Passed | 0.6 |
+| TC-063 | throws a 503 STT_UNAVAILABLE error when every provider in the chain fails | tests/unit/stt-service.test.ts | Passed | 1.5 |
+| TC-064 | throws a 503 STT_UNAVAILABLE error when the chain is empty | tests/unit/stt-service.test.ts | Passed | 0.4 |
+| TC-065 | transcribes valid WAV audio and returns 200 with transcript, durationSeconds, and provider | tests/integration/transcription.test.ts | Passed | 365.5 |
+| TC-066 | returns 400 INVALID_AUDIO when the audio part is missing | tests/integration/transcription.test.ts | Passed | 20.0 |
+| TC-067 | returns 400 INVALID_AUDIO when the sample format is wrong | tests/integration/transcription.test.ts | Passed | 24.1 |
+| TC-068 | returns 404 SESSION_NOT_FOUND for an unknown session | tests/integration/transcription.test.ts | Passed | 8.0 |
+| TC-069 | returns 413 AUDIO_TOO_LARGE when the duration cap is exceeded | tests/integration/transcription.test.ts | Passed | 47.0 |
+| TC-070 | returns 503 STT_UNAVAILABLE with a plain-language message when the provider chain is exhausted | tests/integration/transcription.test.ts | Passed | 25.3 |
+| TC-070b | returns 503 STT_UNAVAILABLE with a plain-language message when a provider in the chain fails | tests/integration/transcription.test.ts | Passed | 19.1 |
+| TC-070c | falls back to the next provider in the chain when the primary provider fails | tests/integration/transcription.test.ts | Passed | 21.1 |
+| TC-070d | returns a whitespace-only transcript as-is with 200 (client decides, FR-011) | tests/integration/transcription.test.ts | Passed | 17.1 |
+| TC-071 | returns 409 TRANSCRIPTION_IN_PROGRESS for a concurrent request on the same session | tests/integration/transcription.test.ts | Passed | 438.5 |
+| TC-072 | falls through to the next provider when the first one exceeds its timeout | tests/unit/stt-service.test.ts | Passed | 52.4 |
+| TC-073 | identical text produces the same ticket creation and handling outcome regardless of inputOrigin=typed | tests/integration/messages-origin.test.ts | Passed | 59.5 |
+| TC-073 | identical text produces the same ticket creation and handling outcome regardless of inputOrigin=voice | tests/integration/messages-origin.test.ts | Passed | 45.5 |
+| TC-073 | identical text produces the same ticket creation and handling outcome regardless of inputOrigin=mixed | tests/integration/messages-origin.test.ts | Passed | 61.9 |
+
+## Frontend Test Coverage (Voice Input, no TC-number prefix in source)
+
+Frontend component tests in this codebase do not carry `TC-NNN:` prefixes in their
+titles (a pre-existing convention across all `frontend/tests/**` files, not introduced
+by this feature). The rows below cover the voice-input UI surfaces added in this
+feature; they are listed by descriptive title rather than TC number for consistency
+with the rest of the frontend suite.
+
+| Description | Suite | Status | Duration (ms) |
+|---|---|---|---|
+| renders a disabled mic control with an explanatory tooltip when the browser has no mediaDevices support | tests/components/VoiceControl.test.tsx | Passed | 40.2 |
+| starts recording and shows the indicator, timer, stop, and cancel controls | tests/components/VoiceControl.test.tsx | Passed | 22.5 |
+| transcribes on stop and reports the transcript back to the caller | tests/components/VoiceControl.test.tsx | Passed | 43.0 |
+| reports a plain-language error when nothing was heard | tests/components/VoiceControl.test.tsx | Passed | 30.7 |
+| reports a plain-language error when the STT service is unavailable | tests/components/VoiceControl.test.tsx | Passed | 18.7 |
+| reports a plain-language error when the microphone is denied | tests/components/VoiceControl.test.tsx | Passed | 73.2 |
+| returns to idle after a mid-attempt STT failure so the user can retry by voice or keep typing immediately | tests/components/VoiceControl.test.tsx | Passed | 47.6 |
+| cancels a recording without transcribing | tests/components/VoiceControl.test.tsx | Passed | 19.0 |
+| does not send anything until Send is pressed (no auto-send on idle) | tests/pages/ChatPage.test.tsx | Passed | 62.7 |
+| sends typed-only text with origin typed | tests/pages/ChatPage.test.tsx | Passed | 38.0 |
+| derives origin voice for a transcript-only draft, including edits made during review | tests/pages/ChatPage.test.tsx | Passed | 61.5 |
+| derives origin mixed when typed text exists before a transcript is appended | tests/pages/ChatPage.test.tsx | Passed | 46.7 |
+| derives origin mixed when a transcript is appended before typing (either order) | tests/pages/ChatPage.test.tsx | Passed | 47.0 |
+| stays mixed once set until clear or send, even through further edits | tests/pages/ChatPage.test.tsx | Passed | 46.4 |
+| clearing the draft discards it with no send and resets origin tracking | tests/pages/ChatPage.test.tsx | Passed | 23.8 |
+| preserves the existing draft and shows a plain-language notice when a voice attempt fails mid-recording | tests/pages/ChatPage.test.tsx | Passed | 39.8 |
+| appends a second recording's transcript onto the pending draft | tests/pages/ChatPage.test.tsx | Passed | 92.8 |
