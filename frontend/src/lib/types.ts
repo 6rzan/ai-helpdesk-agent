@@ -85,6 +85,34 @@ export interface ApiErrorBody {
   error: { code: string; message: string };
 }
 
+export type AccountRole = "user" | "staff";
+export type AvailabilityStatus = "available" | "busy" | "away";
+
+export interface Account {
+  id: string;
+  email: string;
+  displayName: string;
+  role: AccountRole;
+  availability?: AvailabilityStatus;
+  usingInitialPassword: boolean;
+}
+
+export interface RegisterRequest {
+  email: string;
+  displayName: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface AgentTokenEvent {
   conversationId: string;
   messageId: string;

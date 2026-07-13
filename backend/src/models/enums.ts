@@ -42,3 +42,9 @@ export type ConversationState = (typeof CONVERSATION_STATES)[number];
 
 export const INPUT_ORIGINS = ["typed", "voice", "mixed"] as const;
 export type InputOrigin = (typeof INPUT_ORIGINS)[number];
+
+export const ACCOUNT_ROLES = ["user", "staff"] as const;
+export type AccountRole = (typeof ACCOUNT_ROLES)[number];
+
+export const AVAILABILITY_STATUSES = ["available", "busy", "away"] as const;
+export type AvailabilityStatus = (typeof AVAILABILITY_STATUSES)[number];

@@ -1,10 +1,12 @@
 import express, { type Express, type Request } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { pinoHttp } from "pino-http";
 import { config } from "./config/index.js";
 import { logger } from "./lib/logger.js";
 import { errorHandler, notFoundHandler } from "./api/middleware/error-handler.js";
 import { adminGuidesRouter } from "./api/routes/admin-guides.js";
+import { authRouter } from "./api/routes/auth.js";
 import { conversationsRouter } from "./api/routes/conversations.js";
 import { eventsRouter } from "./api/sse/events-route.js";
 import { healthRouter } from "./api/routes/health.js";
@@ -18,6 +20,7 @@ export function createApp(): Express {
 
   app.use(cors());
   app.use(express.json());
+  app.use(cookieParser());
   app.use(
     pinoHttp({
       logger,
@@ -26,6 +29,7 @@ export function createApp(): Express {
   );
 
   app.use("/api", healthRouter);
+  app.use("/api", authRouter);
   app.use("/api", eventsRouter);
   app.use("/api", sessionsRouter);
   app.use("/api", conversationsRouter);

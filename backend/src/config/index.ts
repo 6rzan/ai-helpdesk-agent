@@ -18,6 +18,7 @@ const envSchema = z.object({
   CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.7),
   MAX_CLARIFICATION_ROUNDS: z.coerce.number().int().min(0).default(2),
   SESSION_INACTIVITY_MINUTES: z.coerce.number().int().positive().default(30),
+  AUTH_SESSION_TTL_MINUTES: z.coerce.number().int().positive().default(60 * 24 * 7),
   STT_PROVIDERS: z.string().min(1).default("local"),
   STT_MODEL_DIR: z.string().min(1).default("./models/stt"),
   STT_OPENAI_BASE_URL: z.string().optional(),

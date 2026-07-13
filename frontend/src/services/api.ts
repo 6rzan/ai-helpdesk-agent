@@ -1,7 +1,11 @@
 import type {
+  Account,
   ApiErrorBody,
+  ChangePasswordRequest,
   CreateSessionResponse,
   InputOrigin,
+  LoginRequest,
+  RegisterRequest,
   SendMessageResponse,
   TicketDetail,
   TicketSummary,
@@ -23,6 +27,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,
+    credentials: "include",
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
 
@@ -63,6 +68,7 @@ export async function transcribe(sessionId: string, wavBlob: Blob): Promise<Tran
 
   const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/transcriptions`, {
     method: "POST",
+    credentials: "include",
     body: form,
   });
 
@@ -82,4 +88,24 @@ export function getTicket(reference: string, sessionId: string): Promise<{ ticke
   return request<{ ticket: TicketDetail }>(
     `/tickets/${encodeURIComponent(reference)}?sessionId=${encodeURIComponent(sessionId)}`,
   );
+}
+
+export function register(payload: RegisterRequest): Promise<Account> {
+  return request<Account>("/auth/register", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function login(payload: LoginRequest): Promise<Account> {
+  return request<Account>("/auth/login", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function logout(): Promise<void> {
+  return request<void>("/auth/logout", { method: "POST" });
+}
+
+export function getMe(): Promise<Account> {
+  return request<Account>("/auth/me");
+}
+
+export function changePassword(payload: ChangePasswordRequest): Promise<Account> {
+  return request<Account>("/auth/change-password", { method: "POST", body: JSON.stringify(payload) });
 }
