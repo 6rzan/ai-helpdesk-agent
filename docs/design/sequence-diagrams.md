@@ -32,6 +32,53 @@ sequenceDiagram
     UI-->>User: "Got it — I've logged this as HD-0001 (performance)..."
 ```
 
+## Feature 004: Staff Takeover and Reassignment (US2)
+
+```mermaid
+sequenceDiagram
+    actor Reporter
+    actor StaffA as Acting staff member
+    actor StaffB as Suggested colleague
+    participant UI as Staff ticket detail
+    participant API as Staff routes
+    participant Assign as Assignment service
+    participant Ticket as Ticket collection
+    participant Audit as StaffActionRecord
+    participant Conv as Conversation collection
+    participant SSE as Event bus
+
+    StaffA->>UI: Open escalated ticket with profile and handover context
+    UI->>API: POST /api/staff/tickets/:id/takeover
+    API->>Assign: takeover(ticketId, StaffA)
+    Assign->>Ticket: findOneAndUpdate(unassigned and open)
+    alt takeover precondition succeeds
+        Ticket-->>Assign: assigned ticket
+        Assign->>Audit: append takeover attribution
+        Assign->>Conv: append named-handler notification
+        Assign->>SSE: publish ticket_updated
+        SSE-->>UI: refresh assignment state
+        SSE-->>Reporter: named staff handler shown
+    else another staff member already assigned
+        Ticket-->>Assign: no match
+        Assign-->>API: conflict with current assignee
+        API-->>UI: 409 and current assignee
+    end
+
+    StaffA->>UI: Open reassign picker
+    UI->>API: GET /api/staff/roster
+    API->>Assign: aggregate availability and open-case counts
+    Assign-->>UI: roster plus suggestedAssigneeId
+    StaffA->>UI: Confirm StaffB
+    UI->>API: POST /api/staff/tickets/:id/assignee
+    API->>Assign: reassign(ticketId, StaffB, StaffA)
+    Assign->>Ticket: atomic assignee update and append assignment history
+    Assign->>Audit: append reassignment attribution
+    Assign->>Conv: append new named-handler notification
+    Assign->>SSE: publish ticket_updated
+    SSE-->>UI: show StaffB as current assignee
+    SSE-->>Reporter: show StaffB as current handler
+```
+
 ## 2. Status Query + Live Staff-Driven Update (US2)
 
 ```mermaid

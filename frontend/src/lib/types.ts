@@ -136,3 +136,94 @@ export interface TicketUpdatedEvent {
   at: string;
   plainText: string;
 }
+
+/** One row in the staff dashboard ticket list. `reporter` is the linked account's
+ * display name, or `null` for legacy tickets with no account (FR-014). */
+export interface StaffTicketRow {
+  reference: string;
+  category: IssueCategory;
+  status: TicketStatus;
+  handlingMode: HandlingMode;
+  escalated: boolean;
+  description: string;
+  reporter: string | null;
+  assignee: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketAssignee {
+  accountId: string;
+  displayName: string;
+  since: string;
+}
+
+export interface AssignmentRecord {
+  assigneeId: string;
+  assigneeName: string;
+  byId: string;
+  byName: string;
+  at: string;
+  kind: "takeover" | "reassign";
+}
+
+export interface RemoteAccessId {
+  tool: string;
+  id: string;
+}
+
+export interface ProfileStaffEntry {
+  kind: "note" | "correction";
+  field: "remoteAccessIds" | "location" | "hardware" | null;
+  value: string;
+  staffId: string;
+  staffName: string;
+  at: string;
+}
+
+/** The reporter's support profile, surfaced to handling staff on escalated tickets
+ * (FR-013). `null` when no account is linked or no profile exists. */
+export interface SupportProfileView {
+  remoteAccessIds: RemoteAccessId[];
+  location: string;
+  hardware: string;
+  staffEntries: ProfileStaffEntry[];
+}
+
+/** Full-context detail for the staff ticket view: the shared ticket detail plus the
+ * linked reporter account id, current assignee, assignment trail and the reporter's
+ * support profile (all `null`/empty when not applicable). */
+export interface StaffTicketDetail extends TicketDetail {
+  reporterAccountId: string | null;
+  assignee: TicketAssignee | null;
+  assignmentHistory: AssignmentRecord[];
+  profile: SupportProfileView | null;
+}
+
+export interface RosterEntry {
+  id: string;
+  displayName: string;
+  availability: AvailabilityStatus;
+  openCaseCount: number;
+}
+
+/** The staff roster with an advisory suggested assignee (available, fewest open
+ * cases). Advisory only — staff confirm explicitly, never auto-assigned (FR-021). */
+export interface Roster {
+  staff: RosterEntry[];
+  suggestedAssigneeId: string | null;
+}
+
+export interface StaffTicketFilters {
+  status?: TicketStatus;
+  category?: IssueCategory;
+  escalated?: boolean;
+  sort?: "newest" | "oldest" | "updated";
+}
+
+/** Payload of a staff-stream SSE event (`ticket_created` / `ticket_updated`). */
+export interface StaffStreamEvent {
+  ticketId: string;
+  reference: string;
+  changed: string;
+}

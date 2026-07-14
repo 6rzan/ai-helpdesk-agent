@@ -12,6 +12,30 @@ const transitionRecordSchema = new Schema(
   { _id: false },
 );
 
+// Who currently owns the ticket once a human takes over (FR-007). Absent until the
+// first takeover; never cleared (no hand-back to the agent, FR-019).
+const assigneeSchema = new Schema(
+  {
+    accountId: { type: Schema.Types.ObjectId, ref: "UserAccount", required: true },
+    displayName: { type: String, required: true },
+    since: { type: Date, required: true, default: () => new Date() },
+  },
+  { _id: false },
+);
+
+// Append-only trail of every takeover/reassignment (FR-019).
+const assignmentRecordSchema = new Schema(
+  {
+    assigneeId: { type: Schema.Types.ObjectId, ref: "UserAccount", required: true },
+    assigneeName: { type: String, required: true },
+    byId: { type: Schema.Types.ObjectId, ref: "UserAccount", required: true },
+    byName: { type: String, required: true },
+    at: { type: Date, required: true, default: () => new Date() },
+    kind: { type: String, enum: ["takeover", "reassign"], required: true },
+  },
+  { _id: false },
+);
+
 const ticketSchema = new Schema(
   {
     reference: {
@@ -23,6 +47,15 @@ const ticketSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Reporter",
       required: true,
+      index: true,
+    },
+    // Set from the signed-in session at creation (FR-003). Absent on legacy tickets
+    // created before accounts existed — those stay valid and readable (FR-014).
+    reporterAccountId: {
+      type: Schema.Types.ObjectId,
+      ref: "UserAccount",
+      required: false,
+      default: null,
       index: true,
     },
     conversationId: {
@@ -68,6 +101,15 @@ const ticketSchema = new Schema(
     },
     history: {
       type: [transitionRecordSchema],
+      default: [],
+    },
+    assignee: {
+      type: assigneeSchema,
+      required: false,
+      default: null,
+    },
+    assignmentHistory: {
+      type: [assignmentRecordSchema],
       default: [],
     },
   },

@@ -678,6 +678,7 @@ async function sendAgentReply(
     conversationId: ctx.conversationId,
     author: "agent",
     text,
+    inputOrigin: "typed",
     ...(guidance ? { guidance } : {}),
   });
 

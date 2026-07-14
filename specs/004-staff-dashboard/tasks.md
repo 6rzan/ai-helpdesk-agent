@@ -46,8 +46,8 @@ Web app per plan.md: `backend/src/`, `backend/tests/`, `frontend/src/`, `fronten
 - [X] T011 [P] Create maintainer seed script for staff accounts (email + initial password, FR-002/research R10) in backend/src/scripts/seed-staff.ts with `seed:staff` npm script in backend/package.json
 - [X] T012 [P] Extend frontend API client with `credentials: 'include'` and auth endpoints, plus account types, in frontend/src/services/api.ts and frontend/src/lib/types.ts
 - [X] T013 Create AuthProvider context (loads GET /auth/me once, exposes account + role) in frontend/src/context/AuthContext.tsx
-- [ ] T014 Add router shell per plan.md route map: BrowserRouter, RequireAuth/RequireStaff guard routes, top nav (≤64px per Design Direction), LoginPage and RegisterPage — frontend/src/App.tsx, frontend/src/components/AppNav.tsx, frontend/src/pages/LoginPage.tsx, frontend/src/pages/RegisterPage.tsx (chat stays the default route; existing ChatPage tests stay green)
-- [ ] T015 Frontend auth tests (login/register flows, guard redirect, clear refusal for non-staff on /staff) in frontend/tests/pages/auth.test.tsx
+- [X] T014 Add router shell per plan.md route map: BrowserRouter, RequireAuth/RequireStaff guard routes, top nav (≤64px per Design Direction), LoginPage and RegisterPage — frontend/src/App.tsx, frontend/src/components/AppNav.tsx, frontend/src/pages/LoginPage.tsx, frontend/src/pages/RegisterPage.tsx (chat stays the default route; existing ChatPage tests stay green)
+- [X] T015 Frontend auth tests (login/register flows, guard redirect, clear refusal for non-staff on /staff) in frontend/tests/pages/auth.test.tsx
 
 **Checkpoint**: Sign-in works for seeded staff and self-registered users; role gating enforced and tested — user stories can begin
 
@@ -61,22 +61,22 @@ Web app per plan.md: `backend/src/`, `backend/tests/`, `frontend/src/`, `fronten
 
 ### Tests for User Story 1 (REQUIRED — write first) ⚠️
 
-- [ ] T016 [P] [US1] Write FAILING integration tests for staff ticket operations: list with status/category filters + sort, detail aggregation (conversation, classification, attempted steps, status history), status change + resolve with StaffActionRecord attribution, legacy no-account marker, non-staff refusal — backend/tests/integration/staff-tickets.test.ts
-- [ ] T017 [P] [US1] Write FAILING integration test for live propagation: staff SSE stream receives ticket created/updated events; reporter conversation receives plain-language status message on staff resolve (FR-009) — backend/tests/integration/staff-events.test.ts
+- [X] T016 [P] [US1] Write FAILING integration tests for staff ticket operations: list with status/category filters + sort, detail aggregation (conversation, classification, attempted steps, status history), status change + resolve with StaffActionRecord attribution, legacy no-account marker, non-staff refusal — backend/tests/integration/staff-tickets.test.ts
+- [X] T017 [P] [US1] Write FAILING integration test for live propagation: staff SSE stream receives ticket created/updated events; reporter conversation receives plain-language status message on staff resolve (FR-009) — backend/tests/integration/staff-events.test.ts
 
 ### Implementation for User Story 1
 
-- [ ] T018 [P] [US1] Extend Ticket model with optional `reporterAccountId` (legacy tickets remain valid — FR-014) in backend/src/models/ticket.ts
-- [ ] T019 [P] [US1] Create StaffActionRecord append-only model per data-model.md in backend/src/models/staff-action.ts
-- [ ] T020 [US1] Implement staff ticket service (list/filter/sort, detail aggregation across conversation + guided steps + status history, status changes through existing state machine, attribution records) in backend/src/services/staff/staff-ticket-service.ts
-- [ ] T021 [US1] Implement staff routes GET /staff/tickets, GET /staff/tickets/:id, POST /staff/tickets/:id/status (zod-validated, behind requireStaff, per contracts/api.md) in backend/src/api/routes/staff-tickets.ts, mounted in backend/src/app.ts
-- [ ] T022 [US1] Extend SSE event bus with staff stream (GET /api/staff/events behind requireStaff) publishing ticket created/updated events in backend/src/api/sse/event-bus.ts
-- [ ] T023 [US1] Add plain-language reporter notification templates for staff status changes and resolution (reuse existing path) in backend/src/services/ticket/notifications.ts
-- [ ] T024 [P] [US1] Add staff ticket types + API functions and staff-stream support to frontend/src/lib/types.ts, frontend/src/services/api.ts, frontend/src/services/useEvents.ts (existing hook signature stays compatible)
-- [ ] T025 [US1] Build DashboardPage per Design Direction: dense ticket table (rows, hairline dividers, tabular-nums), escalated tickets pinned in distinct amber-marked group (FR-005), filter/sort toolbar, live updates with row-update pulse, skeleton loader, teaching empty state — frontend/src/pages/staff/DashboardPage.tsx (reuse frontend/src/components/StatusBadge.tsx)
-- [ ] T026 [US1] Build TicketDetailPage: two-column layout (transcript left; status history + actions right), status update/resolve actions with full interactive states — frontend/src/pages/staff/TicketDetailPage.tsx
-- [ ] T027 [P] [US1] Frontend tests for dashboard list/filter/live-update and detail actions in frontend/tests/pages/DashboardPage.test.tsx and frontend/tests/pages/TicketDetailPage.test.tsx
-- [ ] T028 [US1] Capture documentation evidence (dashboard + detail screenshots, TC-table rows for T016/T017 suites) into docs/ (Principle V)
+- [X] T018 [P] [US1] Extend Ticket model with optional `reporterAccountId` (legacy tickets remain valid — FR-014) in backend/src/models/ticket.ts
+- [X] T019 [P] [US1] Create StaffActionRecord append-only model per data-model.md in backend/src/models/staff-action.ts
+- [X] T020 [US1] Implement staff ticket service (list/filter/sort, detail aggregation across conversation + guided steps + status history, status changes through existing state machine, attribution records) in backend/src/services/staff/staff-ticket-service.ts
+- [X] T021 [US1] Implement staff routes GET /staff/tickets, GET /staff/tickets/:id, POST /staff/tickets/:id/status (zod-validated, behind requireStaff, per contracts/api.md) in backend/src/api/routes/staff-tickets.ts, mounted in backend/src/app.ts
+- [X] T022 [US1] Extend SSE event bus with staff stream (GET /api/staff/events behind requireStaff) publishing ticket created/updated events in backend/src/api/sse/event-bus.ts
+- [X] T023 [US1] Add plain-language reporter notification templates for staff status changes and resolution (reuse existing path) in backend/src/services/ticket/notifications.ts
+- [X] T024 [P] [US1] Add staff ticket types + API functions and staff-stream support to frontend/src/lib/types.ts, frontend/src/services/api.ts, frontend/src/services/useEvents.ts (existing hook signature stays compatible)
+- [X] T025 [US1] Build DashboardPage per Design Direction: dense ticket table (rows, hairline dividers, tabular-nums), escalated tickets pinned in distinct amber-marked group (FR-005), filter/sort toolbar, live updates with row-update pulse, skeleton loader, teaching empty state — frontend/src/pages/DashboardPage.tsx (reuse frontend/src/components/StatusBadge.tsx)
+- [X] T026 [US1] Build TicketDetailPage: two-column layout (transcript left; status history + actions right), status update/resolve actions with full interactive states — frontend/src/pages/TicketDetailPage.tsx
+- [X] T027 [P] [US1] Frontend tests for dashboard list/filter/live-update and detail actions in frontend/tests/pages/dashboard.test.tsx
+- [X] T028 [US1] Capture documentation evidence (dashboard + detail screenshots, TC-table rows for T016/T017 suites) into docs/ (Principle V)
 
 **Checkpoint**: US1 fully functional — the support loop closes (MVP)
 
@@ -90,20 +90,20 @@ Web app per plan.md: `backend/src/`, `backend/tests/`, `frontend/src/`, `fronten
 
 ### Tests for User Story 2 (REQUIRED — write first) ⚠️
 
-- [ ] T029 [P] [US2] Write FAILING integration tests for assignment (safety-critical concurrency, test-first): takeover sets human mode + attribution + reporter notification; concurrent takeover → 409 with current assignee (US2-5); reassign appends history, never back to agent (FR-019); roster returns availability + open-case counts + advisory suggestion (FR-021) — backend/tests/integration/takeover.test.ts
-- [ ] T030 [P] [US2] Write FAILING integration test for profile surfacing: escalated ticket detail includes reporter profile automatically; explicit `profile: null` when none exists (FR-013) — backend/tests/integration/ticket-profile.test.ts
+- [X] T029 [P] [US2] Write FAILING integration tests for assignment (safety-critical concurrency, test-first): takeover sets human mode + attribution + reporter notification; concurrent takeover → 409 with current assignee (US2-5); reassign appends history, never back to agent (FR-019); roster returns availability + open-case counts + advisory suggestion (FR-021) — backend/tests/integration/takeover.test.ts
+- [X] T030 [P] [US2] Write FAILING integration test for profile surfacing: escalated ticket detail includes reporter profile automatically; explicit `profile: null` when none exists (FR-013) — backend/tests/integration/ticket-profile.test.ts
 
 ### Implementation for User Story 2
 
-- [ ] T031 [P] [US2] Create SupportProfile Mongoose model (user fields + append-only staffEntries per data-model.md) in backend/src/models/support-profile.ts
-- [ ] T032 [US2] Extend Ticket model with `assignee` + `assignmentHistory` in backend/src/models/ticket.ts and enforce one-way human handling mode (no transition back to automated) in backend/src/services/ticket/state-machine.ts
-- [ ] T033 [US2] Implement assignment service: atomic conditional takeover/reassign via findOneAndUpdate precondition (research R6), roster aggregation with open-case counts + suggested assignee (research R7), availability update — backend/src/services/staff/assignment-service.ts
-- [ ] T034 [US2] Add routes POST /staff/tickets/:id/takeover, POST /staff/tickets/:id/assignee (409 on precondition mismatch), GET /staff/roster, PUT /staff/availability in backend/src/api/routes/staff-tickets.ts and backend/src/api/routes/staff-roster.ts
-- [ ] T035 [US2] Wire profile into ticket detail response (backend/src/services/staff/staff-ticket-service.ts), publish assignment SSE events (backend/src/api/sse/event-bus.ts), and add plain-language "named person is handling your case" reporter notifications for takeover/reassignment (backend/src/services/ticket/notifications.ts) (FR-009, FR-020)
-- [ ] T036 [P] [US2] Build ProfilePanel (fields or explicit "No profile on file") and AssigneePicker popover (availability dot = the one semantic dot, open-case count, suggested default preselected, explicit confirm — never auto-assign) in frontend/src/components/staff/ProfilePanel.tsx and frontend/src/components/staff/AssigneePicker.tsx
-- [ ] T037 [US2] Integrate takeover/reassign actions, conflict (409) handling UI, and ProfilePanel into frontend/src/pages/staff/TicketDetailPage.tsx; add staff availability selector to frontend/src/components/AppNav.tsx
-- [ ] T038 [P] [US2] Frontend tests for takeover flow, conflict message, picker suggestion, profile panel states in frontend/tests/pages/TicketDetailAssignment.test.tsx
-- [ ] T039 [US2] Capture documentation evidence (takeover/reassignment screenshots, takeover sequence diagram for Chapter 4, TC rows) into docs/
+- [X] T031 [P] [US2] Create SupportProfile Mongoose model (user fields + append-only staffEntries per data-model.md) in backend/src/models/support-profile.ts
+- [X] T032 [US2] Extend Ticket model with `assignee` + `assignmentHistory` in backend/src/models/ticket.ts and enforce one-way human handling mode (no transition back to automated) in backend/src/services/ticket/state-machine.ts
+- [X] T033 [US2] Implement assignment service: atomic conditional takeover/reassign via findOneAndUpdate precondition (research R6), roster aggregation with open-case counts + suggested assignee (research R7), availability update — backend/src/services/staff/assignment-service.ts
+- [X] T034 [US2] Add routes POST /staff/tickets/:id/takeover, POST /staff/tickets/:id/assignee (409 on precondition mismatch), GET /staff/roster, PUT /staff/availability in backend/src/api/routes/staff-tickets.ts and backend/src/api/routes/staff-roster.ts
+- [X] T035 [US2] Wire profile into ticket detail response (backend/src/services/staff/staff-ticket-service.ts), publish assignment SSE events (backend/src/api/sse/event-bus.ts), and add plain-language "named person is handling your case" reporter notifications for takeover/reassignment (backend/src/services/ticket/notifications.ts) (FR-009, FR-020)
+- [X] T036 [P] [US2] Build ProfilePanel (fields or explicit "No profile on file") and AssigneePicker popover (availability dot = the one semantic dot, open-case count, suggested default preselected, explicit confirm — never auto-assign) in frontend/src/components/ProfilePanel.tsx and frontend/src/components/AssigneePicker.tsx
+- [X] T037 [US2] Integrate takeover/reassign actions, conflict (409) handling UI, and ProfilePanel into frontend/src/pages/TicketDetailPage.tsx; add staff availability selector to frontend/src/components/AppNav.tsx
+- [X] T038 [P] [US2] Frontend tests for takeover flow, conflict message, picker suggestion, profile panel states in frontend/tests/pages/TicketDetailAssignment.test.tsx
+- [X] T039 [US2] Capture documentation evidence (takeover/reassignment screenshots, takeover sequence diagram for Chapter 4, TC rows) into docs/
 
 **Checkpoint**: Escalation handling end-to-end — dashboard's reason to exist is demoable
 

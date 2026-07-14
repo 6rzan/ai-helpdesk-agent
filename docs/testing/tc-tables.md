@@ -115,3 +115,23 @@
 | TC-073 | identical text produces the same ticket creation and handling outcome regardless of inputOrigin=typed | tests/integration/messages-origin.test.ts | Passed | 51.7 |
 | TC-073 | identical text produces the same ticket creation and handling outcome regardless of inputOrigin=voice | tests/integration/messages-origin.test.ts | Passed | 56.7 |
 | TC-073 | identical text produces the same ticket creation and handling outcome regardless of inputOrigin=mixed | tests/integration/messages-origin.test.ts | Passed | 54.6 |
+| TC-US1-01 | non-staff account is refused the ticket list with no data | tests/integration/staff-tickets.test.ts | Passed | 141.0 |
+| TC-US1-02 | signed-out request is refused with 401 | tests/integration/staff-tickets.test.ts | Passed | 8.7 |
+| TC-US1-03 | staff sees all tickets, filtered by status and category | tests/integration/staff-tickets.test.ts | Passed | 82.6 |
+| TC-US1-04 | legacy ticket without a linked account is marked, not hidden (FR-014) | tests/integration/staff-tickets.test.ts | Passed | 83.7 |
+| TC-US1-05 | staff ticket detail aggregates transcript, classification and status history | tests/integration/staff-tickets.test.ts | Passed | 48.2 |
+| TC-US1-06 | staff status change is applied and attributed in a StaffActionRecord | tests/integration/staff-tickets.test.ts | Passed | 60.4 |
+| TC-US1-07 | resolving records a resolve action and marks the ticket resolved | tests/integration/staff-tickets.test.ts | Passed | 47.7 |
+| TC-US1-08 | an invalid status transition is refused (422) | tests/integration/staff-tickets.test.ts | Passed | 43.5 |
+| TC-US1-09 | the staff stream receives a ticket_updated event on a staff status change | tests/integration/staff-events.test.ts | Passed | 125.3 |
+| TC-US1-10 | the reporter's chat receives a plain-language status message when staff resolve their ticket (FR-009) | tests/integration/staff-events.test.ts | Passed | 62.0 |
+| TC-US2-01 | takeover assigns the ticket to the caller, moves it to human handling and attributes the action | tests/integration/takeover.test.ts | Passed | 153.1 |
+| TC-US2-02 | takeover notifies the reporter with the named handler (FR-020) | tests/integration/takeover.test.ts | Passed | 102.2 |
+| TC-US2-03 | a concurrent takeover of an already-assigned ticket is refused with 409 and the current assignee (US2-5) | tests/integration/takeover.test.ts | Passed | 113.0 |
+| TC-US2-04 | reassignment appends history and updates the assignee without handing back to the agent (FR-019) | tests/integration/takeover.test.ts | Passed | 116.8 |
+| TC-US2-05 | reassignment refuses a non-staff target (never back to a user or the agent) | tests/integration/takeover.test.ts | Passed | 138.1 |
+| TC-US2-06 | the roster reports availability, open-case counts and an advisory suggested assignee (FR-021) | tests/integration/takeover.test.ts | Passed | 134.7 |
+| TC-US2-07 | a staff member can update their own availability | tests/integration/takeover.test.ts | Passed | 57.2 |
+| TC-US2-08 | an escalated ticket surfaces the linked reporter's profile automatically (FR-013) | tests/integration/ticket-profile.test.ts | Passed | 162.9 |
+| TC-US2-09 | a ticket whose reporter has no profile returns an explicit profile: null (FR-013) | tests/integration/ticket-profile.test.ts | Passed | 108.3 |
+| TC-US2-10 | a legacy ticket with no linked account returns profile: null | tests/integration/ticket-profile.test.ts | Passed | 58.7 |

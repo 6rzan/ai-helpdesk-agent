@@ -42,6 +42,19 @@ export function publishEvent(sessionId: string, name: SseEventName, data: unknow
   }
 }
 
+// Staff dashboard broadcast: a single shared channel every signed-in staff member
+// subscribes to (contracts/api.md `/staff/events`). Keyed by a reserved id so it
+// can never collide with a chat session UUID.
+const STAFF_CHANNEL = "__staff__";
+
+export function publishStaffEvent(name: SseEventName, data: unknown): void {
+  publishEvent(STAFF_CHANNEL, name, data);
+}
+
+export function subscribeStaff(listener: Listener): () => void {
+  return subscribe(STAFF_CHANNEL, undefined, listener);
+}
+
 export function subscribe(sessionId: string, lastEventId: string | undefined, listener: Listener): () => void {
   const channel = getOrCreateChannel(sessionId);
 

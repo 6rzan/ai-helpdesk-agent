@@ -53,6 +53,27 @@ export function notifyTicketUpdated(
   }
 }
 
+// FR-009/FR-020: mirror an assignment change into the reporter's chat in plain
+// language, so they always know a named person now owns their case.
+export function notifyTicketAssigned(
+  ticket: { reporterId: Types.ObjectId; reference: string },
+  assigneeName: string,
+): void {
+  const at = new Date();
+  const payload = {
+    reference: ticket.reference,
+    field: "handlingMode" as const,
+    from: "",
+    to: "human_involved",
+    at,
+    assigneeName,
+    plainText: `Ticket ${ticket.reference} is now being handled by ${assigneeName}.`,
+  };
+  for (const sessionId of getSessionIdsForReporter(ticket.reporterId)) {
+    publishEvent(sessionId, "ticket_updated", payload);
+  }
+}
+
 // US2-AS4/FR-004: when staff mark a ticket resolved, ask the reporter to confirm
 // the fix so the ticket can be closed (or reopened if the problem persists).
 export async function askResolutionConfirmation(ticket: {
@@ -61,7 +82,12 @@ export async function askResolutionConfirmation(ticket: {
   reference: string;
 }): Promise<void> {
   const text = `Ticket ${ticket.reference} has been marked resolved — is everything working now? Reply "yes" to close it, or tell me if it's still not working.`;
-  const message = await Message.create({ conversationId: ticket.conversationId, author: "agent", text });
+  const message = await Message.create({
+    conversationId: ticket.conversationId,
+    author: "agent",
+    text,
+    inputOrigin: "typed",
+  });
   const payload = {
     conversationId: ticket.conversationId.toString(),
     message: {

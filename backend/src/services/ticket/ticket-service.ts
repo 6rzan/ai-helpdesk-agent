@@ -5,6 +5,7 @@ import { Message } from "../../models/message.js";
 import { Ticket, type TicketDoc } from "../../models/ticket.js";
 import type { Actor, EscalationReason, HandlingMode, IssueCategory, TicketStatus } from "../../models/enums.js";
 import { askResolutionConfirmation, notifyTicketUpdated } from "./notifications.js";
+import { publishStaffEvent } from "../../api/sse/event-bus.js";
 import { transitionHandlingMode, transitionStatus, type TransitionableTicket } from "./state-machine.js";
 import { GuidedSession } from "../../models/guided-session.js";
 import { Guide } from "../../models/guide.js";
@@ -33,6 +34,12 @@ export async function createTicket(input: CreateTicketInput): Promise<HydratedDo
     handlingMode: input.handlingMode,
     escalated: input.escalated,
     escalationReason: input.escalationReason ?? null,
+  });
+  // Live-notify the staff dashboard so the list refreshes without a reload (US1-6).
+  publishStaffEvent("ticket_created", {
+    ticketId: String(ticket._id),
+    reference: ticket.reference,
+    changed: "created",
   });
   return ticket as unknown as HydratedDocument<TicketDoc>;
 }

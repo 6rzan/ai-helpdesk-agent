@@ -12,7 +12,7 @@ export function errorHandler(
     if (err.statusCode >= 500) {
       logger.error({ err, path: req.path }, "request failed");
     }
-    res.status(err.statusCode).json({ error: { code: err.code, message: err.message } });
+    res.status(err.statusCode).json({ error: { code: err.code, message: err.message }, ...(err.details ?? {}) });
     return;
   }
 

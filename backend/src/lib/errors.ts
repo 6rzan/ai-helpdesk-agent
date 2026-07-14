@@ -1,12 +1,18 @@
 export class AppError extends Error {
   readonly statusCode: number;
   readonly code: string;
+  /** Extra fields merged into the top level of the JSON error response (e.g. the
+   * current assignee on a takeover conflict). */
+  readonly details?: Record<string, unknown>;
 
-  constructor(statusCode: number, code: string, message: string) {
+  constructor(statusCode: number, code: string, message: string, details?: Record<string, unknown>) {
     super(message);
     this.name = "AppError";
     this.statusCode = statusCode;
     this.code = code;
+    if (details !== undefined) {
+      this.details = details;
+    }
   }
 }
 
@@ -32,8 +38,8 @@ export class ForbiddenError extends AppError {
 }
 
 export class ConflictError extends AppError {
-  constructor(message: string, code = "CONFLICT") {
-    super(409, code, message);
+  constructor(message: string, code = "CONFLICT", details?: Record<string, unknown>) {
+    super(409, code, message, details);
     this.name = "ConflictError";
   }
 }

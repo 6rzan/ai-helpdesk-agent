@@ -29,7 +29,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
       </div>
       <p className="mt-1 text-sm text-gray-700">{ticket.description}</p>
       <p className="mt-2 text-xs text-gray-500">
-        Your report has been saved as ticket {ticket.reference} — quote this reference any time.
+        Your report has been saved as ticket {ticket.reference}. Quote this reference any time.
       </p>
     </div>
   );

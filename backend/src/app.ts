@@ -11,6 +11,8 @@ import { conversationsRouter } from "./api/routes/conversations.js";
 import { eventsRouter } from "./api/sse/events-route.js";
 import { healthRouter } from "./api/routes/health.js";
 import { sessionsRouter } from "./api/routes/sessions.js";
+import { staffRosterRouter } from "./api/routes/staff-roster.js";
+import { staffTicketsRouter } from "./api/routes/staff-tickets.js";
 import { testSupportRouter } from "./api/routes/test-support.js";
 import { ticketsRouter } from "./api/routes/tickets.js";
 import { transcriptionsRouter } from "./api/routes/transcriptions.js";
@@ -34,6 +36,8 @@ export function createApp(): Express {
   app.use("/api", sessionsRouter);
   app.use("/api", conversationsRouter);
   app.use("/api", ticketsRouter);
+  app.use("/api", staffTicketsRouter);
+  app.use("/api", staffRosterRouter);
   app.use("/api", transcriptionsRouter);
   if (config.APP_MODE === "demo" || config.APP_MODE === "test") {
     app.use("/api", testSupportRouter);

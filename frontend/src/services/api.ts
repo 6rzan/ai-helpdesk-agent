@@ -1,13 +1,19 @@
 import type {
   Account,
   ApiErrorBody,
+  AvailabilityStatus,
   ChangePasswordRequest,
   CreateSessionResponse,
   InputOrigin,
   LoginRequest,
   RegisterRequest,
+  Roster,
   SendMessageResponse,
+  StaffTicketDetail,
+  StaffTicketFilters,
+  StaffTicketRow,
   TicketDetail,
+  TicketStatus,
   TicketSummary,
   TranscriptionResponse,
 } from "../lib/types";
@@ -15,12 +21,16 @@ import type {
 export class ApiError extends Error {
   code: string;
   status: number;
+  /** Extra top-level fields from the error response (e.g. `currentAssignee` on a
+   * takeover conflict). */
+  details: Record<string, unknown>;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, details: Record<string, unknown> = {}) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -32,8 +42,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as ApiErrorBody | null;
-    throw new ApiError(res.status, body?.error.code ?? "UNKNOWN_ERROR", body?.error.message ?? res.statusText);
+    const body = (await res.json().catch(() => null)) as (ApiErrorBody & Record<string, unknown>) | null;
+    const details: Record<string, unknown> = {};
+    if (body) {
+      for (const [key, value] of Object.entries(body)) {
+        if (key !== "error") details[key] = value;
+      }
+    }
+    throw new ApiError(res.status, body?.error.code ?? "UNKNOWN_ERROR", body?.error.message ?? res.statusText, details);
   }
 
   if (res.status === 204) {
@@ -108,4 +124,52 @@ export function getMe(): Promise<Account> {
 
 export function changePassword(payload: ChangePasswordRequest): Promise<Account> {
   return request<Account>("/auth/change-password", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function listStaffTickets(filters: StaffTicketFilters = {}): Promise<{ tickets: StaffTicketRow[] }> {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.category) params.set("category", filters.category);
+  if (typeof filters.escalated === "boolean") params.set("escalated", String(filters.escalated));
+  if (filters.sort) params.set("sort", filters.sort);
+  const query = params.toString();
+  return request<{ tickets: StaffTicketRow[] }>(`/staff/tickets${query ? `?${query}` : ""}`);
+}
+
+export function getStaffTicket(reference: string): Promise<{ ticket: StaffTicketDetail }> {
+  return request<{ ticket: StaffTicketDetail }>(`/staff/tickets/${encodeURIComponent(reference)}`);
+}
+
+export function updateStaffTicketStatus(
+  reference: string,
+  status: TicketStatus,
+): Promise<{ ticket: TicketDetail }> {
+  return request<{ ticket: TicketDetail }>(`/staff/tickets/${encodeURIComponent(reference)}/status`, {
+    method: "POST",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function takeoverTicket(reference: string): Promise<{ ticket: StaffTicketDetail }> {
+  return request<{ ticket: StaffTicketDetail }>(`/staff/tickets/${encodeURIComponent(reference)}/takeover`, {
+    method: "POST",
+  });
+}
+
+export function reassignTicket(reference: string, toAccountId: string): Promise<{ ticket: StaffTicketDetail }> {
+  return request<{ ticket: StaffTicketDetail }>(`/staff/tickets/${encodeURIComponent(reference)}/assignee`, {
+    method: "POST",
+    body: JSON.stringify({ toAccountId }),
+  });
+}
+
+export function getRoster(): Promise<Roster> {
+  return request<Roster>("/staff/roster");
+}
+
+export function updateAvailability(availability: AvailabilityStatus): Promise<{ availability: AvailabilityStatus }> {
+  return request<{ availability: AvailabilityStatus }>("/staff/availability", {
+    method: "PUT",
+    body: JSON.stringify({ availability }),
+  });
 }
