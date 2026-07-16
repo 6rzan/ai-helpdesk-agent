@@ -1,4 +1,4 @@
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet, MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import type { Express } from "express";
 import { createApp } from "../../src/app.js";
@@ -9,7 +9,7 @@ import { Category } from "../../src/models/category.js";
 import { Guide } from "../../src/models/guide.js";
 import { MANDATED_CATEGORIES } from "../../src/models/enums.js";
 
-let mongod: MongoMemoryServer | undefined;
+let mongod: MongoMemoryServer | MongoMemoryReplSet | undefined;
 
 export interface TestContext {
   app: Express;
@@ -55,8 +55,12 @@ async function seedTestGuides(): Promise<void> {
   );
 }
 
-export async function startTestApp(): Promise<TestContext> {
-  mongod ??= await MongoMemoryServer.create({ instance: { launchTimeout: 60_000 } });
+export async function startTestApp(options: { transactions?: boolean } = {}): Promise<TestContext> {
+  if (!mongod) {
+    mongod = options.transactions
+      ? await MongoMemoryReplSet.create({ replSet: { count: 1 }, instanceOpts: [{ launchTimeout: 60_000 }] })
+      : await MongoMemoryServer.create({ instance: { launchTimeout: 60_000 } });
+  }
   const mongoUri = mongod.getUri();
   await connectDb(mongoUri);
   resetLlmProviderCache();

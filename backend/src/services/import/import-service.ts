@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import crypto from "node:crypto";
-import { Types, type HydratedDocument } from "mongoose";
+import { Types, startSession, type HydratedDocument } from "mongoose";
 import { z } from "zod";
 import { ProfileImport, IMPORT_FIELDS, type ImportField, type ImportMapping, type ImportOutcome, type ProfileImportDoc } from "../../models/profile-import.js";
 import { UserAccount } from "../../models/user-account.js";
@@ -133,6 +133,9 @@ export async function applyImport(id: string) {
   // Mongoose subdocuments do not expose schema fields through object spread. Materialize
   // them before branching so rejected rows retain their outcome and are never applied.
   const outcomes = materializeOutcomes(lock);
+  const session = await startSession();
+  try {
+  await session.withTransaction(async () => {
   for (const [rowIndex, outcome] of outcomes.entries()) {
     if (outcome.outcome === "rejected") continue;
     const row = rowSchema.parse(lock.rows[rowIndex]);
@@ -142,11 +145,13 @@ export async function applyImport(id: string) {
       const suppliedPassword = mappedValue(lock, row, "initialPassword");
       const password = suppliedPassword || `Temp-${crypto.randomBytes(5).toString("hex")}`;
       const hash = await hashPassword(password);
-      account = await UserAccount.create({ email, displayName: mappedValue(lock, row, "displayName"), passwordHash: hash.passwordHash, passwordSalt: hash.passwordSalt, usingInitialPassword: true });
+      const [createdAccount] = await UserAccount.create([{ email, displayName: mappedValue(lock, row, "displayName"), passwordHash: hash.passwordHash, passwordSalt: hash.passwordSalt, usingInitialPassword: true }], { session });
+      if (!createdAccount) throw new Error("Account creation did not return a document.");
+      account = createdAccount;
       outcome.initialPassword = password;
     } else if (mappedValue(lock, row, "displayName")) {
       account.displayName = mappedValue(lock, row, "displayName");
-      await account.save();
+      await account.save({ session });
     }
     const profileSet: Record<string, unknown> = {};
     for (const field of ["location", "hardware"] as const) {
@@ -154,13 +159,24 @@ export async function applyImport(id: string) {
       if (value) profileSet[field] = value;
     }
     const remoteAccessId = mappedValue(lock, row, "remoteAccessId");
-    const update: Record<string, unknown> = { $setOnInsert: { accountId: account._id, remoteAccessIds: [], staffEntries: [] } };
+    // Do not initialise remoteAccessIds and add to it in the same upsert: MongoDB
+    // rejects simultaneous updates to the same path for newly imported accounts.
+    const update: Record<string, unknown> = { $setOnInsert: { accountId: account._id, staffEntries: [] } };
     if (Object.keys(profileSet).length) update.$set = profileSet;
     if (remoteAccessId) update.$addToSet = { remoteAccessIds: { tool: "Imported", id: remoteAccessId } };
-    await SupportProfile.findOneAndUpdate({ accountId: account._id }, update, { upsert: true, new: true, setDefaultsOnInsert: true });
+    await SupportProfile.findOneAndUpdate({ accountId: account._id }, update, { upsert: true, new: true, setDefaultsOnInsert: true, session });
   }
-  await ProfileImport.findByIdAndUpdate(importId, { $set: { status: "applied", rowOutcomes: outcomes } });
+  await ProfileImport.findByIdAndUpdate(importId, { $set: { status: "applied", rowOutcomes: outcomes } }, { session });
+  });
   // Return the materialized working report so the staff UI receives generated
   // credentials immediately; retry responses explicitly select the stored values above.
   return { importId: id, outcomes };
+  } catch (error) {
+    // The lock only protects an active attempt. Releasing it makes a transient failure
+    // recoverable while retaining the partial report needed for an idempotent retry.
+    await ProfileImport.updateOne({ _id: importId, status: "previewed" }, { $unset: { appliedAt: 1 }, $set: { rowOutcomes: outcomes } });
+    throw error;
+  } finally {
+    await session.endSession();
+  }
 }

@@ -2,8 +2,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import { startTestApp, resetDb, stopTestApp, type TestContext } from "../helpers/test-app.js";
 import { resetSessionStore } from "../../src/services/session/session-service.js";
-import { subscribe, subscribeStaff, type SseEvent } from "../../src/api/sse/event-bus.js";
-import { seedStaff } from "../helpers/auth.js";
+import { subscribe, subscribeAccount, subscribeStaff, type SseEvent } from "../../src/api/sse/event-bus.js";
+import { seedStaff, seedUser } from "../helpers/auth.js";
 import { createTicketFixture } from "../helpers/factories.js";
 import { Reporter } from "../../src/models/reporter.js";
 import { Ticket } from "../../src/models/ticket.js";
@@ -98,5 +98,17 @@ describe("TC-US1 live propagation", () => {
     } finally {
       unsubscribe();
     }
+  });
+
+  it("TC-US3-04: sends an account-scoped ticket update only to its owner", async () => {
+    const staff = await seedStaff(); const owner = await seedUser(); const other = await seedUser();
+    const { reference } = await createTicketFixture({ reporterAccountId: owner.account._id, status: "open" });
+    const ownerEvents: SseEvent[] = []; const otherEvents: SseEvent[] = [];
+    const unsubscribeOwner = subscribeAccount(String(owner.account._id), undefined, (event) => ownerEvents.push(event));
+    const unsubscribeOther = subscribeAccount(String(other.account._id), undefined, (event) => otherEvents.push(event));
+    try {
+      const response = await request(ctx.app).post(`/api/staff/tickets/${reference}/status`).set("Cookie", staff.cookie).send({ status: "in_progress" }); expect(response.status).toBe(200);
+      const event = await waitFor(() => ownerEvents.find((candidate) => candidate.name === "ticket_updated")); expect((event.data as Record<string, unknown>).reference).toBe(reference); await new Promise((resolve) => setTimeout(resolve, 50)); expect(otherEvents).toHaveLength(0);
+    } finally { unsubscribeOwner(); unsubscribeOther(); }
   });
 });

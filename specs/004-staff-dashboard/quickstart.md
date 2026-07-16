@@ -7,7 +7,16 @@ Validation guide — proves each user story end-to-end. Contracts:
 
 ## Prerequisites
 
-- MongoDB running locally (same setup as features 001–003).
+- MongoDB running locally as a replica set. US5 Apply uses a transaction and cannot
+  run against a standalone server. For the documented single-node demo setup, run:
+
+  ```powershell
+  docker run -d --name helpdesk-mongo -p 27017:27017 -v helpdesk-mongo-data:/data/db mongo:7 --replSet rs0 --bind_ip_all
+  docker exec helpdesk-mongo mongosh --quiet --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: '127.0.0.1:27017'}]})"
+  docker exec helpdesk-mongo mongosh --quiet --eval "db.hello().isWritablePrimary"
+  ```
+
+  The last command must return `true`. Set `MONGODB_URI=mongodb://127.0.0.1:27017/helpdesk?replicaSet=rs0` in `backend/.env` before starting the backend.
 - `backend/.env` from `.env.example` (LLM provider optional for these flows; the
   dashboard works even with the agent degraded).
 - Install once per side: `npm install` in `backend/` and `frontend/`.
@@ -94,3 +103,24 @@ extend the existing gate, not a separate script.
   panel, assignment picker, import mapping/preview → `docs/`.
 - TC tables for the new test suites (Chapter 5 format).
 - Updated ERD/schema + sequence diagram (takeover flow) for Chapter 4.
+
+## Observed demo-machine record — 2026-07-16
+
+The complete US1–US5 walkthrough was executed on the Windows demo machine. The
+durable browser captures and the detailed outcome record are in
+[`docs/testing/feature-004-uat.md`](../../docs/testing/feature-004-uat.md) and
+[`docs/testing/feature-004-browser/`](../../docs/testing/feature-004-browser/).
+
+- **US1:** a regular user registered and created escalated ticket `HD-0003`; staff saw
+  it in the escalated group, took it over, resolved it, and the reporter received the
+  live plain-language update without a reload.
+- **US2:** the profile fields were visible to staff; reassignment showed availability
+  and workload, while a competing takeover was refused rather than silently stealing
+  the case.
+- **US3:** the second regular account saw only its own tickets; attempting the first
+  account's ticket URL was refused with no ticket data.
+- **US4:** staff appended an attributed profile correction without overwriting the
+  reporter-owned values.
+- **US5:** upload, mapping, and preview showed create/reject outcomes. Under the
+  documented `rs0` replica set, Apply completed, issued credentials were used to sign
+  in, the password was changed, and the new password was verified on a subsequent sign-in.

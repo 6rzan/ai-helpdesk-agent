@@ -1,4 +1,4 @@
-import { Schema, model, models, Types, type Model } from "mongoose";
+import mongoose, { Schema, model, Types, type Model } from "mongoose";
 
 export const IMPORT_FIELDS = ["email", "displayName", "initialPassword", "remoteAccessId", "location", "hardware"] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
@@ -46,5 +46,5 @@ const profileImportSchema = new Schema<ProfileImportDoc>({
   appliedAt: Date,
 });
 
-export const ProfileImport: Model<ProfileImportDoc> = (models.ProfileImport as Model<ProfileImportDoc> | undefined)
+export const ProfileImport: Model<ProfileImportDoc> = (mongoose.models.ProfileImport as Model<ProfileImportDoc> | undefined)
   ?? model<ProfileImportDoc>("ProfileImport", profileImportSchema);

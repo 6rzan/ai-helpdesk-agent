@@ -1,4 +1,4 @@
-import { Schema, model, models, Types, type InferSchemaType, type Model } from "mongoose";
+import mongoose, { Schema, model, Types, type InferSchemaType, type Model } from "mongoose";
 import { CONVERSATION_STATES } from "./enums.js";
 
 const conversationSchema = new Schema(
@@ -53,4 +53,4 @@ const conversationSchema = new Schema(
 );
 
 export type ConversationDoc = InferSchemaType<typeof conversationSchema> & { _id: Types.ObjectId };
-export const Conversation: Model<ConversationDoc> = (models.Conversation as Model<ConversationDoc> | undefined) ?? model<ConversationDoc>("Conversation", conversationSchema);
+export const Conversation: Model<ConversationDoc> = (mongoose.models.Conversation as Model<ConversationDoc> | undefined) ?? model<ConversationDoc>("Conversation", conversationSchema);

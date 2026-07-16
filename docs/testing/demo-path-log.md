@@ -51,7 +51,7 @@ The sequence is covered by `tests/integration/auth.test.ts`,
 |---|---|
 | Backend `tsc --noEmit` | PASS |
 | Backend lint | PASS (warnings only) |
-| Backend full tests | PASS — 79 files, 211 tests |
+| Backend full tests | PASS — 79 files, 217 tests |
 | Frontend `tsc --noEmit` | PASS |
 | Frontend lint | PASS (warning only) |
-| Frontend full tests | PASS — 16 files, 72 tests |
+| Frontend full tests | PASS — 17 files, 81 tests |

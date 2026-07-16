@@ -1,4 +1,4 @@
-import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
+import mongoose, { Schema, model, type InferSchemaType, type Model } from "mongoose";
 
 const reporterSchema = new Schema(
   {
@@ -22,4 +22,4 @@ const reporterSchema = new Schema(
 );
 
 export type ReporterDoc = InferSchemaType<typeof reporterSchema>;
-export const Reporter: Model<ReporterDoc> = (models.Reporter as Model<ReporterDoc> | undefined) ?? model<ReporterDoc>("Reporter", reporterSchema);
+export const Reporter: Model<ReporterDoc> = (mongoose.models.Reporter as Model<ReporterDoc> | undefined) ?? model<ReporterDoc>("Reporter", reporterSchema);

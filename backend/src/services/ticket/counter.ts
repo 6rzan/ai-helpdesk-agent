@@ -1,4 +1,4 @@
-import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
+import mongoose, { Schema, model, type InferSchemaType, type Model } from "mongoose";
 
 const counterSchema = new Schema({
   _id: { type: String, required: true },
@@ -6,7 +6,7 @@ const counterSchema = new Schema({
 });
 
 type CounterDoc = InferSchemaType<typeof counterSchema>;
-const Counter: Model<CounterDoc> = (models.Counter as Model<CounterDoc> | undefined) ?? model<CounterDoc>("Counter", counterSchema);
+const Counter: Model<CounterDoc> = (mongoose.models.Counter as Model<CounterDoc> | undefined) ?? model<CounterDoc>("Counter", counterSchema);
 
 export async function nextSequence(name: string): Promise<number> {
   const doc = await Counter.findByIdAndUpdate(

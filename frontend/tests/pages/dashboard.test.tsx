@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { DashboardPage } from "../../src/pages/DashboardPage";
 import { TicketDetailPage } from "../../src/pages/TicketDetailPage";
@@ -8,6 +8,9 @@ import type { StaffTicketDetail, StaffTicketRow } from "../../src/lib/types";
 const listStaffTickets = vi.fn();
 const getStaffTicket = vi.fn();
 const updateStaffTicketStatus = vi.fn();
+let staffHandlers: { onTicketUpdated?: (event: { reference: string }) => void } | undefined;
+
+vi.mock("../../src/services/useEvents", () => ({ useStaffEvents: (_enabled: boolean, handlers: typeof staffHandlers) => { staffHandlers = handlers; } }));
 
 vi.mock("../../src/services/api", async () => {
   const actual = await vi.importActual<typeof import("../../src/services/api")>("../../src/services/api");
@@ -195,6 +198,26 @@ describe("TicketDetailPage", () => {
     // in_progress -> resolved only
     expect(screen.getByRole("button", { name: /mark resolved/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /mark closed/i })).not.toBeInTheDocument();
+  });
+
+  it("renders handling and timestamp columns, then pulses an SSE-updated row", async () => {
+    listStaffTickets.mockResolvedValue({ tickets: [makeRow({ escalated: true, handlingMode: "human_involved", createdAt: "2026-07-13T09:00:00.000Z", updatedAt: "2026-07-13T10:00:00.000Z" })] });
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+    const link = await screen.findByRole("link", { name: "TCK-0001" });
+    expect(screen.getByRole("columnheader", { name: "Handling" })).toBeInTheDocument(); expect(screen.getByRole("columnheader", { name: "Created" })).toBeInTheDocument(); expect(screen.getByRole("columnheader", { name: "Updated" })).toBeInTheDocument();
+    expect(screen.getByText("human involved")).toBeInTheDocument(); expect(screen.getByText(/needs staff attention/i)).toBeInTheDocument();
+    await act(async () => { staffHandlers?.onTicketUpdated?.({ reference: "TCK-0001" }); });
+    expect(link.closest("tr")).toHaveClass("motion-safe:animate-pulse");
+  });
+
+  it("renders attributed staff actions and the complete assignment history", async () => {
+    getStaffTicket.mockResolvedValue({ ticket: makeDetail({
+      staffActions: [{ staffId: "s1", staffName: "Sam Support", action: "status_change", details: { status: "resolved", note: "User confirmed fix" }, at: "2026-07-13T10:00:00.000Z" }],
+      assignmentHistory: [{ assigneeId: "s2", assigneeName: "Nadia Ng", byId: "s1", byName: "Sam Support", kind: "reassign", at: "2026-07-13T10:01:00.000Z" }],
+    }) });
+    renderDetail();
+    await screen.findByText("TCK-0001");
+    expect(screen.getAllByText(/sam support/i)).toHaveLength(2); expect(screen.getByText(/status: resolved, note: user confirmed fix/i)).toBeInTheDocument(); expect(screen.getByText(/nadia ng/i)).toBeInTheDocument(); expect(screen.getByText(/reassigned by sam support/i)).toBeInTheDocument();
   });
 
   it("applies a status change through the API and reflects it", async () => {

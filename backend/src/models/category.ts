@@ -1,4 +1,4 @@
-import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
+import mongoose, { Schema, model, type InferSchemaType, type Model } from "mongoose";
 
 const categorySchema = new Schema(
   {
@@ -46,4 +46,4 @@ const categorySchema = new Schema(
 );
 
 export type CategoryDoc = InferSchemaType<typeof categorySchema> & { _id: import("mongoose").Types.ObjectId };
-export const Category: Model<CategoryDoc> = (models.Category as Model<CategoryDoc> | undefined) ?? model<CategoryDoc>("Category", categorySchema, "categories");
+export const Category: Model<CategoryDoc> = (mongoose.models.Category as Model<CategoryDoc> | undefined) ?? model<CategoryDoc>("Category", categorySchema, "categories");

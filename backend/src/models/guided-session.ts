@@ -1,4 +1,4 @@
-import { Schema, model, models, Types, type InferSchemaType, type Model } from "mongoose";
+import mongoose, { Schema, model, Types, type InferSchemaType, type Model } from "mongoose";
 
 export const GUIDED_SESSION_STATES = ["active", "resolved", "escalated", "abandoned"] as const;
 export type GuidedSessionState = (typeof GUIDED_SESSION_STATES)[number];
@@ -65,4 +65,4 @@ guidedSessionSchema.index(
 );
 
 export type GuidedSessionDoc = InferSchemaType<typeof guidedSessionSchema> & { _id: Types.ObjectId };
-export const GuidedSession: Model<GuidedSessionDoc> = (models.GuidedSession as Model<GuidedSessionDoc> | undefined) ?? model<GuidedSessionDoc>("GuidedSession", guidedSessionSchema, "guided_sessions");
+export const GuidedSession: Model<GuidedSessionDoc> = (mongoose.models.GuidedSession as Model<GuidedSessionDoc> | undefined) ?? model<GuidedSessionDoc>("GuidedSession", guidedSessionSchema, "guided_sessions");

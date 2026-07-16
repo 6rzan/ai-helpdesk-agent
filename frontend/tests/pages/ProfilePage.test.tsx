@@ -28,4 +28,19 @@ describe("ProfilePage", () => {
     await waitFor(() => expect(updateMyProfile).toHaveBeenCalledWith({ remoteAccessIds: [{ tool: "Remote access", id: "123" }], location: "Lab 3", hardware: "Dell" }));
     expect(screen.getByText(/note by sam/i)).toBeInTheDocument();
   });
+  it("preserves multiple labelled remote-access IDs through save and reload", async () => {
+    getMyProfile.mockResolvedValue({ profile: { remoteAccessIds: [{ tool: "TeamViewer", id: "one" }, { tool: "AnyDesk", id: "two" }], location: "", hardware: "", staffEntries: [] } });
+    updateMyProfile.mockResolvedValue({ profile: { remoteAccessIds: [{ tool: "TeamViewer", id: "one-edited" }, { tool: "AnyDesk", id: "two" }], location: "", hardware: "", staffEntries: [] } });
+    render(<ProfilePage />); await screen.findByDisplayValue("AnyDesk"); fireEvent.change(screen.getByLabelText("Remote access ID 1"), { target: { value: "one-edited" } }); fireEvent.click(screen.getByRole("button", { name: /save profile/i }));
+    await waitFor(() => expect(updateMyProfile).toHaveBeenCalledWith(expect.objectContaining({ remoteAccessIds: [{ tool: "TeamViewer", id: "one-edited" }, { tool: "AnyDesk", id: "two" }] })));
+    expect(screen.getByDisplayValue("two")).toBeInTheDocument();
+  });
+  it("removes one remote-access ID without collapsing the remaining labelled entries", async () => {
+    getMyProfile.mockResolvedValue({ profile: { remoteAccessIds: [{ tool: "TeamViewer", id: "one" }, { tool: "AnyDesk", id: "two" }], location: "", hardware: "", staffEntries: [] } });
+    updateMyProfile.mockResolvedValue({ profile: { remoteAccessIds: [{ tool: "AnyDesk", id: "two" }], location: "", hardware: "", staffEntries: [] } });
+    render(<ProfilePage />); await screen.findByDisplayValue("TeamViewer");
+    fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[0]!); fireEvent.click(screen.getByRole("button", { name: /save profile/i }));
+    await waitFor(() => expect(updateMyProfile).toHaveBeenCalledWith(expect.objectContaining({ remoteAccessIds: [{ tool: "AnyDesk", id: "two" }] })));
+    expect(screen.getByDisplayValue("AnyDesk")).toBeInTheDocument(); expect(screen.queryByDisplayValue("TeamViewer")).not.toBeInTheDocument();
+  });
 });

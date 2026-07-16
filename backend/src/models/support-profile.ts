@@ -1,4 +1,4 @@
-import { Schema, model, models, Types, type InferSchemaType, type Model } from "mongoose";
+import mongoose, { Schema, model, Types, type InferSchemaType, type Model } from "mongoose";
 
 export const STAFF_ENTRY_KINDS = ["note", "correction"] as const;
 export type StaffEntryKind = (typeof STAFF_ENTRY_KINDS)[number];
@@ -49,4 +49,4 @@ const supportProfileSchema = new Schema(
 );
 
 export type SupportProfileDoc = InferSchemaType<typeof supportProfileSchema> & { _id: Types.ObjectId };
-export const SupportProfile: Model<SupportProfileDoc> = (models.SupportProfile as Model<SupportProfileDoc> | undefined) ?? model<SupportProfileDoc>("SupportProfile", supportProfileSchema);
+export const SupportProfile: Model<SupportProfileDoc> = (mongoose.models.SupportProfile as Model<SupportProfileDoc> | undefined) ?? model<SupportProfileDoc>("SupportProfile", supportProfileSchema);

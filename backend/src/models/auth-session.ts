@@ -1,4 +1,4 @@
-import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
+import mongoose, { Schema, model, type InferSchemaType, type Model } from "mongoose";
 
 const authSessionSchema = new Schema({
   tokenHash: {
@@ -26,4 +26,4 @@ const authSessionSchema = new Schema({
 authSessionSchema.index({ accountId: 1 });
 
 export type AuthSessionDoc = InferSchemaType<typeof authSessionSchema>;
-export const AuthSession: Model<AuthSessionDoc> = (models.AuthSession as Model<AuthSessionDoc> | undefined) ?? model<AuthSessionDoc>("AuthSession", authSessionSchema);
+export const AuthSession: Model<AuthSessionDoc> = (mongoose.models.AuthSession as Model<AuthSessionDoc> | undefined) ?? model<AuthSessionDoc>("AuthSession", authSessionSchema);

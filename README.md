@@ -79,11 +79,20 @@ docs/                            Design diagrams, test traceability, implementat
 | MongoDB | `mongosh --eval "db.runCommand({ping:1})"` |
 | LLM runtime (optional for mock-backed development) | `ollama pull llama3.1:8b` |
 
-For a local MongoDB container:
+Feature 004's Excel Import **Apply** operation uses a MongoDB transaction. Run the
+local demo database as a single-node replica set (not a standalone `mongod`):
 
 ```powershell
-docker run -d --name helpdesk-mongo -p 27017:27017 -v helpdesk-mongo-data:/data/db mongo:7
+docker run -d --name helpdesk-mongo -p 27017:27017 -v helpdesk-mongo-data:/data/db mongo:7 --replSet rs0 --bind_ip_all
+docker exec helpdesk-mongo mongosh --quiet --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: '127.0.0.1:27017'}]})"
+docker exec helpdesk-mongo mongosh --quiet --eval "db.hello().isWritablePrimary"
 ```
+
+The final command must print `true` before starting the backend. The reference
+`MONGODB_URI` includes `?replicaSet=rs0`; use the same suffix for a locally installed
+MongoDB service after starting it with `--replSet rs0`. Existing standalone databases
+can still run ordinary chat and dashboard flows, but Import Apply deliberately returns
+MongoDB code 20 because atomic imports are not safe without transactions.
 
 ### Install and run
 
@@ -143,7 +152,7 @@ Copy [`.env.example`](.env.example) to `backend/.env` to override defaults. The 
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `MONGODB_URI` | `mongodb://127.0.0.1:27017/helpdesk` | MongoDB connection string |
+| `MONGODB_URI` | `mongodb://127.0.0.1:27017/helpdesk?replicaSet=rs0` | Replica-set-capable MongoDB connection string required for transactional import Apply |
 | `PORT` | `3000` | Backend HTTP port |
 | `APP_MODE` | `development` | `development`, `test`, or `demo` |
 | `LLM_PROVIDER` | `ollama` | `ollama`, `openai_compat`, or `mock` |
@@ -227,6 +236,7 @@ Feature 004 covers account authentication, staff-role enforcement, dashboard tic
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | API does not start | MongoDB is unavailable | Start MongoDB and verify `mongosh --eval "db.runCommand({ping:1})"` succeeds. |
+| Import Apply reports MongoDB code 20 or “Transaction numbers are only allowed…” | MongoDB is running standalone | Start the single-node `rs0` setup above, confirm `db.hello().isWritablePrimary` is `true`, then set `MONGODB_URI` with `?replicaSet=rs0` and restart the backend. |
 | Chat requests fail | Backend is not running | Start `npm run dev` in `backend` and check `/api/health`. |
 | A staff route returns 401 or 403 | Not signed in, or account lacks the staff role | Sign in with an account provisioned through `npm run seed:staff`. |
 | All issues escalate as unclassified | LLM provider is unavailable | Check `/api/health`, then verify `LLM_PROVIDER`, `LLM_MODEL`, and provider URL settings. |
