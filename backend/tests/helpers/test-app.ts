@@ -56,7 +56,7 @@ async function seedTestGuides(): Promise<void> {
 }
 
 export async function startTestApp(): Promise<TestContext> {
-  mongod ??= await MongoMemoryServer.create();
+  mongod ??= await MongoMemoryServer.create({ instance: { launchTimeout: 60_000 } });
   const mongoUri = mongod.getUri();
   await connectDb(mongoUri);
   resetLlmProviderCache();

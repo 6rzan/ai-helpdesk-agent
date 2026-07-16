@@ -15,6 +15,13 @@ const importIdSchema = z.string().regex(/^[a-f\d]{24}$/i, "Invalid import ID");
 const mappingSchema = z.record(z.enum(IMPORT_FIELDS));
 const rowSchema = z.array(z.string());
 const emailSchema = z.string().email();
+const outcomeSchema = z.object({
+  row: z.number().int().positive(),
+  email: z.string(),
+  outcome: z.enum(["created", "updated", "rejected"]),
+  reason: z.string().optional(),
+  initialPassword: z.string().optional(),
+});
 type ImportDocument = HydratedDocument<ProfileImportDoc>;
 
 function validateId(id: string): Types.ObjectId {
@@ -30,6 +37,22 @@ function mappedValue(doc: ImportDocument, row: string[], field: ImportField): st
   const mapping = mappingObject(doc);
   const column = Object.entries(mapping).find(([, value]) => value === field)?.[0];
   return column === undefined ? "" : row[doc.columns.indexOf(column)]?.trim() ?? "";
+}
+
+function materializeOutcomes(doc: ImportDocument): ImportOutcome[] {
+  return doc.rowOutcomes.map((outcome) => {
+    const value = typeof (outcome as unknown as { toObject?: () => unknown }).toObject === "function"
+      ? (outcome as unknown as { toObject: () => unknown }).toObject()
+      : outcome;
+    const parsed = outcomeSchema.parse(value);
+    return {
+      row: parsed.row,
+      email: parsed.email,
+      outcome: parsed.outcome,
+      ...(parsed.reason === undefined ? {} : { reason: parsed.reason }),
+      ...(parsed.initialPassword === undefined ? {} : { initialPassword: parsed.initialPassword }),
+    };
+  });
 }
 
 export async function parseImport(buffer: Buffer, filename: string, staff: { _id: Types.ObjectId; displayName: string }) {
@@ -102,12 +125,14 @@ export async function applyImport(id: string) {
     { new: true },
   );
   if (!lock) {
-    const existing = await ProfileImport.findById(importId);
+    const existing = await ProfileImport.findById(importId).select("+rowOutcomes.initialPassword");
     if (!existing) throw new NotFoundError("Import not found.");
-    if (existing.status === "applied") return { importId: id, outcomes: existing.rowOutcomes };
+    if (existing.status === "applied") return { importId: id, outcomes: materializeOutcomes(existing) };
     throw new ConflictError("This import is already being applied or must be previewed first.");
   }
-  const outcomes = lock.rowOutcomes.map((outcome) => ({ ...outcome }));
+  // Mongoose subdocuments do not expose schema fields through object spread. Materialize
+  // them before branching so rejected rows retain their outcome and are never applied.
+  const outcomes = materializeOutcomes(lock);
   for (const [rowIndex, outcome] of outcomes.entries()) {
     if (outcome.outcome === "rejected") continue;
     const row = rowSchema.parse(lock.rows[rowIndex]);
@@ -134,6 +159,8 @@ export async function applyImport(id: string) {
     if (remoteAccessId) update.$addToSet = { remoteAccessIds: { tool: "Imported", id: remoteAccessId } };
     await SupportProfile.findOneAndUpdate({ accountId: account._id }, update, { upsert: true, new: true, setDefaultsOnInsert: true });
   }
-  const applied = await ProfileImport.findByIdAndUpdate(importId, { $set: { status: "applied", rowOutcomes: outcomes } }, { new: true });
-  return { importId: id, outcomes: applied?.rowOutcomes ?? outcomes };
+  await ProfileImport.findByIdAndUpdate(importId, { $set: { status: "applied", rowOutcomes: outcomes } });
+  // Return the materialized working report so the staff UI receives generated
+  // credentials immediately; retry responses explicitly select the stored values above.
+  return { importId: id, outcomes };
 }

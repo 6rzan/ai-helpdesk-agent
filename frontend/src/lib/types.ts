@@ -251,6 +251,27 @@ export interface StaffTicketFilters {
   sort?: "newest" | "oldest" | "updated";
 }
 
+export type ImportField = "email" | "displayName" | "initialPassword" | "remoteAccessId" | "location" | "hardware";
+
+export interface ImportOutcome {
+  row: number;
+  email: string;
+  outcome: "created" | "updated" | "rejected";
+  reason?: string;
+  initialPassword?: string;
+}
+
+export interface ImportUploadResponse {
+  importId: string;
+  columns: string[];
+  sampleRows: string[][];
+}
+
+export interface ImportOutcomesResponse {
+  importId: string;
+  outcomes: ImportOutcome[];
+}
+
 /** Payload of a staff-stream SSE event (`ticket_created` / `ticket_updated`). */
 export interface StaffStreamEvent {
   ticketId: string;

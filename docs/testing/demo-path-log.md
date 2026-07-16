@@ -45,13 +45,13 @@ The sequence is covered by `tests/integration/auth.test.ts`,
 `tests/integration/escalation-flow.test.ts`, `tests/integration/takeover.test.ts`, and
 `tests/integration/staff-tickets.test.ts`.
 
-### T065 quality-gate result — 2026-07-15
+### T065 quality-gate result — 2026-07-16
 
 | Gate | Result |
 |---|---|
 | Backend `tsc --noEmit` | PASS |
 | Backend lint | PASS (warnings only) |
-| Backend full tests | PASS — 38 files, 211 tests |
+| Backend full tests | PASS — 79 files, 211 tests |
 | Frontend `tsc --noEmit` | PASS |
 | Frontend lint | PASS (warning only) |
 | Frontend full tests | PASS — 16 files, 72 tests |

@@ -5,6 +5,9 @@ import type {
   ChangePasswordRequest,
   CreateSessionResponse,
   InputOrigin,
+  ImportField,
+  ImportOutcomesResponse,
+  ImportUploadResponse,
   LoginRequest,
   RegisterRequest,
   Roster,
@@ -214,10 +217,10 @@ export function updateAvailability(availability: AvailabilityStatus): Promise<{ 
   });
 }
 
-export function uploadImport(file: File): Promise<{ importId: string; columns: string[]; sampleRows: string[][] }> {
+export function uploadImport(file: File): Promise<ImportUploadResponse> {
   const body = new FormData(); body.append("file", file);
   return fetch("/api/staff/imports", { method: "POST", credentials: "include", body }).then(async r => { if (!r.ok) throw new Error("Import upload failed"); return r.json(); });
 }
-export function mapImport(id: string, mapping: Record<string, string>) { return request(`/staff/imports/${id}/mapping`, { method: "PUT", body: JSON.stringify({ mapping }) }); }
-export function previewImport(id: string) { return request<{ importId: string; outcomes: { row: number; email?: string; outcome: string; reason?: string; initialPassword?: string }[] }>(`/staff/imports/${id}/preview`, { method: "POST" }); }
-export function applyImport(id: string) { return request(`/staff/imports/${id}/apply`, { method: "POST" }); }
+export function mapImport(id: string, mapping: Partial<Record<string, ImportField>>): Promise<{ ok: true }> { return request<{ ok: true }>(`/staff/imports/${id}/mapping`, { method: "PUT", body: JSON.stringify({ mapping }) }); }
+export function previewImport(id: string): Promise<ImportOutcomesResponse> { return request<ImportOutcomesResponse>(`/staff/imports/${id}/preview`, { method: "POST" }); }
+export function applyImport(id: string): Promise<ImportOutcomesResponse> { return request<ImportOutcomesResponse>(`/staff/imports/${id}/apply`, { method: "POST" }); }
