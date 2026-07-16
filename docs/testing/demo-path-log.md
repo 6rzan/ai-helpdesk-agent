@@ -31,3 +31,27 @@
   confident misclassification, p90 1.6 s).
 - An earlier take of the same path on the same stack also passed steps 1–4 before being
   interrupted by an environment restart; this log records the clean end-to-end take.
+
+## Staff dashboard scripted path — T065
+
+The release-gate script now covers the staff handoff sequence in the same session:
+
+1. `POST /api/auth/login` signs the staff account in and retains the session cookie.
+2. The reporter conversation creates an escalated ticket.
+3. `POST /api/staff/tickets/:reference/takeover` claims the ticket for the signed-in staff account.
+4. `POST /api/staff/tickets/:reference/status` with `{ "status": "resolved" }` resolves it and records the staff action.
+
+The sequence is covered by `tests/integration/auth.test.ts`,
+`tests/integration/escalation-flow.test.ts`, `tests/integration/takeover.test.ts`, and
+`tests/integration/staff-tickets.test.ts`.
+
+### T065 quality-gate result — 2026-07-15
+
+| Gate | Result |
+|---|---|
+| Backend `tsc --noEmit` | PASS |
+| Backend lint | PASS (warnings only) |
+| Backend full tests | PASS — 38 files, 211 tests |
+| Frontend `tsc --noEmit` | PASS |
+| Frontend lint | PASS (warning only) |
+| Frontend full tests | PASS — 16 files, 72 tests |

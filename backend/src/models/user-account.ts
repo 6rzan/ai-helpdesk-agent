@@ -1,4 +1,4 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 import { ACCOUNT_ROLES, AVAILABILITY_STATUSES } from "./enums.js";
 
 const userAccountSchema = new Schema(
@@ -48,4 +48,4 @@ const userAccountSchema = new Schema(
 );
 
 export type UserAccountDoc = InferSchemaType<typeof userAccountSchema>;
-export const UserAccount = model("UserAccount", userAccountSchema);
+export const UserAccount: Model<UserAccountDoc> = (models.UserAccount as Model<UserAccountDoc> | undefined) ?? model<UserAccountDoc>("UserAccount", userAccountSchema);

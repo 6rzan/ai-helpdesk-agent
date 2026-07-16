@@ -81,6 +81,11 @@ describe("Message inputOrigin", () => {
     expect(res.status).toBe(202);
 
     const ticket = await waitForTicket(session.conversationId);
+    const agentStart = Date.now();
+    while (Date.now() - agentStart < 2000) {
+      if (await Message.exists({ conversationId: session.conversationId, author: "agent" })) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
     const detailRes = await request(ctx.app)
       .get(`/api/tickets/${ticket.reference}`)
       .query({ sessionId: session.sessionId });

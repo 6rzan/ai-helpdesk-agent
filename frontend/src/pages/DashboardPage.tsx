@@ -46,9 +46,9 @@ function formatWhen(iso: string): string {
   });
 }
 
-function TicketRow({ ticket }: { ticket: StaffTicketRow }) {
+function TicketRow({ ticket, pulse }: { ticket: StaffTicketRow; pulse?: boolean }) {
   return (
-    <tr className="group hover:bg-gray-50">
+    <tr className={`group hover:bg-gray-50 ${pulse ? "motion-safe:animate-pulse" : ""}`}>
       <td className="whitespace-nowrap px-3 py-2 font-mono text-sm tabular-nums">
         <Link to={`/staff/tickets/${ticket.reference}`} className="font-semibold text-blue-600 hover:underline">
           {ticket.reference}
@@ -67,6 +67,8 @@ function TicketRow({ ticket }: { ticket: StaffTicketRow }) {
       <td className="px-3 py-2 text-sm text-gray-600">
         {ticket.assignee ?? <span className="text-gray-400">Unassigned</span>}
       </td>
+      <td className="px-3 py-2 text-sm text-gray-600">{ticket.handlingMode.replaceAll("_", " ")}</td>
+      <td className="whitespace-nowrap px-3 py-2 text-xs tabular-nums text-gray-500">{formatWhen(ticket.createdAt)}</td>
       <td className="whitespace-nowrap px-3 py-2 text-right text-xs tabular-nums text-gray-500">
         {formatWhen(ticket.updatedAt)}
       </td>
@@ -84,7 +86,7 @@ function TableHead() {
         <th className="px-3 py-2">Summary</th>
         <th className="px-3 py-2">Status</th>
         <th className="px-3 py-2">Assignee</th>
-        <th className="px-3 py-2 text-right">Updated</th>
+        <th className="px-3 py-2">Handling</th><th className="px-3 py-2">Created</th><th className="px-3 py-2 text-right">Updated</th>
       </tr>
     </thead>
   );
@@ -97,6 +99,7 @@ export function DashboardPage() {
   const [tickets, setTickets] = useState<StaffTicketRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [updatedReferences, setUpdatedReferences] = useState<Set<string>>(new Set());
 
   const filters = useMemo<StaffTicketFilters>(
     () => ({
@@ -123,7 +126,7 @@ export function DashboardPage() {
   }, [load]);
 
   // Live refresh: any staff-wide ticket change re-pulls the current filtered view.
-  useStaffEvents(true, { onTicketCreated: load, onTicketUpdated: load });
+  useStaffEvents(true, { onTicketCreated: load, onTicketUpdated: (event) => { setUpdatedReferences(new Set([event.reference])); load(); window.setTimeout(() => setUpdatedReferences(new Set()), 350); } });
 
   const escalated = tickets.filter((t) => t.escalated);
   const rest = tickets.filter((t) => !t.escalated);
@@ -210,20 +213,20 @@ export function DashboardPage() {
               <tbody className="divide-y divide-gray-100 border-l-2 border-amber-400">
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={9}
                     className="bg-amber-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-amber-800"
                   >
                     Escalated: needs staff attention
                   </td>
                 </tr>
                 {escalated.map((ticket) => (
-                  <TicketRow key={ticket.reference} ticket={ticket} />
+                  <TicketRow key={ticket.reference} ticket={ticket} pulse={updatedReferences.has(ticket.reference)} />
                 ))}
               </tbody>
             )}
             <tbody className="divide-y divide-gray-100">
               {rest.map((ticket) => (
-                <TicketRow key={ticket.reference} ticket={ticket} />
+                <TicketRow key={ticket.reference} ticket={ticket} pulse={updatedReferences.has(ticket.reference)} />
               ))}
             </tbody>
           </table>

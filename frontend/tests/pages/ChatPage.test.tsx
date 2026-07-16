@@ -21,6 +21,10 @@ vi.mock("../../src/services/useEvents", () => ({
   useEvents: () => undefined,
 }));
 
+vi.mock("../../src/context/AuthContext", () => ({
+  useAuth: () => ({ account: { id: "account-1", displayName: "Alex Chen", email: "alex@example.test", role: "user" } }),
+}));
+
 const startVoiceRecording = vi.fn();
 const isVoiceCaptureSupported = vi.fn(() => true);
 
@@ -57,9 +61,6 @@ async function speak(text: string) {
 async function renderReadySession() {
   createSession.mockResolvedValue(SESSION);
   render(<ChatPage />);
-  fireEvent.change(screen.getByLabelText(/organisation id/i), { target: { value: "TP123456" } });
-  fireEvent.change(screen.getByLabelText(/display name/i), { target: { value: "Alex Chen" } });
-  fireEvent.click(screen.getByRole("button", { name: /start/i }));
   await screen.findByText(/hi, alex chen/i);
 }
 

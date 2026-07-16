@@ -1,4 +1,4 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 
 const guideStepSchema = new Schema(
   {
@@ -68,4 +68,4 @@ const guideSchema = new Schema(
 guideSchema.index({ categoryName: 1, version: 1 }, { unique: true });
 
 export type GuideDoc = InferSchemaType<typeof guideSchema> & { _id: import("mongoose").Types.ObjectId };
-export const Guide = model("Guide", guideSchema, "guides");
+export const Guide: Model<GuideDoc> = (models.Guide as Model<GuideDoc> | undefined) ?? model<GuideDoc>("Guide", guideSchema, "guides");

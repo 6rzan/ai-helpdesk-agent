@@ -51,6 +51,14 @@ export function publishStaffEvent(name: SseEventName, data: unknown): void {
   publishEvent(STAFF_CHANNEL, name, data);
 }
 
+export function publishAccountEvent(accountId: string, name: SseEventName, data: unknown): void {
+  publishEvent(`account:${accountId}`, name, data);
+}
+
+export function subscribeAccount(accountId: string, lastEventId: string | undefined, listener: Listener): () => void {
+  return subscribe(`account:${accountId}`, lastEventId, listener);
+}
+
 export function subscribeStaff(listener: Listener): () => void {
   return subscribe(STAFF_CHANNEL, undefined, listener);
 }

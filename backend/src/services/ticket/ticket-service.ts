@@ -12,6 +12,7 @@ import { Guide } from "../../models/guide.js";
 
 export interface CreateTicketInput {
   reporterId: Types.ObjectId;
+  reporterAccountId?: Types.ObjectId | null;
   conversationId: Types.ObjectId;
   description: string;
   category: IssueCategory;
@@ -26,6 +27,7 @@ export async function createTicket(input: CreateTicketInput): Promise<HydratedDo
   const ticket = await Ticket.create({
     reference,
     reporterId: input.reporterId,
+    reporterAccountId: input.reporterAccountId ?? null,
     conversationId: input.conversationId,
     description: input.description,
     category: input.category,

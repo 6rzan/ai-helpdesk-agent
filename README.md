@@ -4,7 +4,7 @@ Conversational IT support automation for organisations. Employees describe an is
 
 This is a B.Sc. (Hons) Computer Science Final Year Project at Asia Pacific University (APU): *Designing Artificial Intelligence Help Desk Agent for Organisational IT Support Automation*.
 
-> Project status: active development. The staff dashboard and assignment workflow are implemented; the remaining Feature 004 account-history, self-service profile, settings, and import work is still in progress. Interfaces may change before the project is finalised.
+> Project status: active development. Feature 004 account authentication, staff dashboard, assignment, profiles, settings, and Excel import workflows are implemented. Interfaces may change before the project is finalised.
 
 ## What is available now
 
@@ -160,6 +160,8 @@ Copy [`.env.example`](.env.example) to `backend/.env` to override defaults. The 
 
 For an OpenAI-compatible server, set `LLM_PROVIDER=openai_compat`, `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL`. The complete annotated reference, including speech-to-text options, is in [`.env.example`](.env.example).
 
+For the local reference setup, LM Studio can serve `qwen2.5-7b-instruct` at `http://127.0.0.1:1234/v1` for chat and `text-embedding-nomic-embed-text-v1.5` for future semantic retrieval. The current application does not yet make embedding requests, so the embedding model should remain configured separately from the chat model.
+
 Seed the six supported categories and their curated guides with:
 
 ```powershell
@@ -218,9 +220,7 @@ Feature 004 staff-dashboard evidence and test traceability:
 
 ## Current delivery scope
 
-Feature 004 is being delivered incrementally. The completed scope covers account authentication, staff-role enforcement, dashboard ticket management, live staff events, takeover/reassignment, roster availability, and staff-side profile surfacing.
-
-The following planned Feature 004 capabilities are not yet presented as complete: account-linked ticket history, end-user profile editing, user settings, and Excel/CSV import. The authoritative work breakdown is [`specs/004-staff-dashboard/tasks.md`](specs/004-staff-dashboard/tasks.md).
+Feature 004 covers account authentication, staff-role enforcement, dashboard ticket management, live events, takeover/reassignment, roster availability, account-linked ticket history, self-service profiles/settings, staff profile actions, and Excel user import. See [`specs/004-staff-dashboard/tasks.md`](specs/004-staff-dashboard/tasks.md) and the [UAT record](docs/testing/feature-004-uat.md).
 
 ## Troubleshooting
 

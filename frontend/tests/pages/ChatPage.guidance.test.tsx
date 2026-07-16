@@ -26,6 +26,10 @@ vi.mock("../../src/services/useEvents", () => ({
   },
 }));
 
+vi.mock("../../src/context/AuthContext", () => ({
+  useAuth: () => ({ account: { id: "account-1", displayName: "Alex Chen", email: "alex@example.test", role: "user" } }),
+}));
+
 vi.mock("../../src/lib/audio", () => ({
   isVoiceCaptureSupported: () => true,
   startVoiceRecording: vi.fn(),
@@ -53,9 +57,6 @@ function agentStepMessage(text: string, stepIndex: number, stepCount: number): M
 async function renderReadySession() {
   createSession.mockResolvedValue(SESSION);
   render(<ChatPage />);
-  fireEvent.change(screen.getByLabelText(/organisation id/i), { target: { value: "TP123456" } });
-  fireEvent.change(screen.getByLabelText(/display name/i), { target: { value: "Alex Chen" } });
-  fireEvent.click(screen.getByRole("button", { name: /start/i }));
   await screen.findByText(/hi, alex chen/i);
 }
 

@@ -1,4 +1,4 @@
-import { Schema, model, Types, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Types, type InferSchemaType, type Model } from "mongoose";
 import { ACTORS, ESCALATION_REASONS, HANDLING_MODES, TICKET_STATUSES } from "./enums.js";
 
 const transitionRecordSchema = new Schema(
@@ -117,4 +117,4 @@ const ticketSchema = new Schema(
 );
 
 export type TicketDoc = InferSchemaType<typeof ticketSchema> & { _id: Types.ObjectId };
-export const Ticket = model("Ticket", ticketSchema);
+export const Ticket: Model<TicketDoc> = (models.Ticket as Model<TicketDoc> | undefined) ?? model<TicketDoc>("Ticket", ticketSchema);

@@ -1,4 +1,4 @@
-import { Schema, model, Types, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Types, type InferSchemaType, type Model } from "mongoose";
 import { INPUT_ORIGINS, MESSAGE_AUTHORS } from "./enums.js";
 
 const messageSchema = new Schema(
@@ -46,4 +46,4 @@ const messageSchema = new Schema(
 );
 
 export type MessageDoc = InferSchemaType<typeof messageSchema> & { _id: Types.ObjectId };
-export const Message = model("Message", messageSchema);
+export const Message: Model<MessageDoc> = (models.Message as Model<MessageDoc> | undefined) ?? model<MessageDoc>("Message", messageSchema);

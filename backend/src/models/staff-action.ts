@@ -1,4 +1,4 @@
-import { Schema, model, Types, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Types, type InferSchemaType, type Model } from "mongoose";
 
 export const STAFF_ACTIONS = [
   "takeover",
@@ -30,4 +30,4 @@ const staffActionSchema = new Schema(
 );
 
 export type StaffActionDoc = InferSchemaType<typeof staffActionSchema> & { _id: Types.ObjectId };
-export const StaffActionRecord = model("StaffActionRecord", staffActionSchema);
+export const StaffActionRecord: Model<StaffActionDoc> = (models.StaffActionRecord as Model<StaffActionDoc> | undefined) ?? model<StaffActionDoc>("StaffActionRecord", staffActionSchema);

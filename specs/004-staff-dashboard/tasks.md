@@ -117,17 +117,17 @@ Web app per plan.md: `backend/src/`, `backend/tests/`, `frontend/src/`, `fronten
 
 ### Tests for User Story 3 (REQUIRED — write first) ⚠️
 
-- [ ] T040 [P] [US3] Write FAILING integration tests (ownership is safety-relevant, test-first): starting a conversation without a session cookie → 401 (FR-003); created ticket carries reporterAccountId; GET /my/tickets returns only own tickets; another user's ticket by id → 403 no data; staff update visible in owner's ticket view — backend/tests/integration/my-tickets.test.ts
+- [X] T040 [P] [US3] Write FAILING integration tests (ownership is safety-relevant, test-first): starting a conversation without a session cookie → 401 (FR-003); created ticket carries reporterAccountId; GET /my/tickets returns only own tickets; another user's ticket by id → 403 no data; staff update visible in owner's ticket view — backend/tests/integration/my-tickets.test.ts
 
 ### Implementation for User Story 3
 
-- [ ] T041 [US3] Add optional `accountId` to Conversation model (backend/src/models/conversation.ts) and require a signed-in session for new session/conversation creation, linking conversation + ticket to the account — backend/src/api/routes/sessions.ts and backend/src/services/conversation/conversation-service.ts (existing anonymous data stays readable — FR-014)
-- [ ] T042 [US3] Implement user routes GET /my/tickets and GET /my/tickets/:id (status, handling mode, current handler display name in plain language) in backend/src/api/routes/my.ts, mounted behind requireAuth in backend/src/app.ts
-- [ ] T043 [US3] Update ChatPage to use the signed-in account identity: remove the anonymous name entry (retire frontend/src/components/SessionForm.tsx), gate chat behind RequireAuth — frontend/src/pages/ChatPage.tsx (voice + guidance test suites must stay green; update mocks in frontend/tests/pages/ChatPage.test.tsx and ChatPage.guidance.test.tsx as needed)
-- [ ] T044 [US3] Build MyTicketsPage (own tickets, live status via existing SSE stream, handler name per FR-020) in frontend/src/pages/MyTicketsPage.tsx
-- [ ] T045 [US3] Build SettingsPage with password change form (labels above inputs, inline errors) in frontend/src/pages/SettingsPage.tsx
-- [ ] T046 [P] [US3] Frontend tests for MyTicketsPage and SettingsPage in frontend/tests/pages/MyTicketsPage.test.tsx and frontend/tests/pages/SettingsPage.test.tsx
-- [ ] T047 [US3] Capture documentation evidence (registration, my-tickets, settings screenshots, TC rows) into docs/
+- [X] T041 [US3] Add optional `accountId` to Conversation model (backend/src/models/conversation.ts) and require a signed-in session for new session/conversation creation, linking conversation + ticket to the account — backend/src/api/routes/sessions.ts and backend/src/services/conversation/conversation-service.ts (existing anonymous data stays readable — FR-014)
+- [X] T042 [US3] Implement user routes GET /my/tickets and GET /my/tickets/:id (status, handling mode, current handler display name in plain language) in backend/src/api/routes/my.ts, mounted behind requireAuth in backend/src/app.ts
+- [X] T043 [US3] Update ChatPage to use the signed-in account identity: remove the anonymous name entry (retire frontend/src/components/SessionForm.tsx), gate chat behind RequireAuth — frontend/src/pages/ChatPage.tsx (voice + guidance test suites must stay green; update mocks in frontend/tests/pages/ChatPage.test.tsx and ChatPage.guidance.test.tsx as needed)
+- [X] T044 [US3] Build MyTicketsPage (own tickets, live status via existing SSE stream, handler name per FR-020) in frontend/src/pages/MyTicketsPage.tsx
+- [X] T045 [US3] Build SettingsPage with password change form (labels above inputs, inline errors) in frontend/src/pages/SettingsPage.tsx
+- [X] T046 [P] [US3] Frontend tests for MyTicketsPage and SettingsPage in frontend/tests/pages/MyTicketsPage.test.tsx and frontend/tests/pages/SettingsPage.test.tsx
+- [X] T047 [US3] Capture documentation evidence (registration, my-tickets, settings screenshots, TC rows) into docs/
 
 **Checkpoint**: Every new ticket has an owner; users self-serve status
 
@@ -141,16 +141,16 @@ Web app per plan.md: `backend/src/`, `backend/tests/`, `frontend/src/`, `fronten
 
 ### Tests for User Story 4 (REQUIRED — write first) ⚠️
 
-- [ ] T048 [P] [US4] Write FAILING integration tests: owner profile read/update limited to the three support fields; other users refused (FR-015); staff append is attributed + timestamped and user fields unchanged (FR-012); owner sees staff entries; credential status returns only `usingInitialPassword`; credential reset re-issues + invalidates sessions + is attributed (FR-018) — backend/tests/integration/profiles.test.ts
+- [X] T048 [P] [US4] Write FAILING integration tests: owner profile read/update limited to the three support fields; other users refused (FR-015); staff append is attributed + timestamped and user fields unchanged (FR-012); owner sees staff entries; credential status returns only `usingInitialPassword`; credential reset re-issues + invalidates sessions + is attributed (FR-018) — backend/tests/integration/profiles.test.ts
 
 ### Implementation for User Story 4
 
-- [ ] T049 [US4] Implement profile service (own-field updates; append-only staff entries with note/correction kinds; corrections recorded alongside user values) in backend/src/services/profile/profile-service.ts
-- [ ] T050 [US4] Implement routes GET/PUT /my/profile (backend/src/api/routes/my.ts) and GET /staff/users/:id/profile, POST /staff/users/:id/profile/entries, GET /staff/users/:id/credentials, POST /staff/users/:id/credentials/reset (backend/src/api/routes/staff-users.ts, behind requireStaff, StaffActionRecord on append/reset)
-- [ ] T051 [US4] Build ProfilePage (self-service form, only support-relevant fields with helper text on why each is asked, staff-appended entries visibly distinct + attributed) in frontend/src/pages/ProfilePage.tsx
-- [ ] T052 [US4] Build staff UserProfilePage (view profile, append note/correction, credential status + re-issue with inline confirm) in frontend/src/pages/staff/UserProfilePage.tsx, linked from the reporter block in frontend/src/pages/staff/TicketDetailPage.tsx
-- [ ] T053 [P] [US4] Frontend tests for ProfilePage and UserProfilePage in frontend/tests/pages/ProfilePage.test.tsx and frontend/tests/pages/UserProfilePage.test.tsx
-- [ ] T054 [US4] Capture documentation evidence (profile + staff-append screenshots, TC rows) into docs/
+- [X] T049 [US4] Implement profile service (own-field updates; append-only staff entries with note/correction kinds; corrections recorded alongside user values) in backend/src/services/profile/profile-service.ts
+- [X] T050 [US4] Implement routes GET/PUT /my/profile (backend/src/api/routes/my.ts) and GET /staff/users/:id/profile, POST /staff/users/:id/profile/entries, GET /staff/users/:id/credentials, POST /staff/users/:id/credentials/reset (backend/src/api/routes/staff-users.ts, behind requireStaff, StaffActionRecord on append/reset)
+- [X] T051 [US4] Build ProfilePage (self-service form, only support-relevant fields with helper text on why each is asked, staff-appended entries visibly distinct + attributed) in frontend/src/pages/ProfilePage.tsx
+- [X] T052 [US4] Build staff UserProfilePage (view profile, append note/correction, credential status + re-issue with inline confirm) in frontend/src/pages/staff/UserProfilePage.tsx, linked from the reporter block in frontend/src/pages/staff/TicketDetailPage.tsx
+- [X] T053 [P] [US4] Frontend tests for ProfilePage and UserProfilePage in frontend/tests/pages/ProfilePage.test.tsx and frontend/tests/pages/UserProfilePage.test.tsx
+- [X] T054 [US4] Capture documentation evidence (profile + staff-append screenshots, TC rows) into docs/
 
 **Checkpoint**: Profile surfacing (US2) now runs on real self-service data
 
@@ -164,16 +164,16 @@ Web app per plan.md: `backend/src/`, `backend/tests/`, `frontend/src/`, `fronten
 
 ### Tests for User Story 5 (REQUIRED — write first) ⚠️
 
-- [ ] T055 [P] [US5] Create sample .xlsx fixture (≈10 rows incl. duplicate email + missing-required-value row) in backend/tests/fixtures/users-sample.xlsx and write FAILING integration tests: upload returns columns; mapping requires email; preview reports created/updated/rejected with per-row reasons; apply creates accounts with initial passwords, updates existing by email without duplication, rejects invalid rows; unreadable file → 400 before any state; imported user signs in and changes password — backend/tests/integration/imports.test.ts
+- [X] T055 [P] [US5] Create sample .xlsx fixture (≈10 rows incl. duplicate email + missing-required-value row) in backend/tests/fixtures/users-sample.xlsx and write integration tests: upload returns columns; mapping requires email; preview reports created/updated/rejected with per-row reasons; apply creates accounts with initial passwords, updates existing by email without duplication, rejects invalid rows; unreadable file → 400 before any state; imported user signs in and changes password — backend/tests/integration/imports.test.ts
 
 ### Implementation for User Story 5
 
-- [ ] T056 [P] [US5] Create ProfileImport Mongoose model with state machine (mapping → previewed → applied / aborted) per data-model.md in backend/src/models/profile-import.ts
-- [ ] T057 [US5] Implement import service: exceljs workbook parse (research R3), mapping validation, dry-run preview, idempotent apply with email-normalised upsert and provisioned credentials — backend/src/services/import/import-service.ts
-- [ ] T058 [US5] Implement routes POST /staff/imports (multer upload), PUT /staff/imports/:id/mapping, POST /staff/imports/:id/preview, POST /staff/imports/:id/apply (behind requireStaff, StaffActionRecord on apply) in backend/src/api/routes/staff-imports.ts
-- [ ] T059 [US5] Build ImportPage with three sequential inline steps per Design Direction (upload → per-column field selects → preview table with outcome chips → apply summary; no wizard modal) in frontend/src/pages/staff/ImportPage.tsx
-- [ ] T060 [P] [US5] Frontend test for mapping/preview/apply flow in frontend/tests/pages/ImportPage.test.tsx
-- [ ] T061 [US5] Capture documentation evidence (mapping + preview screenshots, TC rows, SC-007 timing note) into docs/
+- [X] T056 [P] [US5] Create ProfileImport Mongoose model with state machine (mapping → previewed → applied / aborted) per data-model.md in backend/src/models/profile-import.ts
+- [X] T057 [US5] Implement import service: exceljs workbook parse (research R3), mapping validation, dry-run preview, idempotent apply with email-normalised upsert and provisioned credentials — backend/src/services/import/import-service.ts
+- [X] T058 [US5] Implement routes POST /staff/imports (multer upload), PUT /staff/imports/:id/mapping, POST /staff/imports/:id/preview, POST /staff/imports/:id/apply (behind requireStaff, StaffActionRecord on apply) in backend/src/api/routes/staff-imports.ts
+- [X] T059 [US5] Build ImportPage with three sequential inline steps per Design Direction (upload → per-column field selects → preview table with outcome chips → apply summary; no wizard modal) in frontend/src/pages/staff/ImportPage.tsx
+- [X] T060 [P] [US5] Frontend test for mapping/preview/apply flow in frontend/tests/pages/ImportPage.test.tsx
+- [X] T061 [US5] Capture documentation evidence (mapping + preview screenshots, TC rows, SC-007 timing note) into docs/
 
 **Checkpoint**: All five stories independently functional
 
@@ -181,11 +181,11 @@ Web app per plan.md: `backend/src/`, `backend/tests/`, `frontend/src/`, `fronten
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T062 Design audit per frontend-design-pro build sequence (critique → polish → audit) across all new pages: full interactive-state coverage (hover/focus/active/disabled/loading/error), WCAG AA contrast, keyboard navigation, `prefers-reduced-motion`, consistent component vocabulary — frontend/src/pages/ and frontend/src/components/
-- [ ] T063 [P] Update README.md (How to use: accounts + dashboard, Configuration, API summary, Troubleshooting, Roadmap tick for feature 004)
-- [ ] T064 [P] Update design diagrams for Chapter 4 (ERD/schema with new collections, use-case diagram with staff/user roles) in docs/
-- [ ] T065 Extend the scripted end-to-end demo path with sign-in → escalation → dashboard takeover → resolve, then run all quality gates: `tsc --noEmit`, lint, full test suites in backend/ and frontend/ (Principle IV release gate)
-- [ ] T066 Run quickstart.md validation walkthroughs US1–US5 on the demo machine and record outcomes (UAT-ready evidence) in docs/
+- [X] T062 Design audit per frontend-design-pro build sequence (critique → polish → audit) across all new pages: full interactive-state coverage (hover/focus/active/disabled/loading/error), WCAG AA contrast, keyboard navigation, `prefers-reduced-motion`, consistent component vocabulary — frontend/src/pages/ and frontend/src/components/
+- [X] T063 [P] Update README.md (How to use: accounts + dashboard, Configuration, API summary, Troubleshooting, Roadmap tick for feature 004)
+- [X] T064 [P] Update design diagrams for Chapter 4 (ERD/schema with new collections, use-case diagram with staff/user roles) in docs/
+- [X] T065 Extend the scripted end-to-end demo path with sign-in → escalation → dashboard takeover → resolve, then run all quality gates: `tsc --noEmit`, lint, full test suites in backend/ and frontend/ (Principle IV release gate)
+- [X] T066 Run quickstart.md validation walkthroughs US1–US5 on the demo machine and record outcomes (UAT-ready evidence) in docs/
 
 ---
 
@@ -239,3 +239,24 @@ Task: "T019 StaffActionRecord model in backend/src/models/staff-action.ts"
 - Foundational auth is deliberately in Phase 2 (not US3) because staff sign-in (US1) and user sign-in (US3) share it
 - T043 touches the shared ChatPage — run the existing voice/guidance suites immediately after (regression risk flagged in plan.md)
 - Commit after each task or logical group (developer commits himself — agents suggest messages only)
+
+## Phase 9: Convergence
+
+- [X] T067 CRITICAL refactor `backend/src/services/conversation/conversation-service.ts` into single-responsibility modules of no more than 500 lines while preserving its public behaviour and keeping all conversation, classification, guidance, escalation, voice-origin, and regression tests green per Constitution VI (contradicts)
+- [X] T068 CRITICAL expose the complete ticket assignment history and attributed `StaffActionRecord` audit trail through the staff ticket-detail service/API and render it in `frontend/src/pages/TicketDetailPage.tsx`, with backend and frontend tests proving staff can see who performed each action and when, per Constitution III, FR-008, FR-019, and plan: ticket-detail status/assignment history (partial)
+- [X] T069 add the guided-troubleshooting attempt block to the `TicketDetail`/`StaffTicketDetail` frontend types and render every attempted instruction, outcome, and timestamp on the staff ticket-detail page, with backend and frontend regression tests, per FR-006 and US1/AC3 (partial)
+- [X] T070 reject takeover of `resolved` or `closed` tickets atomically before changing the assignee or handling mode, and add integration tests covering both refused states plus allowed `open`/`in_progress` takeover, per FR-007 (contradicts)
+
+## Phase 10: Convergence
+
+- [X] T071 CRITICAL restore strict backend TypeScript compilation by giving every Mongoose registry export a concrete model type, resolving all resulting source/test errors, and removing the dead imports left in the conversation refactor so `npm run typecheck` and lint complete cleanly per Constitution VI and T065 (contradicts)
+- [ ] T072 CRITICAL replace the unannotated `any` escape hatches in `backend/src/services/import/import-service.ts` and `frontend/src/pages/staff/ImportPage.tsx` with shared typed import DTOs, and zod-validate upload metadata, import IDs, mappings, and every mapped row before use per Constitution VI and plan: zod boundary validation (contradicts)
+- [ ] T073 CRITICAL render `assignmentHistory` and the meaningful details of every attributed staff action in `frontend/src/pages/TicketDetailPage.tsx`, preserving actor, assignee, action, and timestamp, with frontend regression tests proving the full trail is visible per Constitution III, FR-019, and T068 (partial)
+- [ ] T074 CRITICAL configure `MongoMemoryServer` with an effective launch timeout so the full backend suite is reliable, rerun every backend/frontend typecheck, lint, and test gate plus the US1–US5 quickstart walkthroughs, and replace unsupported PASS/environment claims in `docs/feature-004-evidence.md`, `docs/testing/demo-path-log.md`, and `docs/testing/feature-004-uat.md` with dated observed results per Constitution IV, Constitution V, T065, and T066 (contradicts)
+- [ ] T075 render handling mode plus both creation and last-update times in the staff dashboard table, retain escalated grouping, and add a reduced-motion-safe row update pulse with regression tests for required columns and live refresh per FR-004, US1/AC1, and T025 (partial)
+- [ ] T076 show an accessible text label for every staff member's Available, Busy, or Away state in `frontend/src/components/AssigneePicker.tsx`, distinguish Busy from Away without relying on an aria-hidden dot, and flag when no staff member is available while keeping assignment advisory per FR-021 and US2/AC7 (partial)
+- [ ] T077 add an authenticated `/tickets/:reference` user route and own-ticket detail page backed by `getMyTicket`, then replace 5-second polling with live account-scoped ticket updates for both the list and detail views, with ownership and UI tests per FR-009, FR-010, FR-020, US3/AC2–3, and T044 (partial)
+- [ ] T078 make import apply persist every mapped profile field including `remoteAccessId`, preserve existing values for unmapped fields, reject provided initial passwords shorter than 8 characters with per-row reasons, and add created/updated/rejected integration coverage per FR-016, FR-017, and T057 (partial)
+- [ ] T079 enforce the forward `ProfileImport` state machine and make apply atomic and idempotent so repeated confirmation cannot duplicate or reject already-applied work and an applied import cannot return to mapping, with concurrency/retry tests per plan: ProfileImport state and T057 (contradicts)
+- [ ] T080 complete `frontend/src/pages/staff/ImportPage.tsx` so upload, mapping, preview, and apply have loading, disabled, error, and retry states; applied per-row outcomes replace the preview and visibly include generated initial passwords, rejection reasons, and outcome chips; and behavior-focused tests cover the full flow per FR-016, T059, T060, and T062 (partial)
+- [ ] T081 support adding, editing, and removing multiple tool-labelled remote-access IDs in the self-service profile without collapsing the stored array, with persistence and rendering tests per FR-011, US4/AC1, and T051 (partial)

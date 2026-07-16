@@ -43,6 +43,7 @@ async function reportIssue(ctx: TestContext, session: { sessionId: string; conve
   const before = await Ticket.countDocuments({});
   await postMessage(ctx, session, text);
   await waitFor(async () => ((await Ticket.countDocuments({})) > before ? true : undefined));
+  await waitFor(async () => ((await Message.exists({ conversationId: session.conversationId, author: "agent" })) ? true : undefined));
   return waitForTicket(session.conversationId);
 }
 

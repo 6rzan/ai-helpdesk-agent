@@ -62,6 +62,9 @@ export async function startTestApp(): Promise<TestContext> {
   resetLlmProviderCache();
   const llm = getLlmProvider() as MockLlmProvider;
   const app = createApp();
+  // Existing pre-account journey tests exercise the legacy data migration path;
+  // production apps never set this flag, so anonymous session creation stays blocked.
+  app.locals.allowLegacySessions = true;
   await seedTestCategories();
   await seedTestGuides();
   return { app, llm, mongoUri };

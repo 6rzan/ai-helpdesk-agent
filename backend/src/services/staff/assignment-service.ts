@@ -23,7 +23,9 @@ export async function takeoverTicket(reference: string, staff: Staff) {
   const assignee = { accountId: staff._id, displayName: staff.displayName, since: new Date() };
 
   const claimed = await Ticket.findOneAndUpdate(
-    { reference, assignee: null },
+    // Closed work must remain immutable. Keeping this condition in the atomic claim
+    // prevents a race from assigning a ticket that was resolved concurrently.
+    { reference, assignee: null, status: { $nin: ["resolved", "closed"] } },
     { $set: { assignee } },
     { new: true },
   );
@@ -32,6 +34,9 @@ export async function takeoverTicket(reference: string, staff: Staff) {
     const existing = await Ticket.findOne({ reference });
     if (!existing) {
       throw new NotFoundError("Unknown ticket reference", "TICKET_NOT_FOUND");
+    }
+    if (existing.status === "resolved" || existing.status === "closed") {
+      throw new ConflictError("Resolved or closed tickets cannot be taken over", "TICKET_NOT_ACTIONABLE");
     }
     throw new ConflictError("This ticket is already assigned to someone else", "ALREADY_ASSIGNED", {
       currentAssignee: existing.assignee
@@ -105,7 +110,7 @@ export async function reassignTicket(reference: string, toAccountId: string, sta
 }
 
 async function recordAndNotify(
-  ticket: { _id: Types.ObjectId; reference: string; reporterId: Types.ObjectId },
+  ticket: { _id: Types.ObjectId; reference: string; reporterId: Types.ObjectId; reporterAccountId?: Types.ObjectId | null },
   staff: Staff,
   action: "takeover" | "reassign",
   assigneeName: string,
@@ -118,7 +123,7 @@ async function recordAndNotify(
     targetId: ticket._id,
     details: { assigneeName },
   });
-  notifyTicketAssigned({ reporterId: ticket.reporterId, reference: ticket.reference }, assigneeName);
+  notifyTicketAssigned(ticket, assigneeName);
   publishStaffEvent("ticket_updated", { ticketId: String(ticket._id), reference: ticket.reference, changed: "assignee" });
 }
 

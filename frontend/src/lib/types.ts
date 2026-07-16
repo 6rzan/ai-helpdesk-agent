@@ -57,6 +57,29 @@ export interface TicketDetail extends TicketSummary {
   classificationConfidence: number | null;
   history: TransitionRecord[];
   transcript: Message[];
+  guidance?: {
+    categoryName: string;
+    guideVersion: number;
+    state: string;
+    stepAttempts: {
+      stepIndex: number;
+      outcome: string;
+      at: string;
+      instruction: string | null;
+    }[];
+  };
+}
+
+export interface MyTicket extends TicketSummary {
+  assigneeName: string | null;
+  updatedAt: string;
+}
+
+export interface SupportProfile {
+  remoteAccessIds: RemoteAccessId[];
+  location: string;
+  hardware: string;
+  staffEntries: ProfileStaffEntry[];
 }
 
 export interface Reporter {
@@ -197,6 +220,13 @@ export interface StaffTicketDetail extends TicketDetail {
   reporterAccountId: string | null;
   assignee: TicketAssignee | null;
   assignmentHistory: AssignmentRecord[];
+  staffActions?: {
+    action: string;
+    staffId: string;
+    staffName: string;
+    details: Record<string, unknown>;
+    at: string;
+  }[];
   profile: SupportProfileView | null;
 }
 

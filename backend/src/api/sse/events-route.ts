@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { subscribe, subscribeStaff } from "./event-bus.js";
+import { subscribe, subscribeAccount, subscribeStaff } from "./event-bus.js";
 import { requireAuth } from "../middleware/require-auth.js";
 import { requireStaff } from "../middleware/require-staff.js";
 
@@ -61,4 +61,14 @@ eventsRouter.get("/staff/events", requireAuth, requireStaff, (req, res) => {
     clearInterval(heartbeat);
     unsubscribe();
   });
+});
+
+eventsRouter.get("/my/events", requireAuth, (req, res) => {
+  res.status(200).setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache"); res.setHeader("Connection", "keep-alive"); res.flushHeaders();
+  const unsubscribe = subscribeAccount(String(req.account!._id), req.header("Last-Event-ID"), (event) => {
+    res.write(`id: ${event.id}\nevent: ${event.name}\ndata: ${JSON.stringify(event.data)}\n\n`);
+  });
+  const heartbeat = setInterval(() => res.write(":heartbeat\n\n"), HEARTBEAT_INTERVAL_MS);
+  req.on("close", () => { clearInterval(heartbeat); unsubscribe(); });
 });

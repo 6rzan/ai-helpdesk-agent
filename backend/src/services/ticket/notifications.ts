@@ -1,5 +1,5 @@
 import type { Types } from "mongoose";
-import { publishEvent } from "../../api/sse/event-bus.js";
+import { publishAccountEvent, publishEvent } from "../../api/sse/event-bus.js";
 import { Message } from "../../models/message.js";
 import { getSessionIdsForReporter } from "../session/session-service.js";
 
@@ -37,7 +37,7 @@ export function plainTextForTransition(reference: string, transition: Pick<Ticke
 }
 
 export function notifyTicketUpdated(
-  ticket: { reporterId: Types.ObjectId; reference: string },
+  ticket: { reporterId: Types.ObjectId; reporterAccountId?: Types.ObjectId | null; reference: string },
   transition: TicketTransition,
 ): void {
   const payload = {
@@ -51,12 +51,13 @@ export function notifyTicketUpdated(
   for (const sessionId of getSessionIdsForReporter(ticket.reporterId)) {
     publishEvent(sessionId, "ticket_updated", payload);
   }
+  if (ticket.reporterAccountId) publishAccountEvent(String(ticket.reporterAccountId), "ticket_updated", payload);
 }
 
 // FR-009/FR-020: mirror an assignment change into the reporter's chat in plain
 // language, so they always know a named person now owns their case.
 export function notifyTicketAssigned(
-  ticket: { reporterId: Types.ObjectId; reference: string },
+  ticket: { reporterId: Types.ObjectId; reporterAccountId?: Types.ObjectId | null; reference: string },
   assigneeName: string,
 ): void {
   const at = new Date();
@@ -72,6 +73,7 @@ export function notifyTicketAssigned(
   for (const sessionId of getSessionIdsForReporter(ticket.reporterId)) {
     publishEvent(sessionId, "ticket_updated", payload);
   }
+  if (ticket.reporterAccountId) publishAccountEvent(String(ticket.reporterAccountId), "ticket_updated", payload);
 }
 
 // US2-AS4/FR-004: when staff mark a ticket resolved, ask the reporter to confirm

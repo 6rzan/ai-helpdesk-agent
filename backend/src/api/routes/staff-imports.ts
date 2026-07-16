@@ -1,0 +1,13 @@
+import { Router } from "express";
+import multer from "multer";
+import { z } from "zod";
+import { Types } from "mongoose";
+import { requireAuth } from "../middleware/require-auth.js"; import { requireStaff } from "../middleware/require-staff.js"; import { validate } from "../middleware/validate.js";
+import { parseImport, setMapping, preview, applyImport, IMPORT_FIELDS } from "../../services/import/import-service.js";
+import { StaffActionRecord } from "../../models/staff-action.js";
+const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:10*1024*1024}}); export const staffImportsRouter=Router(); staffImportsRouter.use("/staff/imports",requireAuth,requireStaff);
+staffImportsRouter.post("/staff/imports",upload.single("file"),(req,res,next)=>{ if(!req.file)return next(new Error("A .xlsx file is required.")); parseImport(req.file.buffer,req.file.originalname,req.account!).then(r=>res.status(201).json(r)).catch(next); });
+const mappingSchema=z.object({mapping:z.record(z.enum(IMPORT_FIELDS))});
+staffImportsRouter.put("/staff/imports/:id/mapping",validate({body:mappingSchema}),(req,res,next)=>setMapping(req.params.id!,req.body.mapping).then(()=>res.status(200).json({ok:true})).catch(next));
+staffImportsRouter.post("/staff/imports/:id/preview",(req,res,next)=>preview(req.params.id!).then(r=>res.status(200).json(r)).catch(next));
+staffImportsRouter.post("/staff/imports/:id/apply",(req,res,next)=>applyImport(req.params.id!).then(async r=>{await StaffActionRecord.create({staffId:req.account!._id,staffName:req.account!.displayName,action:"import_apply",targetType:"import",targetId:new Types.ObjectId(req.params.id!),details:{rows:r.outcomes.length}});res.status(200).json(r);}).catch(next));

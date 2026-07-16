@@ -1,4 +1,4 @@
-import { Schema, model, Types, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Types, type InferSchemaType, type Model } from "mongoose";
 import { CONVERSATION_STATES } from "./enums.js";
 
 const conversationSchema = new Schema(
@@ -7,6 +7,15 @@ const conversationSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Reporter",
       required: true,
+      index: true,
+    },
+    // New conversations belong to a signed-in account. Legacy conversations omit
+    // this field and remain readable during the account migration.
+    accountId: {
+      type: Schema.Types.ObjectId,
+      ref: "UserAccount",
+      required: false,
+      default: null,
       index: true,
     },
     state: {
@@ -44,4 +53,4 @@ const conversationSchema = new Schema(
 );
 
 export type ConversationDoc = InferSchemaType<typeof conversationSchema> & { _id: Types.ObjectId };
-export const Conversation = model("Conversation", conversationSchema);
+export const Conversation: Model<ConversationDoc> = (models.Conversation as Model<ConversationDoc> | undefined) ?? model<ConversationDoc>("Conversation", conversationSchema);

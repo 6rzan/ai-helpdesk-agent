@@ -10,7 +10,7 @@ interface AssigneePickerProps {
 
 function AvailabilityDot({ status }: { status: RosterEntry["availability"] }) {
   // The one semantic dot on the staff surface: green means available to take work.
-  const className = status === "available" ? "bg-emerald-500" : "bg-gray-300";
+  const className = status === "available" ? "bg-emerald-500" : status === "busy" ? "bg-amber-500" : "bg-gray-400";
   return <span className={`inline-block h-2 w-2 rounded-full ${className}`} aria-hidden="true" />;
 }
 
@@ -82,6 +82,8 @@ export function AssigneePicker({ label, onAssign, disabled }: AssigneePickerProp
           {!roster ? (
             <p className="px-1 py-2 text-sm text-gray-400">Loading roster…</p>
           ) : (
+            <>
+            {!roster.staff.some((member) => member.availability === "available") && <p className="px-1 py-2 text-sm text-amber-800">No staff member is currently available. You may still assign a case manually.</p>}
             <ul className="max-h-56 overflow-y-auto" role="listbox" aria-label="Choose an assignee">
               {roster.staff.map((member) => (
                 <li key={member.id}>
@@ -97,6 +99,7 @@ export function AssigneePicker({ label, onAssign, disabled }: AssigneePickerProp
                     <span className="flex items-center gap-2">
                       <AvailabilityDot status={member.availability} />
                       {member.displayName}
+                      <span className="text-xs text-gray-500">{member.availability === "available" ? "Available" : member.availability === "busy" ? "Busy" : "Away"}</span>
                       {roster.suggestedAssigneeId === member.id && (
                         <span
                           className={`rounded px-1 text-xs ${
@@ -116,6 +119,7 @@ export function AssigneePicker({ label, onAssign, disabled }: AssigneePickerProp
                 </li>
               ))}
             </ul>
+            </>
           )}
           <button
             type="button"

@@ -5,6 +5,7 @@ import { resetSessionStore } from "../../src/services/session/session-service.js
 import { Reporter } from "../../src/models/reporter.js";
 import { Ticket } from "../../src/models/ticket.js";
 import { nextTicketReference } from "../../src/services/ticket/counter.js";
+import { seedUser } from "../helpers/auth.js";
 
 describe("POST /api/sessions", () => {
   let ctx: TestContext;
@@ -22,32 +23,37 @@ describe("POST /api/sessions", () => {
     await stopTestApp();
   });
 
-  it("TC-002: creates a session for a brand-new orgId", async () => {
-    const res = await request(ctx.app)
-      .post("/api/sessions")
-      .send({ orgId: "TP001234", displayName: "Alex Chen" });
+  it("TC-002: refuses conversation creation without an authenticated account", async () => {
+    const res = await request(ctx.app).post("/api/sessions").send();
+
+    expect(res.status).toBe(401);
+  });
+
+  it("TC-003: creates an account-linked session", async () => {
+    const user = await seedUser({ displayName: "Alex Chen" });
+    const res = await request(ctx.app).post("/api/sessions").set("Cookie", user.cookie).send();
 
     expect(res.status).toBe(201);
     expect(typeof res.body.sessionId).toBe("string");
     expect(res.body.sessionId.length).toBeGreaterThan(0);
-    expect(res.body.reporter).toEqual({ orgId: "TP001234", displayName: "Alex Chen" });
+    expect(res.body.reporter.displayName).toBe("Alex Chen");
     expect(typeof res.body.conversationId).toBe("string");
     expect(res.body.openTickets).toEqual([]);
   });
 
-  it("TC-003: resuming with the same orgId reuses the reporter and surfaces open tickets", async () => {
-    const first = await request(ctx.app)
-      .post("/api/sessions")
-      .send({ orgId: "TP005678", displayName: "Jordan Lee" });
+  it("TC-004: a returning account gets a new conversation and its own open tickets", async () => {
+    const user = await seedUser({ displayName: "Jordan Lee" });
+    const first = await request(ctx.app).post("/api/sessions").set("Cookie", user.cookie).send();
     expect(first.status).toBe(201);
 
-    const reporter = await Reporter.findOne({ orgId: "TP005678" });
+    const reporter = await Reporter.findOne({ displayName: "Jordan Lee" });
     expect(reporter).not.toBeNull();
 
     const reference = await nextTicketReference();
     await Ticket.create({
       reference,
       reporterId: reporter?._id,
+      reporterAccountId: user.account._id,
       conversationId: first.body.conversationId,
       description: "Printer on 3rd floor is jammed",
       category: "printer",
@@ -61,6 +67,7 @@ describe("POST /api/sessions", () => {
     await Ticket.create({
       reference: closedReference,
       reporterId: reporter?._id,
+      reporterAccountId: user.account._id,
       conversationId: first.body.conversationId,
       description: "Old resolved issue",
       category: "network",
@@ -70,14 +77,12 @@ describe("POST /api/sessions", () => {
       escalated: false,
     });
 
-    const second = await request(ctx.app)
-      .post("/api/sessions")
-      .send({ orgId: "TP005678", displayName: "Jordan Lee" });
+    const second = await request(ctx.app).post("/api/sessions").set("Cookie", user.cookie).send();
 
     expect(second.status).toBe(201);
     expect(second.body.sessionId).not.toBe(first.body.sessionId);
     expect(second.body.conversationId).not.toBe(first.body.conversationId);
-    expect(second.body.reporter).toEqual({ orgId: "TP005678", displayName: "Jordan Lee" });
+    expect(second.body.reporter.displayName).toBe("Jordan Lee");
     expect(second.body.openTickets).toHaveLength(1);
     expect(second.body.openTickets[0]).toMatchObject({
       reference,
@@ -86,19 +91,4 @@ describe("POST /api/sessions", () => {
     });
   });
 
-  it("TC-004: rejects an invalid orgId", async () => {
-    const res = await request(ctx.app)
-      .post("/api/sessions")
-      .send({ orgId: "ab", displayName: "Alex Chen" });
-
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
-  it("TC-005: rejects a missing displayName", async () => {
-    const res = await request(ctx.app).post("/api/sessions").send({ orgId: "TP009999" });
-
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe("VALIDATION_ERROR");
-  });
 });

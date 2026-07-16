@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import express, { type Express } from "express";
 import cookieParser from "cookie-parser";
-import { resetDb, startTestApp, stopTestApp, type TestContext } from "../helpers/test-app.js";
+import { resetDb, startTestApp, stopTestApp } from "../helpers/test-app.js";
 import { hashPassword } from "../../src/services/auth/password-service.js";
 import { UserAccount } from "../../src/models/user-account.js";
 import { issueSession, sessionCookie } from "../../src/services/auth/session-service.js";
@@ -25,11 +25,10 @@ function buildProbeApp(): Express {
 }
 
 describe("access control (requireAuth / requireStaff)", () => {
-  let ctx: TestContext;
   let probeApp: Express;
 
   beforeAll(async () => {
-    ctx = await startTestApp();
+    await startTestApp();
     probeApp = buildProbeApp();
   });
 

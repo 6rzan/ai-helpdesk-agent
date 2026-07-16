@@ -12,6 +12,9 @@ import type {
   StaffTicketDetail,
   StaffTicketFilters,
   StaffTicketRow,
+  ProfileStaffEntry,
+  MyTicket,
+  SupportProfile,
   TicketDetail,
   TicketStatus,
   TicketSummary,
@@ -59,10 +62,47 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-export function createSession(orgId: string, displayName: string): Promise<CreateSessionResponse> {
+export function createSession(): Promise<CreateSessionResponse> {
   return request<CreateSessionResponse>("/sessions", {
     method: "POST",
-    body: JSON.stringify({ orgId, displayName }),
+  });
+}
+
+export function listMyTickets(): Promise<{ tickets: MyTicket[] }> {
+  return request<{ tickets: MyTicket[] }>("/my/tickets");
+}
+
+export function getMyTicket(reference: string): Promise<{ ticket: MyTicket & TicketDetail }> {
+  return request<{ ticket: MyTicket & TicketDetail }>(`/my/tickets/${encodeURIComponent(reference)}`);
+}
+
+export function getMyProfile(): Promise<{ profile: SupportProfile }> { return request("/my/profile"); }
+export function updateMyProfile(profile: Pick<SupportProfile, "remoteAccessIds" | "location" | "hardware">): Promise<{ profile: SupportProfile }> {
+  return request("/my/profile", { method: "PUT", body: JSON.stringify(profile) });
+}
+
+export function getStaffUserProfile(accountId: string): Promise<{ profile: SupportProfile }> {
+  return request(`/staff/users/${encodeURIComponent(accountId)}/profile`);
+}
+
+export function appendStaffProfileEntry(
+  accountId: string,
+  entry: Pick<ProfileStaffEntry, "kind" | "field" | "value">,
+): Promise<{ profile: SupportProfile }> {
+  return request(`/staff/users/${encodeURIComponent(accountId)}/profile/entries`, {
+    method: "POST",
+    body: JSON.stringify(entry),
+  });
+}
+
+export function getStaffCredentialStatus(accountId: string): Promise<{ usingInitialPassword: boolean }> {
+  return request(`/staff/users/${encodeURIComponent(accountId)}/credentials`);
+}
+
+export function resetStaffCredentials(accountId: string, newInitialPassword: string): Promise<{ usingInitialPassword: boolean }> {
+  return request(`/staff/users/${encodeURIComponent(accountId)}/credentials/reset`, {
+    method: "POST",
+    body: JSON.stringify({ newInitialPassword }),
   });
 }
 
@@ -173,3 +213,11 @@ export function updateAvailability(availability: AvailabilityStatus): Promise<{ 
     body: JSON.stringify({ availability }),
   });
 }
+
+export function uploadImport(file: File): Promise<{ importId: string; columns: string[]; sampleRows: string[][] }> {
+  const body = new FormData(); body.append("file", file);
+  return fetch("/api/staff/imports", { method: "POST", credentials: "include", body }).then(async r => { if (!r.ok) throw new Error("Import upload failed"); return r.json(); });
+}
+export function mapImport(id: string, mapping: Record<string, string>) { return request(`/staff/imports/${id}/mapping`, { method: "PUT", body: JSON.stringify({ mapping }) }); }
+export function previewImport(id: string) { return request<{ importId: string; outcomes: { row: number; email?: string; outcome: string; reason?: string; initialPassword?: string }[] }>(`/staff/imports/${id}/preview`, { method: "POST" }); }
+export function applyImport(id: string) { return request(`/staff/imports/${id}/apply`, { method: "POST" }); }

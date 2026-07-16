@@ -1,12 +1,12 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { X } from "@phosphor-icons/react";
 import { EscalationNotice } from "../components/EscalationNotice";
 import { MessageBubble } from "../components/MessageBubble";
 import { QuickReplies } from "../components/QuickReplies";
-import { SessionForm } from "../components/SessionForm";
 import { TicketCard } from "../components/TicketCard";
 import { VoiceControl } from "../components/VoiceControl";
 import { createSession, sendMessage } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import { useEvents } from "../services/useEvents";
 import type { CreateSessionResponse, InputOrigin, Message, TicketSummary } from "../lib/types";
 
@@ -18,6 +18,7 @@ interface StreamingReply {
 const VOICE_MAX_SECONDS = Number(import.meta.env.VITE_VOICE_MAX_SECONDS ?? 120);
 
 export function ChatPage() {
+  const { account } = useAuth();
   const [session, setSession] = useState<CreateSessionResponse | null>(null);
   const [sessionError, setSessionError] = useState<string>();
   const [isStarting, setIsStarting] = useState(false);
@@ -61,10 +62,10 @@ export function ChatPage() {
     },
   });
 
-  const handleStart = useCallback((orgId: string, displayName: string) => {
+  const startSession = useCallback(() => {
     setIsStarting(true);
     setSessionError(undefined);
-    createSession(orgId, displayName)
+    createSession()
       .then((result) => {
         setSession(result);
         setTickets(result.openTickets);
@@ -74,6 +75,12 @@ export function ChatPage() {
       })
       .finally(() => setIsStarting(false));
   }, []);
+
+  useEffect(() => {
+    if (account && !session && !isStarting) {
+      startSession();
+    }
+  }, [account, session, isStarting, startSession]);
 
   const handleDraftChange = useCallback((value: string) => {
     // In-place corrections to an existing transcript (fixing a misheard word)
@@ -151,7 +158,7 @@ export function ChatPage() {
   );
 
   if (!session) {
-    return <SessionForm onSubmit={handleStart} isSubmitting={isStarting} error={sessionError} />;
+    return <div className="mx-auto max-w-3xl p-6 text-sm text-gray-600">{sessionError ?? "Starting your support session…"}</div>;
   }
 
   return (

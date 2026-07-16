@@ -75,3 +75,9 @@ export function useStaffEvents(enabled: boolean, handlers: StaffEventHandlers): 
     };
   }, [enabled]);
 }
+
+export function useMyTicketEvents(enabled: boolean, onTicketUpdated: () => void): void {
+  const callback = useRef(onTicketUpdated); callback.current = onTicketUpdated;
+  useEffect(() => { if (!enabled) return; const source = new EventSource("/api/my/events");
+    source.addEventListener("ticket_updated", () => callback.current()); return () => source.close(); }, [enabled]);
+}

@@ -4,7 +4,7 @@
 
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is filled in by the `/speckit-plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
+**Note**: This template is filled in by the `/speckit-plan` command; its definition describes the execution workflow.
 
 ## Summary
 
@@ -102,15 +102,6 @@ ios/ or android/
 
 **Structure Decision**: [Document the selected structure and reference the real
 directories captured above]
-
-## Design Direction (frontend-design-pro)
-
-> **[REMOVE IF NO FRONTEND]** — Populated by the `/frontend-design-pro` skill (invoked
-> automatically by the `before_plan` hook in `.specify/extensions.yml` when the feature
-> has a frontend/UI surface). Must contain: Design Read + dials (variance/motion/density),
-> design-system/stack decision, palette commitment, typography plan, layout strategy,
-> motion plan, banned patterns, affected shared components (from graphify), and the
-> planned build sequence (craft → critique → polish → audit).
 
 ## Complexity Tracking
 

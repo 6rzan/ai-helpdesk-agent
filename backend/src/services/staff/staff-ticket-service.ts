@@ -64,6 +64,7 @@ export async function getStaffTicketDetail(reference: string) {
   }
   const detail = await toTicketDetail(ticket as unknown as TicketDoc);
   const profile = ticket.reporterAccountId ? await loadProfile(ticket.reporterAccountId) : null;
+  const actions = await StaffActionRecord.find({ targetType: "ticket", targetId: ticket._id }).sort({ at: 1 });
   return {
     ...detail,
     reporterAccountId: ticket.reporterAccountId ? String(ticket.reporterAccountId) : null,
@@ -81,6 +82,13 @@ export async function getStaffTicketDetail(reference: string) {
       byName: entry.byName,
       at: entry.at,
       kind: entry.kind,
+    })),
+    staffActions: actions.map((action) => ({
+      action: action.action,
+      staffId: String(action.staffId),
+      staffName: action.staffName,
+      details: action.details,
+      at: action.at,
     })),
     profile,
   };

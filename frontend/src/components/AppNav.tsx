@@ -54,6 +54,8 @@ export function AppNav() {
             <Link to="/profile" className="text-blue-600 hover:underline">
               {account.displayName}
             </Link>
+            <Link to="/tickets" className="text-blue-600 hover:underline">My tickets</Link>
+            <Link to="/settings" className="text-blue-600 hover:underline">Settings</Link>
             <button
               type="button"
               onClick={handleLogout}

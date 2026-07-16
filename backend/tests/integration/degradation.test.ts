@@ -61,6 +61,12 @@ describe("LLM degradation handling", () => {
     expect(ticket.escalated).toBe(true);
     expect(ticket.escalationReason).toBe("llm_unavailable");
 
+    const replyStart = Date.now();
+    while (Date.now() - replyStart < 2000) {
+      if (await Message.exists({ conversationId: session.conversationId, author: "agent" })) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+
     const agentReplies = await Message.find({
       conversationId: session.conversationId,
       author: "agent",

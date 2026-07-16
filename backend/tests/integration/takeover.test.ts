@@ -57,18 +57,21 @@ describe("TC-US2 takeover and assignment", () => {
 
   it("TC-US2-02: takeover notifies the reporter with the named handler (FR-020)", async () => {
     const staff = await seedStaff({ displayName: "Nadia Ng" });
+    const reporterAccount = await seedUser({ displayName: "Reporter Rae" });
 
     const sessionRes = await request(ctx.app)
       .post("/api/sessions")
-      .send({ orgId: "TP920002", displayName: "Reporter Rae" });
+      .set("Cookie", reporterAccount.cookie)
+      .send();
     expect(sessionRes.status).toBe(201);
     const chatSessionId = sessionRes.body.sessionId as string;
     const conversationId = sessionRes.body.conversationId as string;
-    const reporter = await Reporter.findOne({ orgId: "TP920002" });
+    const reporter = await Reporter.findOne({ displayName: "Reporter Rae" });
 
     const created = await Ticket.create({
       reference: "TKT-920002",
       reporterId: reporter!._id,
+      reporterAccountId: reporterAccount.account._id,
       conversationId,
       description: "vpn keeps dropping",
       category: "network",
@@ -179,5 +182,24 @@ describe("TC-US2 takeover and assignment", () => {
 
     const me = await request(ctx.app).get("/api/auth/me").set("Cookie", staff.cookie);
     expect(me.body.availability).toBe("busy");
+  });
+
+  it.each(["resolved", "closed"] as const)("TC-US2-08: refuses takeover of a %s ticket without changing it", async (status) => {
+    const staff = await seedStaff();
+    const { reference } = await createTicketFixture({ status });
+
+    const res = await request(ctx.app).post(`/api/staff/tickets/${reference}/takeover`).set("Cookie", staff.cookie).send();
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("TICKET_NOT_ACTIONABLE");
+    const unchanged = await Ticket.findOne({ reference });
+    expect(unchanged?.assignee).toBeNull();
+  });
+
+  it.each(["open", "in_progress"] as const)("TC-US2-09: permits takeover of an actionable %s ticket", async (status) => {
+    const staff = await seedStaff();
+    const { reference } = await createTicketFixture({ status });
+    const res = await request(ctx.app).post(`/api/staff/tickets/${reference}/takeover`).set("Cookie", staff.cookie).send();
+    expect(res.status).toBe(200);
   });
 });
