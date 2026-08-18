@@ -2,3 +2,26 @@ sandbox_mode = "workspace-write"
 
 [sandbox_workspace_write]
 network_access = true
+
+[shell_environment_policy]
+inherit = "core"
+
+[shell_environment_policy.set]
+ANTHROPIC_BASE_URL = "http://127.0.0.1:8787"
+
+[mcp_servers.headroom]
+command = "docker"
+args = [
+    "run",
+    "--rm",
+    "-i",
+    "--network",
+    "headroom-net",
+    "--entrypoint",
+    "headroom",
+    "ghcr.io/chopratejas/headroom:latest",
+    "mcp",
+    "serve",
+    "--proxy-url",
+    "http://host.docker.internal:8787",
+]

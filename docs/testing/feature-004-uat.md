@@ -1,6 +1,6 @@
 # Feature 004 UAT record
 
-**Last reviewed**: 2026-07-16. The complete live browser walkthrough was completed on
+**Last reviewed**: 2026-07-17. The complete live browser walkthrough was completed on
 the local demo machine. The documented `rs0` single-node replica set was used for the
 transactional Import Apply step.
 
@@ -18,4 +18,4 @@ registration/chat, dashboard and ticket detail, own-ticket isolation, self-servi
 staff-appended profiles, Excel upload/mapping/preview/Apply, and the imported user's
 initial-password sign-in and password-change re-login.
 
-Observed automated gates on 2026-07-16: backend typecheck/lint and 79 Vitest files (217 tests) passed; frontend typecheck/lint and 17 Vitest files (81 tests) passed. The Mongo-memory test helper uses a replica set with a 60-second launch timeout. Production/demo MongoDB deployments must be replica-set capable for the atomic import operation; a standalone server returns MongoDB error code 20 by design. The reproducible `rs0` local setup is documented in [`../../README.md`](../../README.md) and the feature [quickstart](../../specs/004-staff-dashboard/quickstart.md).
+Observed automated gates on 2026-07-17: backend typecheck/lint and 38 Vitest files (217 tests) passed; frontend typecheck/lint and 17 Vitest files (81 tests) passed. The Mongo-memory test helper uses a replica set with a 60-second launch timeout. Production/demo MongoDB deployments must be replica-set capable for the atomic import operation; a standalone server returns MongoDB error code 20 by design. The reproducible `rs0` local setup is documented in [`../../README.md`](../../README.md) and the feature [quickstart](../../specs/004-staff-dashboard/quickstart.md).

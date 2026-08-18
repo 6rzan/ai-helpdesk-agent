@@ -7,9 +7,12 @@ SEM_2_SESSION_3_PRESENTATION_FYP_PRESENTATION.pdf
 
 # Local tool caches / state
 .tokensave/
-{out}
+.serena/
 graphify-out/
 backend/tests/.results/
+
+# Stray generated Vitest JSON reports (canonical output is ignored above)
+backend/**/*vitest*.json
 
 # Speech-to-text model bundle (large binary, downloaded per .env.example instructions)
 backend/models/stt/
