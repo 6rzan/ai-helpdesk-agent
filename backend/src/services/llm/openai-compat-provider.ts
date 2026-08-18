@@ -16,14 +16,13 @@ import type {
 
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 
-const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0", "host.docker.internal"]);
+// URL.hostname keeps the brackets on an IPv6 literal, hence "[::1]" not "::1".
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]", "host.docker.internal"]);
 
-function isLocalBaseUrl(baseUrl: string): boolean {
-  try {
-    return LOCAL_HOSTNAMES.has(new URL(baseUrl).hostname);
-  } catch {
-    return false;
-  }
+// Exact hostname match, never a substring test: "localhost.example.com" is a
+// remote host and must still be required to present a key.
+export function isLocalBaseUrl(baseUrl: string): boolean {
+  return LOCAL_HOSTNAMES.has(new URL(baseUrl).hostname);
 }
 
 // json_schema (not json_object): required by LM Studio, also supported by OpenAI.
@@ -97,9 +96,8 @@ export class OpenAiCompatProvider implements LlmProvider {
   private readonly apiKey: string | undefined;
   /**
    * Local OpenAI-compatible servers (LM Studio, llama.cpp, vLLM, Ollama's /v1)
-   * accept unauthenticated requests. Only a remote base URL — including the
-   * api.openai.com default — genuinely needs a key, so requiring one
-   * unconditionally silently disabled every local deployment.
+   * accept unauthenticated requests; only a remote base URL — including the
+   * api.openai.com default — genuinely needs a key.
    */
   private readonly requiresApiKey: boolean;
 
