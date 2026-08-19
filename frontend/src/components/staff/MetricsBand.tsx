@@ -64,7 +64,7 @@ export function MetricsBand() {
       {summary ? (
         <MetricsSummary summary={summary} />
       ) : (
-        <div className="h-24 animate-pulse rounded bg-gray-100" aria-hidden="true" />
+        <div className="h-24 motion-safe:animate-pulse rounded bg-gray-100" aria-hidden="true" />
       )}
     </section>
   );

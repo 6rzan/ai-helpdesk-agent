@@ -73,7 +73,7 @@ export function ApprovalsPage() {
       )}
 
       {isLoading ? (
-        <div className="h-32 animate-pulse rounded bg-gray-100" aria-hidden="true" />
+        <div className="h-32 motion-safe:animate-pulse rounded bg-gray-100" aria-hidden="true" />
       ) : (
         <ApprovalQueue approvals={approvals} onApprove={handleApprove} onDecline={handleDecline} decidingId={decidingId} />
       )}
