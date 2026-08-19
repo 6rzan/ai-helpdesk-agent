@@ -40,7 +40,11 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+[Gates determined based on constitution file — evaluate Principles I–VIII]
+
+**Compliance Debt**: state whether this feature closes any entry in the constitution's
+Compliance Debt Register, and name the closing evidence (test or code reference). An entry
+is struck only when that evidence exists, never on intent.
 
 ## Project Structure
 

@@ -4,7 +4,9 @@ import { Conversation } from "../../src/models/conversation.js";
 import { Message } from "../../src/models/message.js";
 import { Ticket, type TicketDoc } from "../../src/models/ticket.js";
 import { nextTicketReference } from "../../src/services/ticket/counter.js";
-import type { MessageAuthor } from "../../src/models/enums.js";
+import type { Actor, ActionOutcome, ActionTier, MessageAuthor, RefusalReason } from "../../src/models/enums.js";
+import { ActionRecord, type ActionRecordDoc } from "../../src/models/action-record.js";
+import type { ActionPolicyEntry, ArgumentSpec, TestEndpoint } from "../../src/policy/policy-schema.js";
 
 let orgCounter = 0;
 
@@ -69,3 +71,73 @@ export async function createTicketFixture(options: TicketFixtureOptions = {}): P
     reference,
   };
 }
+
+// T026: fixtures for 005 (constrained automated remediation). Policy entries
+// and endpoints are plain-object builders (the real things are frozen JSON,
+// not Mongoose models — see policy-schema.ts), while action records go
+// through the actual model so audit-trail tests exercise real validation.
+
+export function buildArgumentSpec(overrides: Partial<ArgumentSpec> = {}): ArgumentSpec {
+  return { name: "username", kind: "enum", values: ["test-user-locked"], ...overrides } as ArgumentSpec;
+}
+
+export function buildPolicyEntry(overrides: Partial<ActionPolicyEntry> = {}): ActionPolicyEntry {
+  return {
+    id: "account-status",
+    description: "Checks whether a local test account is locked",
+    category: "password_login",
+    guidedStepRef: null,
+    tier: "read_only",
+    command: "sudo /usr/local/bin/account-status.sh {{username}}",
+    arguments: [buildArgumentSpec()],
+    allowedEndpointIds: ["test-node-a"],
+    verifiedBy: null,
+    timeoutMs: null,
+    ...overrides,
+  };
+}
+
+export function buildTestEndpoint(overrides: Partial<TestEndpoint> = {}): TestEndpoint {
+  return {
+    id: "test-node-a",
+    label: "Test Node A",
+    host: "127.0.0.1",
+    port: 2201,
+    username: "remediation",
+    hostKeyFingerprint: "fixture-fingerprint",
+    description: "Fixture endpoint",
+    ...overrides,
+  };
+}
+
+interface ActionRecordFixtureOptions {
+  actor?: Actor;
+  ticketId?: Types.ObjectId | null;
+  classifiedIntent?: string;
+  policyEntryId?: string | null;
+  tier?: ActionTier | null;
+  requestedAction?: string;
+  endpointId?: string | null;
+  outcome?: ActionOutcome;
+  refusalReason?: RefusalReason | null;
+}
+
+export async function createActionRecordFixture(options: ActionRecordFixtureOptions = {}): Promise<HydratedDocument<ActionRecordDoc>> {
+  const doc = await ActionRecord.create({
+    actor: options.actor ?? "agent",
+    ticketId: options.ticketId ?? null,
+    classifiedIntent: options.classifiedIntent ?? "check service status",
+    policyEntryId: options.policyEntryId ?? "service-status",
+    tier: options.tier ?? "read_only",
+    requestedAction: options.requestedAction ?? "service-status widget-service",
+    endpointId: options.endpointId ?? "test-node-a",
+    authorisation: {},
+    outcome: options.outcome ?? "succeeded",
+    refusalReason: options.refusalReason ?? null,
+  });
+  return doc as unknown as HydratedDocument<ActionRecordDoc>;
+}
+
+// Approval-request fixtures land alongside the ApprovalRequest model in
+// Phase 5 (T070) — see backend/tests/helpers/factories.ts history at that
+// commit for `createApprovalRequestFixture`.

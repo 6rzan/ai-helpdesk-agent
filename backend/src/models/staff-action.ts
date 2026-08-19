@@ -8,10 +8,13 @@ export const STAFF_ACTIONS = [
   "profile_append",
   "credential_reset",
   "import_apply",
+  // 005: staff decisions over automated remediation (data-model.md §3, FR-022).
+  "remediation_toggle",
+  "approval_decision",
 ] as const;
 export type StaffAction = (typeof STAFF_ACTIONS)[number];
 
-export const STAFF_ACTION_TARGETS = ["ticket", "profile", "account", "import"] as const;
+export const STAFF_ACTION_TARGETS = ["ticket", "profile", "account", "import", "remediation"] as const;
 export type StaffActionTarget = (typeof STAFF_ACTION_TARGETS)[number];
 
 // Append-only attribution log for every dashboard action (FR-008). Separate from

@@ -278,3 +278,170 @@ export interface StaffStreamEvent {
   reference: string;
   changed: string;
 }
+
+// --- 005: Constrained Automated Remediation --------------------------------
+
+export type ActionTier = "read_only" | "state_changing";
+
+export type ActionOutcome = "succeeded" | "failed" | "timed_out" | "attempted_unverified" | "refused";
+
+export type RefusalReason =
+  | "no_matching_entry"
+  | "argument_mismatch"
+  | "unregistered_target"
+  | "endpoint_not_permitted"
+  | "missing_consent"
+  | "missing_approval"
+  | "remediation_disabled"
+  | "low_confidence"
+  | "degraded_model"
+  | "not_ticket_owner"
+  | "already_attempted"
+  | "step_cap_reached";
+
+export interface ConsentRecord {
+  given: boolean;
+  byAccountId: string;
+  at: string;
+  messageId: string;
+}
+
+export interface ApprovalReference {
+  requestId: string;
+  byAccountId: string;
+  displayName: string;
+  at: string;
+}
+
+/** data-model.md §5. One executed-or-refused action, shown identically to the
+ * reporter (plain-language) and staff (full detail) per the same record. */
+export interface ActionRecord {
+  id: string;
+  at: string;
+  actor: Actor;
+  ticketId: string | null;
+  classifiedIntent: string;
+  policyEntryId: string | null;
+  tier: ActionTier | null;
+  requestedAction: string;
+  arguments: Record<string, string>;
+  endpointId: string | null;
+  endpointLabel: string | null;
+  authorisation: {
+    consent: ConsentRecord | null;
+    approval: ApprovalReference | null;
+  };
+  outcome: ActionOutcome;
+  refusalReason: RefusalReason | null;
+  observedOutput: string | null;
+  verification: { entryId: string; outcome: ActionOutcome; observedOutput: string | null } | null;
+  durationMs: number | null;
+}
+
+export type ApprovalStatus = "pending" | "approved" | "declined" | "expired" | "no_longer_applicable";
+
+/** data-model.md §4. One pending-or-decided state-changing action. */
+export interface ApprovalRequest {
+  id: string;
+  ticketReference: string;
+  policyEntryId: string;
+  description: string;
+  command: string;
+  arguments: Record<string, string>;
+  endpointId: string;
+  endpointLabel: string;
+  consent: ConsentRecord;
+  status: ApprovalStatus;
+  raisedAt: string;
+  expiresAt: string;
+  decidedBy: { accountId: string; displayName: string } | null;
+  decidedAt: string | null;
+  closureReason: string | null;
+}
+
+/** data-model.md §2, the fields the UI is allowed to know about an endpoint —
+ * never host/port/credentials (contracts/api.md rule 1). */
+export interface TestEndpointSummary {
+  id: string;
+  label: string;
+  description: string;
+}
+
+export interface RemediationEndpointAvailability {
+  id: string;
+  label: string;
+  enabled: boolean;
+  description: string;
+}
+
+/** GET /staff/remediation shape (contracts/api.md). */
+export interface RemediationAvailability {
+  globallyEnabled: boolean;
+  endpoints: RemediationEndpointAvailability[];
+}
+
+/** The agent's in-chat offer to run an approved action, before consent (US1). */
+export interface ActionProposal {
+  ticketId: string;
+  proposalId: string;
+  tier: ActionTier;
+  description: string;
+  endpointLabel: string;
+}
+
+export interface MetricsPeriod {
+  preset: "7d" | "30d" | "90d" | "all";
+  from: string | null;
+  to: string | null;
+}
+
+export interface MetricsSplit {
+  key: string;
+  count: number;
+}
+
+export interface MetricsSummary {
+  period: MetricsPeriod;
+  hasData: boolean;
+  ticketVolume: number;
+  categorySplit: MetricsSplit[];
+  statusSplit: MetricsSplit[];
+  resolvedWithoutHuman: { count: number; proportion: number };
+  escalationRate: number;
+  actionOutcomes: MetricsSplit[];
+  timeToResolution: { medianMinutes: number | null; buckets: MetricsSplit[] };
+  providerFallbacks: number;
+}
+
+export interface ActionProposedEvent {
+  ticketId: string;
+  proposalId: string;
+  tier: ActionTier;
+  description: string;
+  endpointLabel: string;
+}
+
+export interface ActionRecordedEvent {
+  ticketId: string;
+  actionRecordId: string;
+  outcome: ActionOutcome;
+  summary: string;
+}
+
+export interface ApprovalPendingEvent {
+  ticketId: string;
+  approvalId: string;
+  description: string;
+}
+
+export interface ApprovalDecidedEvent {
+  ticketId: string;
+  approvalId: string;
+  status: ApprovalStatus;
+  decidedBy?: string;
+}
+
+export interface RemediationAvailabilityChangedEvent {
+  globallyEnabled: boolean;
+  disabledEndpointIds: string[];
+}

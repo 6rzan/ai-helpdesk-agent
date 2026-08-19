@@ -1,0 +1,125 @@
+{
+  "version": "1.0.0",
+  "entries": [
+    {
+      "id": "account-status",
+      "description": "Checks whether a local test account on the endpoint is locked, and whether its password is flagged for a forced change at next sign-in.",
+      "category": "password_login",
+      "guidedStepRef": null,
+      "tier": "read_only",
+      "command": "sudo /usr/local/bin/account-status.sh {{username}}",
+      "arguments": [
+        { "name": "username", "kind": "enum", "values": ["test-user-locked", "test-user-active"] }
+      ],
+      "allowedEndpointIds": ["test-node-a"],
+      "verifiedBy": null,
+      "timeoutMs": null
+    },
+    {
+      "id": "unlock-account",
+      "description": "Unlocks a locked local test account on the endpoint.",
+      "category": "password_login",
+      "guidedStepRef": null,
+      "tier": "state_changing",
+      "command": "sudo /usr/local/bin/unlock-account.sh {{username}}",
+      "arguments": [
+        { "name": "username", "kind": "enum", "values": ["test-user-locked", "test-user-active"] }
+      ],
+      "allowedEndpointIds": ["test-node-a"],
+      "verifiedBy": "account-status",
+      "timeoutMs": null
+    },
+    {
+      "id": "expire-password",
+      "description": "Forces a password change at next sign-in for a local test account on the endpoint.",
+      "category": "password_login",
+      "guidedStepRef": null,
+      "tier": "state_changing",
+      "command": "sudo /usr/local/bin/expire-password.sh {{username}}",
+      "arguments": [
+        { "name": "username", "kind": "enum", "values": ["test-user-locked", "test-user-active"] }
+      ],
+      "allowedEndpointIds": ["test-node-a"],
+      "verifiedBy": "account-status",
+      "timeoutMs": null
+    },
+    {
+      "id": "network-probe",
+      "description": "Checks reachability and DNS resolution for a named target, as seen from the endpoint.",
+      "category": "network",
+      "guidedStepRef": null,
+      "tier": "read_only",
+      "command": "/usr/local/bin/network-probe.sh {{target}}",
+      "arguments": [
+        { "name": "target", "kind": "enum", "values": ["test-node-a", "test-node-b", "1.1.1.1"] }
+      ],
+      "allowedEndpointIds": ["test-node-a", "test-node-b"],
+      "verifiedBy": null,
+      "timeoutMs": null
+    },
+    {
+      "id": "print-queue-status",
+      "description": "Lists jobs currently queued on the endpoint's print service.",
+      "category": "printer",
+      "guidedStepRef": null,
+      "tier": "read_only",
+      "command": "/usr/local/bin/print-queue-status.sh",
+      "arguments": [],
+      "allowedEndpointIds": ["test-node-b"],
+      "verifiedBy": null,
+      "timeoutMs": null
+    },
+    {
+      "id": "clear-print-queue",
+      "description": "Clears the endpoint's print queue.",
+      "category": "printer",
+      "guidedStepRef": null,
+      "tier": "state_changing",
+      "command": "/usr/local/bin/clear-print-queue.sh",
+      "arguments": [],
+      "allowedEndpointIds": ["test-node-b"],
+      "verifiedBy": "print-queue-status",
+      "timeoutMs": null
+    },
+    {
+      "id": "peripheral-list",
+      "description": "Lists devices visible to the endpoint. This is the container's own device view, not the employee's physical desk.",
+      "category": "peripherals",
+      "guidedStepRef": null,
+      "tier": "read_only",
+      "command": "/usr/local/bin/peripheral-list.sh",
+      "arguments": [],
+      "allowedEndpointIds": ["test-node-a", "test-node-b"],
+      "verifiedBy": null,
+      "timeoutMs": null
+    },
+    {
+      "id": "service-status",
+      "description": "Reports the state of a named approved service on the endpoint.",
+      "category": "service_status",
+      "guidedStepRef": null,
+      "tier": "read_only",
+      "command": "sudo /usr/local/bin/service-status.sh {{service}}",
+      "arguments": [
+        { "name": "service", "kind": "enum", "values": ["widget-service"] }
+      ],
+      "allowedEndpointIds": ["test-node-a"],
+      "verifiedBy": null,
+      "timeoutMs": null
+    },
+    {
+      "id": "restart-service",
+      "description": "Restarts a named approved service on the endpoint.",
+      "category": "service_status",
+      "guidedStepRef": null,
+      "tier": "state_changing",
+      "command": "sudo /usr/local/bin/restart-service.sh {{service}}",
+      "arguments": [
+        { "name": "service", "kind": "enum", "values": ["widget-service"] }
+      ],
+      "allowedEndpointIds": ["test-node-a"],
+      "verifiedBy": "service-status",
+      "timeoutMs": null
+    }
+  ]
+}

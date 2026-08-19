@@ -61,43 +61,43 @@ the policy engine.
 
 ### Enums and models
 
-- [ ] T010 [P] Extend `backend/src/models/enums.ts` with `ACTION_TIERS` (`read_only`, `state_changing`), `ACTION_OUTCOMES` (`succeeded`, `failed`, `timed_out`, `attempted_unverified`, `refused`), and `REFUSAL_REASONS` (the twelve values in data-model.md §5), with a unit test asserting the exact members in `backend/tests/unit/enums.test.ts`
-- [ ] T011 [P] Extend `backend/src/models/staff-action.ts` with `remediation_toggle` and `approval_decision` in `STAFF_ACTIONS` and `remediation` in `STAFF_ACTION_TARGETS`, with a test proving existing staff-action records still validate
+- [X] T010 [P] Extend `backend/src/models/enums.ts` with `ACTION_TIERS` (`read_only`, `state_changing`), `ACTION_OUTCOMES` (`succeeded`, `failed`, `timed_out`, `attempted_unverified`, `refused`), and `REFUSAL_REASONS` (the twelve values in data-model.md §5), with a unit test asserting the exact members in `backend/tests/unit/enums.test.ts`
+- [X] T011 [P] Extend `backend/src/models/staff-action.ts` with `remediation_toggle` and `approval_decision` in `STAFF_ACTIONS` and `remediation` in `STAFF_ACTION_TARGETS`, with a test proving existing staff-action records still validate
 
 ### Policy data (test-first — safety-critical)
 
-- [ ] T012 Write failing unit tests for the policy and registry schemas in `backend/tests/unit/policy-schema.test.ts`: placeholder/argument symmetry both ways, unique ids, `allowedEndpointIds` resolving to real endpoints, `state_changing` entries naming a valid `read_only` `verifiedBy`, and rejection of any free-text argument kind
-- [ ] T013 Implement the zod schemas in `backend/src/policy/policy-schema.ts` so T012 passes
-- [ ] T014 [P] Author the whitelist in `backend/src/policy/action-policy.json`: the nine entries from research.md R11 with `version`, plain-language descriptions, fixed command templates, enum or anchored-pattern arguments only, `allowedEndpointIds`, and `verifiedBy` on all three state-changing entries
-- [ ] T015 [P] Author the registry in `backend/src/policy/test-endpoints.json`: `test-node-a` and `test-node-b` with id, label, host, port, username, pinned `hostKeyFingerprint`, and description, and **no secret values**
-- [ ] T016 Write failing unit tests for the loader in `backend/tests/unit/policy-loader.test.ts`, including the fail-closed cases: a missing file, an empty entry list, and an invalid file all leave remediation **unavailable** and never permissive, while guidance and escalation stay unaffected (edge case, FR-002)
-- [ ] T017 Implement `backend/src/policy/policy-loader.ts` to read, validate, and freeze both files once at startup, exposing read-only accessors and no write path of any kind (FR-005)
+- [X] T012 Write failing unit tests for the policy and registry schemas in `backend/tests/unit/policy-schema.test.ts`: placeholder/argument symmetry both ways, unique ids, `allowedEndpointIds` resolving to real endpoints, `state_changing` entries naming a valid `read_only` `verifiedBy`, and rejection of any free-text argument kind
+- [X] T013 Implement the zod schemas in `backend/src/policy/policy-schema.ts` so T012 passes
+- [X] T014 [P] Author the whitelist in `backend/src/policy/action-policy.json`: the nine entries from research.md R11 with `version`, plain-language descriptions, fixed command templates, enum or anchored-pattern arguments only, `allowedEndpointIds`, and `verifiedBy` on all three state-changing entries
+- [X] T015 [P] Author the registry in `backend/src/policy/test-endpoints.json`: `test-node-a` and `test-node-b` with id, label, host, port, username, pinned `hostKeyFingerprint`, and description, and **no secret values**
+- [X] T016 Write failing unit tests for the loader in `backend/tests/unit/policy-loader.test.ts`, including the fail-closed cases: a missing file, an empty entry list, and an invalid file all leave remediation **unavailable** and never permissive, while guidance and escalation stay unaffected (edge case, FR-002)
+- [X] T017 Implement `backend/src/policy/policy-loader.ts` to read, validate, and freeze both files once at startup, exposing read-only accessors and no write path of any kind (FR-005)
 
 ### Append-only audit trail (test-first — safety-critical)
 
-- [ ] T018 Write failing tests in `backend/tests/integration/audit-immutability.test.ts` asserting that `findOneAndUpdate`, `updateOne`, `updateMany`, `deleteOne`, `deleteMany`, and `findOneAndDelete` on action records each throw (FR-010, research R7)
-- [ ] T019 Implement `backend/src/models/action-record.ts` per data-model.md §5 with `strict: "throw"`, throwing `pre` hooks on all six mutation paths, and indexes on `at` and `ticketId`
-- [ ] T020 Implement `backend/src/services/remediation/audit-service.ts` with an append-only write API and no update or delete function, plus unit tests in `backend/tests/unit/audit-service.test.ts` covering a record for each outcome and each refusal reason
+- [X] T018 Write failing tests in `backend/tests/integration/audit-immutability.test.ts` asserting that `findOneAndUpdate`, `updateOne`, `updateMany`, `deleteOne`, `deleteMany`, and `findOneAndDelete` on action records each throw (FR-010, research R7)
+- [X] T019 Implement `backend/src/models/action-record.ts` per data-model.md §5 with `strict: "throw"`, throwing `pre` hooks on all six mutation paths, and indexes on `at` and `ticketId`
+- [X] T020 Implement `backend/src/services/remediation/audit-service.ts` with an append-only write API and no update or delete function, plus unit tests in `backend/tests/unit/audit-service.test.ts` covering a record for each outcome and each refusal reason
 
 ### Availability gate (test-first — safety-critical)
 
-- [ ] T021 [P] Implement `backend/src/models/remediation-settings.ts` as the singleton from data-model.md §3, defaulting `globallyEnabled` from `REMEDIATION_ENABLED` (default `false`)
-- [ ] T022 Write failing unit tests in `backend/tests/unit/availability-service.test.ts`: execution is permitted only when globally enabled **and** the target endpoint is not individually disabled, and the check is evaluated immediately before execution rather than cached per turn
-- [ ] T023 Implement `backend/src/services/remediation/availability-service.ts` so T022 passes
+- [X] T021 [P] Implement `backend/src/models/remediation-settings.ts` as the singleton from data-model.md §3, defaulting `globallyEnabled` from `REMEDIATION_ENABLED` (default `false`)
+- [X] T022 Write failing unit tests in `backend/tests/unit/availability-service.test.ts`: execution is permitted only when globally enabled **and** the target endpoint is not individually disabled, and the check is evaluated immediately before execution rather than cached per turn
+- [X] T023 Implement `backend/src/services/remediation/availability-service.ts` so T022 passes
 
 ### Default-deny policy engine (test-first — safety-critical)
 
-- [ ] T024 Write failing unit tests in `backend/tests/unit/policy-engine.test.ts` covering exact matching only: unknown action id, altered argument, argument outside its enum, argument failing its pattern, unregistered endpoint id, endpoint not in the entry's `allowedEndpointIds`, and near-miss variants of approved actions — each returns a refusal with the correct reason and **never** an execution (FR-002, US2 AS3)
-- [ ] T025 Implement `backend/src/services/remediation/policy-engine.ts` so T024 passes: it resolves the target from the policy entry and ticket context, applies the availability gate, and is the **only** module permitted to call the executor
-- [ ] T026 [P] Add fixtures and factories for policy entries, endpoints, action records, and approval requests to `backend/tests/helpers/factories.ts`
+- [X] T024 Write failing unit tests in `backend/tests/unit/policy-engine.test.ts` covering exact matching only: unknown action id, altered argument, argument outside its enum, argument failing its pattern, unregistered endpoint id, endpoint not in the entry's `allowedEndpointIds`, and near-miss variants of approved actions — each returns a refusal with the correct reason and **never** an execution (FR-002, US2 AS3)
+- [X] T025 Implement `backend/src/services/remediation/policy-engine.ts` so T024 passes: it resolves the target from the policy entry and ticket context, applies the availability gate, and is the **only** module permitted to call the executor
+- [X] T026 [P] Add fixtures and factories for policy entries, endpoints, action records, and approval requests to `backend/tests/helpers/factories.ts`
 
 ### Shared frontend atoms
 
-- [ ] T027 [P] Add `ActionRecord`, `ApprovalRequest`, `TestEndpointSummary`, `RemediationAvailability`, `ActionProposal`, and `MetricsSummary` types to `frontend/src/lib/types.ts`
-- [ ] T028 [P] Create `frontend/src/components/ActionOutcomeBadge.tsx` as a vocabulary **separate** from `StatusBadge.tsx`, with refused, declined, and expired rendered neutral grey and red reserved for a failed execution, plus a test in `frontend/tests/components/ActionOutcomeBadge.test.tsx` asserting refusals are not styled as errors (Design Direction)
-- [ ] T029 [P] Create `frontend/src/components/ActionRecordCard.tsx` as the single action-record atom with the fixed field order from DESIGN-DIRECTION.md, an icon plus written label for read-only versus state-changing, mono inert command text, and collapsed-by-default output disclosure, with a test in `frontend/tests/components/ActionRecordCard.test.tsx`
-- [ ] T030 [P] Extend `frontend/src/services/api.ts` with the client functions for every endpoint in contracts/api.md
-- [ ] T031 Extend `EventHandlers` and `StaffEventHandlers` in `frontend/src/services/useEvents.ts` with the five new event types from contracts/api.md, with a regression test proving the shipped `ticket_created` and `ticket_updated` handlers still fire
+- [X] T027 [P] Add `ActionRecord`, `ApprovalRequest`, `TestEndpointSummary`, `RemediationAvailability`, `ActionProposal`, and `MetricsSummary` types to `frontend/src/lib/types.ts`
+- [X] T028 [P] Create `frontend/src/components/ActionOutcomeBadge.tsx` as a vocabulary **separate** from `StatusBadge.tsx`, with refused, declined, and expired rendered neutral grey and red reserved for a failed execution, plus a test in `frontend/tests/components/ActionOutcomeBadge.test.tsx` asserting refusals are not styled as errors (Design Direction)
+- [X] T029 [P] Create `frontend/src/components/ActionRecordCard.tsx` as the single action-record atom with the fixed field order from DESIGN-DIRECTION.md, an icon plus written label for read-only versus state-changing, mono inert command text, and collapsed-by-default output disclosure, with a test in `frontend/tests/components/ActionRecordCard.test.tsx`
+- [X] T030 [P] Extend `frontend/src/services/api.ts` with the client functions for every endpoint in contracts/api.md
+- [X] T031 Extend `EventHandlers` and `StaffEventHandlers` in `frontend/src/services/useEvents.ts` with the five new event types from contracts/api.md, with a regression test proving the shipped `ticket_created` and `ticket_updated` handlers still fire
 
 **Checkpoint**: nothing can execute yet, but everything that decides *whether* something may execute exists, is default-deny, and is tested.
 

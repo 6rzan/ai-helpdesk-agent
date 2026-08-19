@@ -1,0 +1,22 @@
+{
+  "entries": [
+    {
+      "id": "test-node-a",
+      "label": "Test Node A",
+      "host": "127.0.0.1",
+      "port": 2201,
+      "username": "remediation",
+      "hostKeyFingerprint": "REGENERATE_VIA_reset.ps1",
+      "description": "General service and account node: OpenSSH, the dummy widget-service, and seeded local test accounts (research.md R1)."
+    },
+    {
+      "id": "test-node-b",
+      "label": "Test Node B",
+      "host": "127.0.0.1",
+      "port": 2202,
+      "username": "remediation",
+      "hostKeyFingerprint": "REGENERATE_VIA_reset.ps1",
+      "description": "Print node and the unregistered-target contrast case: OpenSSH and CUPS with a virtual PDF-backed printer (research.md R1)."
+    }
+  ]
+}

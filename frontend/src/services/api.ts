@@ -1,6 +1,8 @@
 import type {
   Account,
+  ActionRecord,
   ApiErrorBody,
+  ApprovalRequest,
   AvailabilityStatus,
   ChangePasswordRequest,
   CreateSessionResponse,
@@ -9,7 +11,9 @@ import type {
   ImportOutcomesResponse,
   ImportUploadResponse,
   LoginRequest,
+  MetricsSummary,
   RegisterRequest,
+  RemediationAvailability,
   Roster,
   SendMessageResponse,
   StaffTicketDetail,
@@ -224,3 +228,81 @@ export function uploadImport(file: File): Promise<ImportUploadResponse> {
 export function mapImport(id: string, mapping: Partial<Record<string, ImportField>>): Promise<{ ok: true }> { return request<{ ok: true }>(`/staff/imports/${id}/mapping`, { method: "PUT", body: JSON.stringify({ mapping }) }); }
 export function previewImport(id: string): Promise<ImportOutcomesResponse> { return request<ImportOutcomesResponse>(`/staff/imports/${id}/preview`, { method: "POST" }); }
 export function applyImport(id: string): Promise<ImportOutcomesResponse> { return request<ImportOutcomesResponse>(`/staff/imports/${id}/apply`, { method: "POST" }); }
+
+// --- 005: Constrained Automated Remediation --------------------------------
+
+export function recordActionConsent(
+  ticketId: string,
+  proposalId: string,
+  granted: boolean,
+): Promise<{ ok: true }> {
+  return request<{ ok: true }>(`/tickets/${encodeURIComponent(ticketId)}/actions/consent`, {
+    method: "POST",
+    body: JSON.stringify({ proposalId, granted }),
+  });
+}
+
+export function getTicketActions(
+  ticketId: string,
+): Promise<{ actions: ActionRecord[]; approvals: ApprovalRequest[] }> {
+  return request<{ actions: ActionRecord[]; approvals: ApprovalRequest[] }>(
+    `/tickets/${encodeURIComponent(ticketId)}/actions`,
+  );
+}
+
+export function listApprovals(status?: ApprovalRequest["status"]): Promise<{ approvals: ApprovalRequest[] }> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return request<{ approvals: ApprovalRequest[] }>(`/staff/approvals${query}`);
+}
+
+export function approveApproval(approvalId: string): Promise<{ approval: ApprovalRequest }> {
+  return request<{ approval: ApprovalRequest }>(`/staff/approvals/${encodeURIComponent(approvalId)}/approve`, {
+    method: "POST",
+  });
+}
+
+export function declineApproval(approvalId: string, reason?: string): Promise<{ approval: ApprovalRequest }> {
+  return request<{ approval: ApprovalRequest }>(`/staff/approvals/${encodeURIComponent(approvalId)}/decline`, {
+    method: "POST",
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
+}
+
+export interface StaffActionFilters {
+  ticketId?: string;
+  endpointId?: string;
+  outcome?: ActionRecord["outcome"];
+  from?: string;
+  to?: string;
+}
+
+export function listStaffActions(filters: StaffActionFilters = {}): Promise<{ actions: ActionRecord[] }> {
+  const params = new URLSearchParams();
+  if (filters.ticketId) params.set("ticketId", filters.ticketId);
+  if (filters.endpointId) params.set("endpointId", filters.endpointId);
+  if (filters.outcome) params.set("outcome", filters.outcome);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  const query = params.toString();
+  return request<{ actions: ActionRecord[] }>(`/staff/actions${query ? `?${query}` : ""}`);
+}
+
+export function getRemediationAvailability(): Promise<RemediationAvailability> {
+  return request<RemediationAvailability>("/staff/remediation");
+}
+
+export type RemediationToggleScope = { scope: "global" } | { scope: "endpoint"; endpointId: string };
+
+export function toggleRemediation(
+  scope: RemediationToggleScope,
+  enabled: boolean,
+): Promise<RemediationAvailability> {
+  return request<RemediationAvailability>("/staff/remediation/toggle", {
+    method: "POST",
+    body: JSON.stringify({ ...scope, enabled }),
+  });
+}
+
+export function getMetrics(period: MetricsSummary["period"]["preset"] = "30d"): Promise<MetricsSummary> {
+  return request<MetricsSummary>(`/staff/metrics?period=${encodeURIComponent(period)}`);
+}

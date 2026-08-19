@@ -48,3 +48,27 @@ export type AccountRole = (typeof ACCOUNT_ROLES)[number];
 
 export const AVAILABILITY_STATUSES = ["available", "busy", "away"] as const;
 export type AvailabilityStatus = (typeof AVAILABILITY_STATUSES)[number];
+
+// Constrained automated remediation (005, FR-8, Constitution Principle II).
+export const ACTION_TIERS = ["read_only", "state_changing"] as const;
+export type ActionTier = (typeof ACTION_TIERS)[number];
+
+export const ACTION_OUTCOMES = ["succeeded", "failed", "timed_out", "attempted_unverified", "refused"] as const;
+export type ActionOutcome = (typeof ACTION_OUTCOMES)[number];
+
+// data-model.md §5 "Refusal reason vocabulary". Each maps to a specific requirement.
+export const REFUSAL_REASONS = [
+  "no_matching_entry",
+  "argument_mismatch",
+  "unregistered_target",
+  "endpoint_not_permitted",
+  "missing_consent",
+  "missing_approval",
+  "remediation_disabled",
+  "low_confidence",
+  "degraded_model",
+  "not_ticket_owner",
+  "already_attempted",
+  "step_cap_reached",
+] as const;
+export type RefusalReason = (typeof REFUSAL_REASONS)[number];

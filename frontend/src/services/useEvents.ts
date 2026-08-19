@@ -1,7 +1,12 @@
 import { useEffect, useRef } from "react";
 import type {
+  ActionProposedEvent,
+  ActionRecordedEvent,
   AgentMessageEvent,
   AgentTokenEvent,
+  ApprovalDecidedEvent,
+  ApprovalPendingEvent,
+  RemediationAvailabilityChangedEvent,
   StaffStreamEvent,
   TicketCreatedEvent,
   TicketUpdatedEvent,
@@ -12,11 +17,19 @@ export interface EventHandlers {
   onAgentMessage?: (data: AgentMessageEvent) => void;
   onTicketCreated?: (data: TicketCreatedEvent) => void;
   onTicketUpdated?: (data: TicketUpdatedEvent) => void;
+  onActionProposed?: (data: ActionProposedEvent) => void;
+  onActionRecorded?: (data: ActionRecordedEvent) => void;
+  onApprovalPending?: (data: ApprovalPendingEvent) => void;
+  onApprovalDecided?: (data: ApprovalDecidedEvent) => void;
 }
 
 export interface StaffEventHandlers {
   onTicketCreated?: (data: StaffStreamEvent) => void;
   onTicketUpdated?: (data: StaffStreamEvent) => void;
+  onActionRecorded?: (data: ActionRecordedEvent) => void;
+  onApprovalPending?: (data: ApprovalPendingEvent) => void;
+  onApprovalDecided?: (data: ApprovalDecidedEvent) => void;
+  onRemediationAvailabilityChanged?: (data: RemediationAvailabilityChangedEvent) => void;
 }
 
 export function useEvents(sessionId: string | undefined, handlers: EventHandlers): void {
@@ -41,6 +54,18 @@ export function useEvents(sessionId: string | undefined, handlers: EventHandlers
     });
     source.addEventListener("ticket_updated", (event) => {
       handlersRef.current.onTicketUpdated?.(JSON.parse((event as MessageEvent<string>).data) as TicketUpdatedEvent);
+    });
+    source.addEventListener("action_proposed", (event) => {
+      handlersRef.current.onActionProposed?.(JSON.parse((event as MessageEvent<string>).data) as ActionProposedEvent);
+    });
+    source.addEventListener("action_recorded", (event) => {
+      handlersRef.current.onActionRecorded?.(JSON.parse((event as MessageEvent<string>).data) as ActionRecordedEvent);
+    });
+    source.addEventListener("approval_pending", (event) => {
+      handlersRef.current.onApprovalPending?.(JSON.parse((event as MessageEvent<string>).data) as ApprovalPendingEvent);
+    });
+    source.addEventListener("approval_decided", (event) => {
+      handlersRef.current.onApprovalDecided?.(JSON.parse((event as MessageEvent<string>).data) as ApprovalDecidedEvent);
     });
 
     return () => {
@@ -68,6 +93,20 @@ export function useStaffEvents(enabled: boolean, handlers: StaffEventHandlers): 
     });
     source.addEventListener("ticket_updated", (event) => {
       handlersRef.current.onTicketUpdated?.(JSON.parse((event as MessageEvent<string>).data) as StaffStreamEvent);
+    });
+    source.addEventListener("action_recorded", (event) => {
+      handlersRef.current.onActionRecorded?.(JSON.parse((event as MessageEvent<string>).data) as ActionRecordedEvent);
+    });
+    source.addEventListener("approval_pending", (event) => {
+      handlersRef.current.onApprovalPending?.(JSON.parse((event as MessageEvent<string>).data) as ApprovalPendingEvent);
+    });
+    source.addEventListener("approval_decided", (event) => {
+      handlersRef.current.onApprovalDecided?.(JSON.parse((event as MessageEvent<string>).data) as ApprovalDecidedEvent);
+    });
+    source.addEventListener("remediation_availability_changed", (event) => {
+      handlersRef.current.onRemediationAvailabilityChanged?.(
+        JSON.parse((event as MessageEvent<string>).data) as RemediationAvailabilityChangedEvent,
+      );
     });
 
     return () => {
