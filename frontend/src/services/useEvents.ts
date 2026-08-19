@@ -120,3 +120,34 @@ export function useMyTicketEvents(enabled: boolean, onTicketUpdated: () => void)
   useEffect(() => { if (!enabled) return; const source = new EventSource("/api/my/events");
     source.addEventListener("ticket_updated", () => callback.current()); return () => source.close(); }, [enabled]);
 }
+
+export interface MyEventHandlers {
+  onApprovalPending?: (data: ApprovalPendingEvent) => void;
+  onApprovalDecided?: (data: ApprovalDecidedEvent) => void;
+}
+
+/** T079/FR-004c: the account-scoped channel (`/api/my/events`), not the
+ * ephemeral chat sessionId one -- a staff decision can land minutes or hours
+ * after the employee's own session token has rotated, so `approval_pending`/
+ * `approval_decided` must reach whichever tab is open under this account,
+ * not just the tab that happened to raise the request. */
+export function useMyEvents(enabled: boolean, handlers: MyEventHandlers): void {
+  const handlersRef = useRef(handlers);
+  handlersRef.current = handlers;
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+    const source = new EventSource("/api/my/events");
+    source.addEventListener("approval_pending", (event) => {
+      handlersRef.current.onApprovalPending?.(JSON.parse((event as MessageEvent<string>).data) as ApprovalPendingEvent);
+    });
+    source.addEventListener("approval_decided", (event) => {
+      handlersRef.current.onApprovalDecided?.(JSON.parse((event as MessageEvent<string>).data) as ApprovalDecidedEvent);
+    });
+    return () => {
+      source.close();
+    };
+  }, [enabled]);
+}

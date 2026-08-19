@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ACTION_OUTCOMES, ACTION_TIERS, REFUSAL_REASONS } from "../../src/models/enums.js";
+import { ACTION_OUTCOMES, ACTION_TIERS, APPROVAL_STATUSES, REFUSAL_REASONS } from "../../src/models/enums.js";
 
 // T010: exact membership of the new remediation enums (data-model.md §1, §5).
 describe("remediation enums", () => {
@@ -27,5 +27,9 @@ describe("remediation enums", () => {
       "step_cap_reached",
     ]);
     expect(REFUSAL_REASONS).toHaveLength(12);
+  });
+
+  it("APPROVAL_STATUSES has exactly the five states from data-model.md §4", () => {
+    expect(APPROVAL_STATUSES).toEqual(["pending", "approved", "declined", "expired", "no_longer_applicable"]);
   });
 });

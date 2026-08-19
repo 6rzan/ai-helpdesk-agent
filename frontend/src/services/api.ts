@@ -5,7 +5,9 @@ import type {
   ApprovalRequest,
   AvailabilityStatus,
   ChangePasswordRequest,
+  ConsentDecisionResult,
   CreateSessionResponse,
+  DecideApprovalResult,
   InputOrigin,
   ImportField,
   ImportOutcomesResponse,
@@ -235,8 +237,8 @@ export function recordActionConsent(
   ticketId: string,
   proposalId: string,
   granted: boolean,
-): Promise<{ ok: true }> {
-  return request<{ ok: true }>(`/tickets/${encodeURIComponent(ticketId)}/actions/consent`, {
+): Promise<{ result: ConsentDecisionResult }> {
+  return request<{ result: ConsentDecisionResult }>(`/tickets/${encodeURIComponent(ticketId)}/actions/consent`, {
     method: "POST",
     body: JSON.stringify({ proposalId, granted }),
   });
@@ -255,14 +257,14 @@ export function listApprovals(status?: ApprovalRequest["status"]): Promise<{ app
   return request<{ approvals: ApprovalRequest[] }>(`/staff/approvals${query}`);
 }
 
-export function approveApproval(approvalId: string): Promise<{ approval: ApprovalRequest }> {
-  return request<{ approval: ApprovalRequest }>(`/staff/approvals/${encodeURIComponent(approvalId)}/approve`, {
+export function approveApproval(approvalId: string): Promise<{ result: DecideApprovalResult }> {
+  return request<{ result: DecideApprovalResult }>(`/staff/approvals/${encodeURIComponent(approvalId)}/approve`, {
     method: "POST",
   });
 }
 
-export function declineApproval(approvalId: string, reason?: string): Promise<{ approval: ApprovalRequest }> {
-  return request<{ approval: ApprovalRequest }>(`/staff/approvals/${encodeURIComponent(approvalId)}/decline`, {
+export function declineApproval(approvalId: string, reason?: string): Promise<{ result: DecideApprovalResult }> {
+  return request<{ result: DecideApprovalResult }>(`/staff/approvals/${encodeURIComponent(approvalId)}/decline`, {
     method: "POST",
     body: JSON.stringify(reason ? { reason } : {}),
   });

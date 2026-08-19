@@ -9,7 +9,7 @@ import { TicketCard } from "../components/TicketCard";
 import { VoiceControl } from "../components/VoiceControl";
 import { createSession, getTicketActions, recordActionConsent, sendMessage } from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import { useEvents } from "../services/useEvents";
+import { useEvents, useMyEvents } from "../services/useEvents";
 import type {
   ActionProposal,
   ActionRecord,
@@ -103,6 +103,12 @@ export function ChatPage() {
         })
         .catch(() => undefined);
     },
+  });
+
+  // T079/FR-004c: approval_pending/approval_decided arrive on the durable
+  // account-scoped channel, not the ephemeral chat sessionId one -- a staff
+  // decision can land well after this session's own tab context changes.
+  useMyEvents(!!account, {
     onApprovalPending: (data) => {
       pushSystemMessage(`Waiting on IT staff to approve: ${data.description}`);
     },
@@ -221,10 +227,16 @@ export function ChatPage() {
       }
       setConsentDeciding(true);
       recordActionConsent(pendingProposal.ticketId, pendingProposal.proposalId, granted)
-        .then(() => {
+        .then(({ result }) => {
           // No optimistic outcome here (Design Direction) — the transcript
           // shows what happened only once the server's own reply arrives
           // (via onAgentMessage), so the proposal simply stops being asked.
+          // A state-changing grant raises an approval instead of executing
+          // (FR-004a); surface that immediately rather than waiting on the
+          // account-scoped SSE round trip, which may take a moment to land.
+          if (result.outcome === "pending_approval") {
+            pushSystemMessage(`Waiting on IT staff to approve: ${result.description}`);
+          }
           setPendingProposal(null);
         })
         .catch((err: unknown) => {

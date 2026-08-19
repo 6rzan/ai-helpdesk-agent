@@ -107,8 +107,10 @@ describe("Edge-case refusals: not_ticket_owner and already_attempted are both re
     ticket.pendingActionProposal = null;
     await ticket.save();
 
-    // Seed the exact failure this ticket already suffered for the one
-    // read-only tool mapped to `service_status:0` (action-policy.json).
+    // Seed the exact failure this ticket already suffered for *every* tool
+    // mapped to `service_status:0` (action-policy.json: service-status,
+    // restart-service) -- already_attempted only fires once every candidate
+    // for the step has failed, never just one of several.
     await ActionRecord.create({
       actor: "agent",
       ticketId: ticket._id,
@@ -116,6 +118,16 @@ describe("Edge-case refusals: not_ticket_owner and already_attempted are both re
       classifiedIntent: "service_status:0",
       policyEntryId: "service-status",
       requestedAction: "sudo /usr/local/bin/service-status.sh widget-service",
+      outcome: "failed",
+      observedOutput: "ssh: connect to host 127.0.0.1 port 2201: Connection refused",
+    });
+    await ActionRecord.create({
+      actor: "agent",
+      ticketId: ticket._id,
+      conversationId: session.conversationId,
+      classifiedIntent: "service_status:0",
+      policyEntryId: "restart-service",
+      requestedAction: "sudo /usr/local/bin/restart-service.sh widget-service",
       outcome: "failed",
       observedOutput: "ssh: connect to host 127.0.0.1 port 2201: Connection refused",
     });

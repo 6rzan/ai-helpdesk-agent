@@ -6,6 +6,7 @@ import { getSession, touchSession } from "../../services/session/session-service
 import { findOwnedTicket, listTicketsForReporter, toTicketDetail } from "../../services/ticket/ticket-service.js";
 import { getActionsForTicket, toActionRecordJson } from "../../services/remediation/audit-service.js";
 import { recordConsent } from "../../services/remediation/consent-service.js";
+import { listApprovalRequestsForTicket, toApprovalRequestJson } from "../../services/remediation/approval-service.js";
 
 const sessionQuerySchema = z.object({ sessionId: z.string().min(1) });
 const referenceParamsSchema = z.object({ reference: z.string().min(1) });
@@ -83,7 +84,11 @@ ticketsRouter.get(
       const { reference } = req.params as { reference: string };
       const ticket = await findOwnedTicket(reference, session.reporterId);
       const actions = await getActionsForTicket(ticket._id);
-      res.status(200).json({ actions: actions.map((record) => toActionRecordJson(record, ticket.reference)) });
+      const approvalRequests = await listApprovalRequestsForTicket(ticket._id);
+      res.status(200).json({
+        actions: actions.map((record) => toActionRecordJson(record, ticket.reference)),
+        approvals: await Promise.all(approvalRequests.map(toApprovalRequestJson)),
+      });
     })().catch(next);
   },
 );

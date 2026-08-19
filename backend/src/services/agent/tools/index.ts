@@ -1,22 +1,32 @@
 import { getPolicy } from "../../../policy/policy-loader.js";
 import { accountStatusTool } from "./account-status.js";
+import { clearPrintQueueTool } from "./clear-print-queue.js";
+import { expirePasswordTool } from "./expire-password.js";
 import { networkProbeTool } from "./network-probe.js";
 import { peripheralListTool } from "./peripheral-list.js";
 import { printQueueStatusTool } from "./print-queue-status.js";
+import { restartServiceTool } from "./restart-service.js";
 import { serviceStatusTool } from "./service-status.js";
+import { unlockAccountTool } from "./unlock-account.js";
 import type { RegisteredTool } from "./types.js";
 
 export type { RegisteredTool } from "./types.js";
 
-// contracts/tools.md: read-only tools only in this registry so far (US1, Phase 3).
-// State-changing tools (unlock_account, expire_password, clear_print_queue,
-// restart_service) join once approval-gated execution exists (Phase 5).
+// contracts/tools.md: all nine tools. The four state-changing ones
+// (unlock_account, expire_password, clear_print_queue, restart_service) route
+// through approval-gated execution (Phase 5) — consent-service raises an
+// approval request for any of these instead of executing directly; the read-
+// only five still execute immediately on consent.
 const REGISTERED_TOOLS: RegisteredTool[] = [
   accountStatusTool,
   networkProbeTool,
   printQueueStatusTool,
   peripheralListTool,
   serviceStatusTool,
+  unlockAccountTool,
+  expirePasswordTool,
+  clearPrintQueueTool,
+  restartServiceTool,
 ];
 
 /**

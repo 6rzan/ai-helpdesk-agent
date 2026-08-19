@@ -19,6 +19,7 @@ vi.mock("../../src/services/api", async () => {
 
 vi.mock("../../src/services/useEvents", () => ({
   useEvents: () => undefined,
+  useMyEvents: () => undefined,
 }));
 
 vi.mock("../../src/context/AuthContext", () => ({

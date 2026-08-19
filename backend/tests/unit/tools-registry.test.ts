@@ -10,9 +10,19 @@ describe("agent tool registry", () => {
     await stopTestApp();
   });
 
-  it("registers exactly the five read-only tools for US1", () => {
+  it("registers all nine tools from contracts/tools.md: five read-only, four state-changing", () => {
     const names = getRegisteredTools().map((tool) => tool.name);
-    expect(names).toEqual(["account_status", "network_probe", "print_queue_status", "peripheral_list", "service_status"]);
+    expect(names).toEqual([
+      "account_status",
+      "network_probe",
+      "print_queue_status",
+      "peripheral_list",
+      "service_status",
+      "unlock_account",
+      "expire_password",
+      "clear_print_queue",
+      "restart_service",
+    ]);
   });
 
   it("maps every registered tool 1:1 onto a real policy entry (FR-013)", () => {

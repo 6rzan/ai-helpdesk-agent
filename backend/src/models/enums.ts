@@ -57,6 +57,10 @@ export type ActionTier = (typeof ACTION_TIERS)[number];
 export const ACTION_OUTCOMES = ["succeeded", "failed", "timed_out", "attempted_unverified", "refused"] as const;
 export type ActionOutcome = (typeof ACTION_OUTCOMES)[number];
 
+// data-model.md §4 "Approval Request" state transitions (R6, FR-004a/b).
+export const APPROVAL_STATUSES = ["pending", "approved", "declined", "expired", "no_longer_applicable"] as const;
+export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
+
 // data-model.md §5 "Refusal reason vocabulary". Each maps to a specific requirement.
 export const REFUSAL_REASONS = [
   "no_matching_entry",

@@ -3,7 +3,7 @@ import { getPolicy } from "../../policy/policy-loader.js";
 import type { ActionPolicyEntry, TestEndpoint } from "../../policy/policy-schema.js";
 import { isRemediationAvailable } from "./availability-service.js";
 import { recordAction, type ApprovalReferenceInput, type ConsentRecordInput } from "./audit-service.js";
-import type { Actor, RefusalReason } from "../../models/enums.js";
+import type { Actor, ActionOutcome, RefusalReason } from "../../models/enums.js";
 
 // The default-deny policy engine (Constitution Principle II, FR-002, FR-006).
 // This module is the ONLY caller of the executor anywhere in the codebase —
@@ -109,9 +109,47 @@ export interface AttemptActionInput {
 }
 
 export interface AttemptActionResult {
-  outcome: "succeeded" | "failed" | "timed_out" | "refused";
+  outcome: "succeeded" | "failed" | "timed_out" | "attempted_unverified" | "refused";
   refusalReason?: RefusalReason;
   observedOutput: string | null;
+  actionRecordId?: Types.ObjectId;
+}
+
+type VerificationJudgement = "confirmed" | "contradicted" | "inconclusive";
+
+/**
+ * R10: interprets a verification read against the state-changing entry it is
+ * judging. Keyed by the state-changing entry's id (not the shared `verifiedBy`
+ * entry) because the same read-only check means different things for
+ * different actions — e.g. `account-status` output is read one way to confirm
+ * an unlock and another way to confirm a password expiry. Deliberately exact,
+ * substring-anchored matching on the known script output vocabulary — no
+ * inference, consistent with the rest of this module.
+ */
+function judgeVerification(policyEntryId: string, output: string | null): VerificationJudgement {
+  if (!output) {
+    return "inconclusive";
+  }
+  switch (policyEntryId) {
+    case "unlock-account":
+      if (/\blocked=false\b/.test(output)) return "confirmed";
+      if (/\blocked=true\b/.test(output)) return "contradicted";
+      return "inconclusive";
+    case "expire-password":
+      if (/\bpassword_change_required=true\b/.test(output)) return "confirmed";
+      if (/\bpassword_change_required=false\b/.test(output)) return "contradicted";
+      return "inconclusive";
+    case "clear-print-queue":
+      if (/\bqueue_empty=true\b/.test(output)) return "confirmed";
+      if (/^printer=/m.test(output)) return "contradicted";
+      return "inconclusive";
+    case "restart-service":
+      if (/\bis running\b/.test(output)) return "confirmed";
+      if (/\bis not running\b/.test(output)) return "contradicted";
+      return "inconclusive";
+    default:
+      return "inconclusive";
+  }
 }
 
 /**
@@ -214,7 +252,43 @@ export async function attemptAction(input: AttemptActionInput): Promise<AttemptA
   });
   const durationMs = Date.now() - startedAt;
 
-  await recordAction({
+  // R10: a state-changing action's own "succeeded" exit code is not trusted on
+  // its own — its named verification entry is read afterward, and only a
+  // confirming observation reports success. Read-only actions and any
+  // non-succeeded state-changing attempt skip this (nothing to verify).
+  let outcome: ActionOutcome = result.outcome;
+  let verification: { entryId: string; outcome: ActionOutcome; observedOutput: string | null } | null = null;
+
+  if (entry.tier === "state_changing" && result.outcome === "succeeded") {
+    if (!entry.verifiedBy) {
+      outcome = "attempted_unverified";
+    } else {
+      const verifyMatch = matchAction(entry.verifiedBy, input.arguments, endpoint.id);
+      if (!verifyMatch.ok) {
+        outcome = "attempted_unverified";
+        verification = { entryId: entry.verifiedBy, outcome: "refused", observedOutput: null };
+      } else {
+        const verifyResult = await executor({
+          endpoint: verifyMatch.endpoint,
+          command: verifyMatch.command,
+          timeoutMs: verifyMatch.entry.timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS,
+        });
+        verification = {
+          entryId: entry.verifiedBy,
+          outcome: verifyResult.outcome,
+          observedOutput: verifyResult.observedOutput,
+        };
+        if (verifyResult.outcome !== "succeeded") {
+          outcome = "attempted_unverified";
+        } else {
+          const judgement = judgeVerification(entry.id, verifyResult.observedOutput);
+          outcome = judgement === "confirmed" ? "succeeded" : judgement === "contradicted" ? "failed" : "attempted_unverified";
+        }
+      }
+    }
+  }
+
+  const record = await recordAction({
     actor: input.actor,
     ticketId: input.ticketId,
     conversationId: input.conversationId,
@@ -226,10 +300,11 @@ export async function attemptAction(input: AttemptActionInput): Promise<AttemptA
     endpointId: endpoint.id,
     consent: input.consent ?? null,
     approval: input.approval ?? null,
-    outcome: result.outcome,
+    outcome,
     observedOutput: result.observedOutput,
+    verification,
     durationMs,
   });
 
-  return { outcome: result.outcome, observedOutput: result.observedOutput };
+  return { outcome, observedOutput: result.observedOutput, actionRecordId: record._id };
 }

@@ -380,6 +380,29 @@ export interface RemediationAvailability {
   endpoints: RemediationEndpointAvailability[];
 }
 
+/** POST /tickets/:id/actions/consent response (contracts/api.md). Granting a
+ * read-only proposal resolves immediately; granting a state-changing one
+ * returns `pending_approval` with `approvalId` instead of executing (FR-004a). */
+export interface ConsentDecisionResult {
+  outcome: ActionOutcome | "pending_approval";
+  refusalReason?: RefusalReason;
+  observedOutput: string | null;
+  description: string;
+  approvalId?: string;
+}
+
+/** POST /staff/approvals/:id/{approve,decline} response. `execution` is only
+ * present when the decision actually ran the action (approved + won the race). */
+export interface DecideApprovalResult {
+  status: ApprovalStatus;
+  execution: {
+    outcome: ActionOutcome;
+    refusalReason?: RefusalReason;
+    observedOutput: string | null;
+    actionRecordId?: string;
+  } | null;
+}
+
 /** The agent's in-chat offer to run an approved action, before consent (US1). */
 export interface ActionProposal {
   ticketId: string;

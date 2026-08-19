@@ -15,6 +15,7 @@ import type { ConversationTurn } from "../llm/types.js";
 import { recordAction } from "./audit-service.js";
 import { isRemediationAvailable } from "./availability-service.js";
 import { attemptAction } from "./policy-engine.js";
+import { raiseApprovalRequest } from "./approval-service.js";
 
 // T043: proposal issuance and consent recording. This is the one place that
 // decides *whether to offer* a registered diagnostic at a guided step
@@ -198,17 +199,19 @@ export interface ConsentDecisionInput {
 }
 
 export interface ConsentDecisionResult {
-  outcome: "succeeded" | "failed" | "timed_out" | "attempted_unverified" | "refused";
+  outcome: "succeeded" | "failed" | "timed_out" | "attempted_unverified" | "refused" | "pending_approval";
   refusalReason?: RefusalReason;
   observedOutput: string | null;
   description: string;
+  approvalId?: string;
 }
 
 /**
  * Records an explicit, per-proposal consent decision (FR-004): granting a
  * read-only proposal executes it immediately through the policy engine;
- * granting a state-changing one is refused for now with `missing_approval`
- * (Phase 5's approval-service intercepts this case before it reaches here).
+ * granting a state-changing one raises an approval request instead of
+ * executing (FR-004a) — approval-service.decideApproval is the only path
+ * that ever lets a state-changing action reach the executor from there.
  * Declining is refused with `missing_consent` — recorded, nothing raised.
  */
 export async function recordConsent(input: ConsentDecisionInput): Promise<ConsentDecisionResult> {
@@ -277,6 +280,29 @@ export async function recordConsent(input: ConsentDecisionInput): Promise<Consen
     return { outcome: "refused", refusalReason: "missing_consent", observedOutput: null, description: proposal.description };
   }
 
+  const consentInput = { given: true as const, byAccountId, at: new Date(), messageId: decisionMessage._id };
+
+  if (proposal.tier === "state_changing") {
+    // FR-004a: a state-changing grant never reaches the executor from here —
+    // it raises a pending approval request and waits on a named staff
+    // decision (approval-service.decideApproval).
+    const request = await raiseApprovalRequest({
+      ticketId: ticket._id,
+      ticketReference: ticket.reference,
+      conversationId: ticket.conversationId,
+      reporterAccountId: byAccountId,
+      policyEntryId: proposal.policyEntryId,
+      arguments: proposal.arguments as Record<string, string>,
+      endpointId: proposal.endpointId,
+      description: proposal.description,
+      consent: consentInput,
+    });
+
+    await sendAgentReply(replyCtx, `That needs IT staff sign-off first — ${proposal.description}. I'll let you know as soon as it's decided.`);
+
+    return { outcome: "pending_approval", observedOutput: null, description: proposal.description, approvalId: request._id.toString() };
+  }
+
   const result = await attemptAction({
     actor: "user",
     ticketId: ticket._id,
@@ -285,7 +311,7 @@ export async function recordConsent(input: ConsentDecisionInput): Promise<Consen
     policyEntryId: proposal.policyEntryId,
     arguments: proposal.arguments as Record<string, string>,
     endpointId: proposal.endpointId,
-    consent: { given: true, byAccountId, at: new Date(), messageId: decisionMessage._id },
+    consent: consentInput,
   });
 
   const record = await mostRecentActionRecord(ticket._id);
@@ -301,7 +327,7 @@ export async function recordConsent(input: ConsentDecisionInput): Promise<Consen
   // without ever mutating step index or guide version pinning (FR-014).
   await sendAgentReply(replyCtx, chatReportFor(proposal.description, result.outcome, result.refusalReason));
 
-  if (result.outcome === "failed" || result.outcome === "timed_out") {
+  if (result.outcome === "failed" || result.outcome === "timed_out" || result.outcome === "attempted_unverified") {
     await escalateTicketForGuidance(replyCtx, ticket, "remediation_issue");
   }
 

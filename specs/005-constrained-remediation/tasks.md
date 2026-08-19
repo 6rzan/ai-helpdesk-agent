@@ -187,30 +187,30 @@ decline, an expiry, or a failed attempt each escalates with the attempt recorded
 
 ### Tests for User Story 3 (MANDATORY) ⚠️
 
-- [ ] T063 [P] [US3] Write failing unit tests for the approval lifecycle in `backend/tests/unit/approval-service.test.ts`: lazy expiry evaluated on list and on decide, expiry never meaning approval, and only `pending` requests transitioning (FR-004b, research R6)
-- [ ] T064 [P] [US3] Write a failing integration test in `backend/tests/integration/approval-concurrency.test.ts` proving two near-simultaneous decisions resolve with the first writer winning, the second receiving `APPROVAL_ALREADY_DECIDED`, exactly one execution, and both attempts attributed (edge case)
-- [ ] T065 [P] [US3] Write a failing integration test in `backend/tests/integration/approval-preconditions.test.ts` covering approval against a resolved ticket, against disabled remediation, and for an action already executed on that ticket — each closing as `no_longer_applicable` with no execution (edge case, R6)
-- [ ] T066 [P] [US3] Write a failing integration test in `backend/tests/integration/remediation-state-changing.test.ts` asserting **zero** state-changing executions without both a recorded consent and a recorded staff approval, including deliberate attempts to bypass the approval step (SC-005a)
-- [ ] T067 [P] [US3] Write a failing test in `backend/tests/integration/remediation-verification.test.ts` covering all three verification outcomes: verified success, verified contradiction reported as `failed` with escalation, and missing or failed verification reported as `attempted_unverified` with escalation (research R10, US3 AS5)
-- [ ] T068 [P] [US3] Write a failing test in `backend/tests/integration/remediation-password-disclosure.test.ts` asserting the unlock path genuinely unlocks the local test account, verifies before reporting, and always states plainly that this applied to the test account and not to any organisational directory (US3 AS7, FR-019)
-- [ ] T069 [P] [US3] Write a failing test asserting that when the employee declines consent, no approval request is raised at all and the decision is recorded (US3 AS4)
+- [X] T063 [P] [US3] Write failing unit tests for the approval lifecycle in `backend/tests/unit/approval-service.test.ts`: lazy expiry evaluated on list and on decide, expiry never meaning approval, and only `pending` requests transitioning (FR-004b, research R6)
+- [X] T064 [P] [US3] Write a failing integration test in `backend/tests/integration/approval-concurrency.test.ts` proving two near-simultaneous decisions resolve with the first writer winning, the second receiving `APPROVAL_ALREADY_DECIDED`, exactly one execution, and both attempts attributed (edge case)
+- [X] T065 [P] [US3] Write a failing integration test in `backend/tests/integration/approval-preconditions.test.ts` covering approval against a resolved ticket, against disabled remediation, and for an action already executed on that ticket — each closing as `no_longer_applicable` with no execution (edge case, R6)
+- [X] T066 [P] [US3] Write a failing integration test in `backend/tests/integration/remediation-state-changing.test.ts` asserting **zero** state-changing executions without both a recorded consent and a recorded staff approval, including deliberate attempts to bypass the approval step (SC-005a)
+- [X] T067 [P] [US3] Write a failing test in `backend/tests/integration/remediation-verification.test.ts` covering all three verification outcomes: verified success, verified contradiction reported as `failed` with escalation, and missing or failed verification reported as `attempted_unverified` with escalation (research R10, US3 AS5)
+- [X] T068 [P] [US3] Write a failing test in `backend/tests/integration/remediation-password-disclosure.test.ts` asserting the unlock path genuinely unlocks the local test account, verifies before reporting, and always states plainly that this applied to the test account and not to any organisational directory (US3 AS7, FR-019)
+- [X] T069 [P] [US3] Write a failing test asserting that when the employee declines consent, no approval request is raised at all and the decision is recorded (US3 AS4)
 
 ### Implementation for User Story 3
 
-- [ ] T070 [US3] Implement `backend/src/models/approval-request.ts` per data-model.md §4 including the embedded `ConsentRecord` and the five status values
-- [ ] T071 [US3] Implement `backend/src/services/remediation/approval-service.ts` with lazy expiry, atomic `findOneAndUpdate` on `status: "pending"`, and precondition re-checking at approval time, so T063, T064, and T065 pass
-- [ ] T072 [P] [US3] Add the three state-changing policy entries to `backend/src/policy/action-policy.json` (`unlock-account`, `expire-password`, `clear-print-queue`, `restart-service` with its enumerated service list) if not already authored in T014, each naming its `verifiedBy` entry
-- [ ] T073 [P] [US3] Implement the state-changing tools `unlock_account`, `expire_password`, `clear_print_queue`, and `restart_service` under `backend/src/services/agent/tools/`, each 1:1 with its policy entry (FR-013)
-- [ ] T074 [US3] Implement verification in `backend/src/services/remediation/policy-engine.ts`: after a state-changing execution, run the entry's `verifiedBy` read-only entry through the same policy path and derive the outcome from it, so T067 passes
-- [ ] T075 [US3] Extend `consent-service.ts` so consenting to a state-changing proposal raises an approval request rather than executing, so T066 passes
-- [ ] T076 [US3] Implement `GET /staff/approvals`, `POST /staff/approvals/:id/approve`, and `POST /staff/approvals/:id/decline` in `backend/src/api/routes/staff-approvals.ts` per contracts/api.md, writing a `StaffActionRecord` with action `approval_decision` on each decision
-- [ ] T077 [US3] Mount `staff-approvals.ts` in `backend/src/app.ts` behind the existing staff role guard
-- [ ] T078 [US3] Emit `approval_pending` and `approval_decided` from `backend/src/api/sse/event-bus.ts`
-- [ ] T079 [US3] Implement the three-stage in-chat state in `frontend/src/pages/ChatPage.tsx` — waiting on your consent, waiting on IT staff, then done or failed — so the employee is never unsure which is true (FR-004c, FR-006 of the IR)
-- [ ] T080 [US3] Implement the mandatory test-account disclosure string on the password path in `backend/src/services/remediation/`, with no em-dash, so T068 passes
-- [ ] T081 [US3] Implement the failed-action path: escalate carrying the action, its output, and the verification result, and never retry the same action (US3 AS5, FR-012)
-- [ ] T082 [US3] Implement the disable-during-execution behaviour: a running action completes and is audited, and nothing new starts because the availability gate is checked immediately before execution (edge case), with an integration test
-- [ ] T083 [US3] Handle the employee-contradicts-verification case: record both the verification result and the employee's contradiction on the ticket and escalate, without re-running the action (edge case)
+- [X] T070 [US3] Implement `backend/src/models/approval-request.ts` per data-model.md §4 including the embedded `ConsentRecord` and the five status values
+- [X] T071 [US3] Implement `backend/src/services/remediation/approval-service.ts` with lazy expiry, atomic `findOneAndUpdate` on `status: "pending"`, and precondition re-checking at approval time, so T063, T064, and T065 pass
+- [X] T072 [P] [US3] Add the three state-changing policy entries to `backend/src/policy/action-policy.json` (`unlock-account`, `expire-password`, `clear-print-queue`, `restart-service` with its enumerated service list) if not already authored in T014, each naming its `verifiedBy` entry
+- [X] T073 [P] [US3] Implement the state-changing tools `unlock_account`, `expire_password`, `clear_print_queue`, and `restart_service` under `backend/src/services/agent/tools/`, each 1:1 with its policy entry (FR-013)
+- [X] T074 [US3] Implement verification in `backend/src/services/remediation/policy-engine.ts`: after a state-changing execution, run the entry's `verifiedBy` read-only entry through the same policy path and derive the outcome from it, so T067 passes
+- [X] T075 [US3] Extend `consent-service.ts` so consenting to a state-changing proposal raises an approval request rather than executing, so T066 passes
+- [X] T076 [US3] Implement `GET /staff/approvals`, `POST /staff/approvals/:id/approve`, and `POST /staff/approvals/:id/decline` in `backend/src/api/routes/staff-approvals.ts` per contracts/api.md, writing a `StaffActionRecord` with action `approval_decision` on each decision
+- [X] T077 [US3] Mount `staff-approvals.ts` in `backend/src/app.ts` behind the existing staff role guard
+- [X] T078 [US3] Emit `approval_pending` and `approval_decided` from `backend/src/api/sse/event-bus.ts`
+- [X] T079 [US3] Implement the three-stage in-chat state in `frontend/src/pages/ChatPage.tsx` — waiting on your consent, waiting on IT staff, then done or failed — so the employee is never unsure which is true (FR-004c, FR-006 of the IR)
+- [X] T080 [US3] Implement the mandatory test-account disclosure string on the password path in `backend/src/services/remediation/`, with no em-dash, so T068 passes
+- [X] T081 [US3] Implement the failed-action path: escalate carrying the action, its output, and the verification result, and never retry the same action (US3 AS5, FR-012)
+- [X] T082 [US3] Implement the disable-during-execution behaviour: a running action completes and is audited, and nothing new starts because the availability gate is checked immediately before execution (edge case), with an integration test
+- [X] T083 [US3] Handle the employee-contradicts-verification case: record both the verification result and the employee's contradiction on the ticket and escalate, without re-running the action (edge case)
 
 **Checkpoint**: Objective O-3's automated half is complete and NFR-4's human oversight is exercised before the risky operation rather than reconstructed after it.
 

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { useEvents, useStaffEvents } from "../../src/services/useEvents";
+import { useEvents, useMyEvents, useStaffEvents } from "../../src/services/useEvents";
 
 type Listener = (event: MessageEvent<string>) => void;
 
@@ -122,6 +122,31 @@ describe("useStaffEvents", () => {
 
   it("does not connect when disabled", () => {
     renderHook(() => useStaffEvents(false, {}));
+
+    expect(RecordingEventSource.instances).toHaveLength(0);
+  });
+});
+
+describe("useMyEvents", () => {
+  it("connects to the account-scoped channel and fires approval handlers (T079/FR-004c)", () => {
+    const onApprovalPending = vi.fn();
+    const onApprovalDecided = vi.fn();
+    renderHook(() => useMyEvents(true, { onApprovalPending, onApprovalDecided }));
+
+    const source = RecordingEventSource.instances[0]!;
+    expect(source.url).toBe("/api/my/events");
+
+    const pending = { ticketId: "t1", approvalId: "ap1", description: "unlock account" };
+    const decided = { ticketId: "t1", approvalId: "ap1", status: "expired" };
+    source.emit("approval_pending", pending);
+    source.emit("approval_decided", decided);
+
+    expect(onApprovalPending).toHaveBeenCalledWith(pending);
+    expect(onApprovalDecided).toHaveBeenCalledWith(decided);
+  });
+
+  it("does not connect when disabled", () => {
+    renderHook(() => useMyEvents(false, {}));
 
     expect(RecordingEventSource.instances).toHaveLength(0);
   });

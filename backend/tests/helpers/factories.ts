@@ -4,8 +4,9 @@ import { Conversation } from "../../src/models/conversation.js";
 import { Message } from "../../src/models/message.js";
 import { Ticket, type TicketDoc } from "../../src/models/ticket.js";
 import { nextTicketReference } from "../../src/services/ticket/counter.js";
-import type { Actor, ActionOutcome, ActionTier, MessageAuthor, RefusalReason } from "../../src/models/enums.js";
+import type { Actor, ActionOutcome, ActionTier, ApprovalStatus, MessageAuthor, RefusalReason } from "../../src/models/enums.js";
 import { ActionRecord, type ActionRecordDoc } from "../../src/models/action-record.js";
+import { ApprovalRequest, type ApprovalRequestDoc } from "../../src/models/approval-request.js";
 import type { ActionPolicyEntry, ArgumentSpec, TestEndpoint } from "../../src/policy/policy-schema.js";
 
 let orgCounter = 0;
@@ -138,6 +139,38 @@ export async function createActionRecordFixture(options: ActionRecordFixtureOpti
   return doc as unknown as HydratedDocument<ActionRecordDoc>;
 }
 
-// Approval-request fixtures land alongside the ApprovalRequest model in
-// Phase 5 (T070) — see backend/tests/helpers/factories.ts history at that
-// commit for `createApprovalRequestFixture`.
+interface ApprovalRequestFixtureOptions {
+  ticketId: Types.ObjectId;
+  conversationId: Types.ObjectId;
+  byAccountId: Types.ObjectId;
+  messageId?: Types.ObjectId;
+  policyEntryId?: string;
+  arguments?: Record<string, string>;
+  endpointId?: string;
+  status?: ApprovalStatus;
+  expiresAt?: Date;
+}
+
+// T070/data-model.md §4: a pending (or already-decided, via `status`) approval
+// request, ready for approval-service.test.ts and the Phase 5 integration tests.
+export async function createApprovalRequestFixture(
+  options: ApprovalRequestFixtureOptions,
+): Promise<HydratedDocument<ApprovalRequestDoc>> {
+  const doc = await ApprovalRequest.create({
+    ticketId: options.ticketId,
+    conversationId: options.conversationId,
+    policyEntryId: options.policyEntryId ?? "unlock-account",
+    arguments: options.arguments ?? { username: "test-user-locked" },
+    endpointId: options.endpointId ?? "test-node-a",
+    consent: {
+      given: true,
+      byAccountId: options.byAccountId,
+      at: new Date(),
+      messageId: options.messageId ?? new Types.ObjectId(),
+    },
+    status: options.status ?? "pending",
+    raisedAt: new Date(),
+    expiresAt: options.expiresAt ?? new Date(Date.now() + 30 * 60_000),
+  });
+  return doc as unknown as HydratedDocument<ApprovalRequestDoc>;
+}

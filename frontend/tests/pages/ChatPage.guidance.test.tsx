@@ -24,6 +24,7 @@ vi.mock("../../src/services/useEvents", () => ({
   ) => {
     capturedHandlers = handlers;
   },
+  useMyEvents: () => undefined,
 }));
 
 vi.mock("../../src/context/AuthContext", () => ({
