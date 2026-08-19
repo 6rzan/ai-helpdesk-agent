@@ -1,3 +1,4 @@
+import { ActionRecordCard } from "./ActionRecordCard";
 import type { StaffTicketDetail, TransitionRecord } from "../lib/types";
 
 // Extracted from TicketDetailPage (T008): the ticket's history, staff activity,
@@ -35,6 +36,19 @@ export function TicketTimeline({ ticket }: TicketTimelineProps) {
               <HistoryRow key={`${record.at}-${i}`} record={record} />
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="rounded border border-gray-200 p-4">
+        <h2 className="text-sm font-semibold text-gray-700">Automated actions</h2>
+        {!ticket.actions || ticket.actions.length === 0 ? (
+          <p className="mt-1 text-sm text-gray-400">The agent has not attempted any actions on this ticket.</p>
+        ) : (
+          <div className="mt-1 flex flex-col gap-2">
+            {ticket.actions.map((record) => (
+              <ActionRecordCard key={record.id} record={record} />
+            ))}
+          </div>
         )}
       </section>
 

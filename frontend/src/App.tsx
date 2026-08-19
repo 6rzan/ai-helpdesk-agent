@@ -12,6 +12,9 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { UserProfilePage } from "./pages/staff/UserProfilePage";
 import { ImportPage } from "./pages/staff/ImportPage";
+import { ApprovalsPage } from "./pages/staff/ApprovalsPage";
+import { AuditPage } from "./pages/staff/AuditPage";
+import { RemediationPage } from "./pages/staff/RemediationPage";
 
 function AppLayout() {
   return (
@@ -44,6 +47,9 @@ export default function App() {
               <Route path="/staff/tickets/:reference" element={<TicketDetailPage />} />
               <Route path="/staff/users/:accountId/profile" element={<UserProfilePage />} />
               <Route path="/staff/import" element={<ImportPage />} />
+              <Route path="/staff/approvals" element={<ApprovalsPage />} />
+              <Route path="/staff/audit" element={<AuditPage />} />
+              <Route path="/staff/remediation" element={<RemediationPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

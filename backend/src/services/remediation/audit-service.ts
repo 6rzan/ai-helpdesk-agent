@@ -1,5 +1,6 @@
-import type { Types } from "mongoose";
+import { Types } from "mongoose";
 import { ActionRecord, type ActionRecordDoc } from "../../models/action-record.js";
+import { Ticket } from "../../models/ticket.js";
 import type { Actor, ActionOutcome, ActionTier, RefusalReason } from "../../models/enums.js";
 import { getPolicy } from "../../policy/policy-loader.js";
 
@@ -92,6 +93,69 @@ export function toActionRecordJson(record: ActionRecordDoc, ticketReference: str
     observedOutput: record.observedOutput ?? null,
     verification: record.verification ?? null,
     durationMs: record.durationMs ?? null,
+  };
+}
+
+export interface StaffActionFilters {
+  /** Ticket reference (e.g. "TICK-0001"), never a raw Mongo id (contracts/api.md rule 1). */
+  ticketId?: string | undefined;
+  endpointId?: string | undefined;
+  outcome?: ActionOutcome | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
+  page?: number | undefined;
+  pageSize?: number | undefined;
+}
+
+const DEFAULT_PAGE_SIZE = 25;
+const MAX_PAGE_SIZE = 100;
+
+/** T089/contracts/api.md "Action trail": the complete trail across all
+ * tickets, executed and refused together by default (FR-021), paginated and
+ * filterable by ticket, endpoint, outcome, and date. */
+export async function listActionsForStaff(filters: StaffActionFilters) {
+  const page = Math.max(1, filters.page ?? 1);
+  const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, filters.pageSize ?? DEFAULT_PAGE_SIZE));
+
+  const query: Record<string, unknown> = {};
+  if (filters.ticketId) {
+    const ticket = await Ticket.findOne({ reference: filters.ticketId });
+    // No matching ticket: an id that can never match a real ActionRecord,
+    // so the filter still behaves as "no results" rather than "no filter".
+    query.ticketId = ticket ? ticket._id : new Types.ObjectId();
+  }
+  if (filters.endpointId) {
+    query.endpointId = filters.endpointId;
+  }
+  if (filters.outcome) {
+    query.outcome = filters.outcome;
+  }
+  if (filters.from || filters.to) {
+    const at: Record<string, Date> = {};
+    if (filters.from) at.$gte = new Date(filters.from);
+    if (filters.to) at.$lte = new Date(filters.to);
+    query.at = at;
+  }
+
+  const [total, records] = await Promise.all([
+    ActionRecord.countDocuments(query),
+    ActionRecord.find(query)
+      .sort({ at: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize),
+  ]);
+
+  const ticketIds = [...new Set(records.map((r) => r.ticketId).filter((id): id is Types.ObjectId => Boolean(id)).map(String))];
+  const tickets = ticketIds.length > 0 ? await Ticket.find({ _id: { $in: ticketIds } }).select("reference") : [];
+  const referenceById = new Map(tickets.map((t) => [String(t._id), t.reference]));
+
+  return {
+    actions: records.map((record) =>
+      toActionRecordJson(record, record.ticketId ? (referenceById.get(String(record.ticketId)) ?? null) : null),
+    ),
+    total,
+    page,
+    pageSize,
   };
 }
 

@@ -276,17 +276,28 @@ export interface StaffActionFilters {
   outcome?: ActionRecord["outcome"];
   from?: string;
   to?: string;
+  page?: number;
+  pageSize?: number;
 }
 
-export function listStaffActions(filters: StaffActionFilters = {}): Promise<{ actions: ActionRecord[] }> {
+export interface StaffActionsPage {
+  actions: ActionRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export function listStaffActions(filters: StaffActionFilters = {}): Promise<StaffActionsPage> {
   const params = new URLSearchParams();
   if (filters.ticketId) params.set("ticketId", filters.ticketId);
   if (filters.endpointId) params.set("endpointId", filters.endpointId);
   if (filters.outcome) params.set("outcome", filters.outcome);
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
   const query = params.toString();
-  return request<{ actions: ActionRecord[] }>(`/staff/actions${query ? `?${query}` : ""}`);
+  return request<StaffActionsPage>(`/staff/actions${query ? `?${query}` : ""}`);
 }
 
 export function getRemediationAvailability(): Promise<RemediationAvailability> {

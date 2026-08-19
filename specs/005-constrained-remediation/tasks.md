@@ -230,24 +230,24 @@ working.
 
 ### Tests for User Story 4 (MANDATORY) ⚠️
 
-- [ ] T084 [P] [US4] Write a failing integration test in `backend/tests/integration/audit-trail-view.test.ts` asserting every executed **and** refused action appears with timestamp, actor, classified intent, exact action, target endpoint, authorisation, and outcome, and that filters by ticket, endpoint, and outcome work (US4 AS2, SC-002)
-- [ ] T085 [P] [US4] Write a failing integration test in `backend/tests/integration/remediation-toggle.test.ts` asserting a disable stops further executions immediately, that the employee is told the agent cannot act right now, that guidance and escalation still work, and that the disable is recorded as an attributed staff action (US4 AS4, SC-006)
-- [ ] T086 [P] [US4] Write a failing access-control test in `backend/tests/integration/access-control.test.ts` (extending the existing file) asserting non-staff accounts receive 403 with no action data in the body for `/staff/actions`, `/staff/approvals`, and `/staff/remediation` (US4 AS6)
-- [ ] T087 [P] [US4] Write a failing frontend test in `frontend/tests/components/AuditTrail.test.tsx` asserting the audit view renders **no** edit, delete, or overflow affordance, including disabled ones (Design Direction, US4 AS5)
-- [ ] T088 [P] [US4] Write a failing frontend test in `frontend/tests/components/ApprovalQueue.test.tsx` asserting each row shows ticket, exact action, target endpoint, reporter consent, and age, that approve requires a confirmation restating command and target, and that decline is not styled as destructive (Design Direction, US4 AS1)
+- [X] T084 [P] [US4] Write a failing integration test in `backend/tests/integration/audit-trail-view.test.ts` asserting every executed **and** refused action appears with timestamp, actor, classified intent, exact action, target endpoint, authorisation, and outcome, and that filters by ticket, endpoint, and outcome work (US4 AS2, SC-002)
+- [X] T085 [P] [US4] Write a failing integration test in `backend/tests/integration/remediation-toggle.test.ts` asserting a disable stops further executions immediately, that the employee is told the agent cannot act right now, that guidance and escalation still work, and that the disable is recorded as an attributed staff action (US4 AS4, SC-006)
+- [X] T086 [P] [US4] Write a failing access-control test in `backend/tests/integration/access-control.test.ts` (extending the existing file) asserting non-staff accounts receive 403 with no action data in the body for `/staff/actions`, `/staff/approvals`, and `/staff/remediation` (US4 AS6)
+- [X] T087 [P] [US4] Write a failing frontend test in `frontend/tests/components/AuditTrail.test.tsx` asserting the audit view renders **no** edit, delete, or overflow affordance, including disabled ones (Design Direction, US4 AS5)
+- [X] T088 [P] [US4] Write a failing frontend test in `frontend/tests/components/ApprovalQueue.test.tsx` asserting each row shows ticket, exact action, target endpoint, reporter consent, and age, that approve requires a confirmation restating command and target, and that decline is not styled as destructive (Design Direction, US4 AS1)
 
 ### Implementation for User Story 4
 
-- [ ] T089 [US4] Implement `GET /staff/actions` in `backend/src/api/routes/staff-actions.ts` with pagination and the ticket, endpoint, outcome, and date filters, returning executed and refused actions together by default, so T084 passes
-- [ ] T090 [US4] Implement `GET /staff/remediation` and `POST /staff/remediation/toggle` in `backend/src/api/routes/staff-remediation.ts`, writing a `StaffActionRecord` with action `remediation_toggle` on each change, so T085 passes
-- [ ] T091 [US4] Mount `staff-actions.ts` and `staff-remediation.ts` in `backend/src/app.ts` behind the staff role guard, and add a test asserting `PATCH`, `PUT`, and `DELETE` on `/staff/actions` and `/staff/actions/:id` fall through to the 404 handler (FR-010)
-- [ ] T092 [US4] Emit `remediation_availability_changed` from `backend/src/api/sse/event-bus.ts`
-- [ ] T093 [US4] Create `frontend/src/components/staff/ApprovalQueue.tsx` as a decision queue with a confirmation step on approve, decline in neutral outline rather than red, and a designed empty state reading as a good outcome, so T088 passes
-- [ ] T094 [US4] Create `frontend/src/components/staff/AuditTrail.tsx` over `ActionRecordCard`, with the ticket, endpoint, and outcome filters and no mutation affordance anywhere, so T087 passes
-- [ ] T095 [US4] Create `frontend/src/components/staff/RemediationControls.tsx` with the asymmetric kill switch — off in one click, on behind a confirmation — plus the persistent non-dismissible disabled banner (Design Direction)
-- [ ] T096 [US4] Add the approval-queue entry point with its pending count indicator to `frontend/src/pages/DashboardPage.tsx`, and route the audit view and remediation controls through `frontend/src/components/RouteGuards.tsx`
-- [ ] T097 [US4] Interleave action records into the existing timeline in `frontend/src/components/TicketTimeline.tsx` alongside conversation, guided steps, and staff actions, building **no** second timeline and duplicating **no** existing staff-action entry (US4 AS3, FR-010)
-- [ ] T098 [US4] Add the new staff routes to `frontend/src/App.tsx` and verify staff retain takeover, reassign, and resolve authority on tickets the agent acted upon (FR-022) with an integration test
+- [X] T089 [US4] Implement `GET /staff/actions` in `backend/src/api/routes/staff-actions.ts` with pagination and the ticket, endpoint, outcome, and date filters, returning executed and refused actions together by default, so T084 passes
+- [X] T090 [US4] Implement `GET /staff/remediation` and `POST /staff/remediation/toggle` in `backend/src/api/routes/staff-remediation.ts`, writing a `StaffActionRecord` with action `remediation_toggle` on each change, so T085 passes
+- [X] T091 [US4] Mount `staff-actions.ts` and `staff-remediation.ts` in `backend/src/app.ts` behind the staff role guard, and add a test asserting `PATCH`, `PUT`, and `DELETE` on `/staff/actions` and `/staff/actions/:id` fall through to the 404 handler (FR-010)
+- [X] T092 [US4] Emit `remediation_availability_changed` from `backend/src/api/sse/event-bus.ts`
+- [X] T093 [US4] Create `frontend/src/components/staff/ApprovalQueue.tsx` as a decision queue with a confirmation step on approve, decline in neutral outline rather than red, and a designed empty state reading as a good outcome, so T088 passes
+- [X] T094 [US4] Create `frontend/src/components/staff/AuditTrail.tsx` over `ActionRecordCard`, with the ticket, endpoint, and outcome filters and no mutation affordance anywhere, so T087 passes
+- [X] T095 [US4] Create `frontend/src/components/staff/RemediationControls.tsx` with the asymmetric kill switch — off in one click, on behind a confirmation — plus the persistent non-dismissible disabled banner (Design Direction)
+- [X] T096 [US4] Add the approval-queue entry point with its pending count indicator to `frontend/src/pages/DashboardPage.tsx`, and route the audit view and remediation controls through `frontend/src/components/RouteGuards.tsx`
+- [X] T097 [US4] Interleave action records into the existing timeline in `frontend/src/components/TicketTimeline.tsx` alongside conversation, guided steps, and staff actions, building **no** second timeline and duplicating **no** existing staff-action entry (US4 AS3, FR-010)
+- [X] T098 [US4] Add the new staff routes to `frontend/src/App.tsx` and verify staff retain takeover, reassign, and resolve authority on tickets the agent acted upon (FR-022) with an integration test
 
 **Checkpoint**: automated actions are inspectable, decidable, and stoppable, which is what makes them usable as evidence.
 

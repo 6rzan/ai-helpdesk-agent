@@ -227,6 +227,10 @@ export interface StaffTicketDetail extends TicketDetail {
     details: Record<string, unknown>;
     at: string;
   }[];
+  /** T097: the agent's own action records for this ticket (executed AND
+   * refused), interleaved into the timeline alongside conversation, guided
+   * steps, and staff actions (data-model.md §5, US4 AS2). */
+  actions?: ActionRecord[];
   profile: SupportProfileView | null;
 }
 

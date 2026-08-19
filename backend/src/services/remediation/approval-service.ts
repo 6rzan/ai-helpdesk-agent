@@ -304,12 +304,14 @@ export async function decideApproval(input: DecideApprovalInput): Promise<Decide
   if (ticket) {
     const description = entry?.description ?? claimed.policyEntryId;
     const replyCtx = { sessionId: ticketReference, conversationId: ticket.conversationId, reporterId: ticket.reporterId, text: "" };
-    publishEvent(replyCtx.sessionId, "action_recorded", {
+    const actionRecordedPayload = {
       ticketId: ticketReference,
       actionRecordId: result.actionRecordId?.toString() ?? null,
       outcome: result.outcome,
       summary: `${result.outcome}: ${description}`,
-    });
+    };
+    publishEvent(replyCtx.sessionId, "action_recorded", actionRecordedPayload);
+    publishStaffEvent("action_recorded", actionRecordedPayload);
     const report = chatReportForApproval(description, result.outcome, input.staff.displayName);
     const withDisclosure = isPasswordPathEntry(claimed.policyEntryId) ? `${report} ${TEST_ACCOUNT_DISCLOSURE}` : report;
     await sendAgentReply(replyCtx, withDisclosure);

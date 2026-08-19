@@ -6,7 +6,7 @@ import type { RefusalReason } from "../../models/enums.js";
 import { Message } from "../../models/message.js";
 import { Ticket, type TicketDoc } from "../../models/ticket.js";
 import { getPolicy } from "../../policy/policy-loader.js";
-import { publishEvent } from "../../api/sse/event-bus.js";
+import { publishEvent, publishStaffEvent } from "../../api/sse/event-bus.js";
 import { runAgentLoop, type Planner, type ToolLike } from "../agent/agent-loop.js";
 import { getToolsForGuideStep, type RegisteredTool } from "../agent/tools/index.js";
 import { escalateTicketForGuidance, sendAgentReply } from "../conversation/conversation-guidance.js";
@@ -315,12 +315,16 @@ export async function recordConsent(input: ConsentDecisionInput): Promise<Consen
   });
 
   const record = await mostRecentActionRecord(ticket._id);
-  publishEvent(input.sessionId, "action_recorded", {
+  // contracts/api.md "Server-sent events": action_recorded reaches both the
+  // employee (their own chat session) and staff (live audit/dashboard).
+  const actionRecordedPayload = {
     ticketId: ticket.reference,
     actionRecordId: record?._id.toString() ?? null,
     outcome: result.outcome,
     summary: describeOutcome(proposal.description, result.outcome, result.refusalReason),
-  });
+  };
+  publishEvent(input.sessionId, "action_recorded", actionRecordedPayload);
+  publishStaffEvent("action_recorded", actionRecordedPayload);
 
   // US1 AS1/AS3: the diagnostic's result always reaches the transcript in
   // plain language (research.md R5 "Observe") — it informs the guided flow

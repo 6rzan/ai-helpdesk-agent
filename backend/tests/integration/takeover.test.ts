@@ -8,6 +8,7 @@ import { createTicketFixture } from "../helpers/factories.js";
 import { Reporter } from "../../src/models/reporter.js";
 import { Ticket } from "../../src/models/ticket.js";
 import { StaffActionRecord } from "../../src/models/staff-action.js";
+import { ActionRecord } from "../../src/models/action-record.js";
 
 let ctx: TestContext;
 
@@ -201,5 +202,42 @@ describe("TC-US2 takeover and assignment", () => {
     const { reference } = await createTicketFixture({ status });
     const res = await request(ctx.app).post(`/api/staff/tickets/${reference}/takeover`).set("Cookie", staff.cookie).send();
     expect(res.status).toBe(200);
+  });
+
+  // T098/FR-022: an agent having acted on a ticket is not a lock — staff keep
+  // full takeover, reassign, and resolve authority regardless.
+  it("TC-US2-10: staff retain takeover, reassign, and resolve authority on a ticket the agent acted upon", async () => {
+    const staffA = await seedStaff({ displayName: "Acting Owner" });
+    const staffB = await seedStaff({ displayName: "Handoff Target" });
+    const { reference, ticket } = await createTicketFixture({ status: "in_progress", handlingMode: "automated" });
+
+    await ActionRecord.create({
+      actor: "agent",
+      ticketId: ticket._id,
+      classifiedIntent: "check service status",
+      requestedAction: "sudo /usr/local/bin/service-status.sh widget-service",
+      outcome: "succeeded",
+    });
+
+    const takeover = await request(ctx.app)
+      .post(`/api/staff/tickets/${reference}/takeover`)
+      .set("Cookie", staffA.cookie)
+      .send();
+    expect(takeover.status).toBe(200);
+    expect(takeover.body.ticket.assignee.displayName).toBe("Acting Owner");
+
+    const reassign = await request(ctx.app)
+      .post(`/api/staff/tickets/${reference}/assignee`)
+      .set("Cookie", staffA.cookie)
+      .send({ toAccountId: String(staffB.account._id) });
+    expect(reassign.status).toBe(200);
+    expect(reassign.body.ticket.assignee.displayName).toBe("Handoff Target");
+
+    const resolve = await request(ctx.app)
+      .post(`/api/staff/tickets/${reference}/status`)
+      .set("Cookie", staffB.cookie)
+      .send({ status: "resolved" });
+    expect(resolve.status).toBe(200);
+    expect(resolve.body.ticket.status).toBe("resolved");
   });
 });

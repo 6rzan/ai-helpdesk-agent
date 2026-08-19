@@ -8,6 +8,7 @@ import type { UserAccountDoc } from "../../models/user-account.js";
 import type { TicketStatus } from "../../models/enums.js";
 import { applyStateTransition, toTicketDetail } from "../ticket/ticket-service.js";
 import { publishStaffEvent } from "../../api/sse/event-bus.js";
+import { getActionsForTicket, toActionRecordJson } from "../remediation/audit-service.js";
 
 export interface StaffTicketFilters {
   status?: string | undefined;
@@ -64,7 +65,11 @@ export async function getStaffTicketDetail(reference: string) {
   }
   const detail = await toTicketDetail(ticket as unknown as TicketDoc);
   const profile = ticket.reporterAccountId ? await loadProfile(ticket.reporterAccountId) : null;
-  const actions = await StaffActionRecord.find({ targetType: "ticket", targetId: ticket._id }).sort({ at: 1 });
+  const staffActionRecords = await StaffActionRecord.find({ targetType: "ticket", targetId: ticket._id }).sort({ at: 1 });
+  // T097: the agent's own action records (executed AND refused), interleaved
+  // into the timeline alongside conversation, guided steps, and staff actions
+  // (data-model.md §5, US4 AS2).
+  const actionRecords = await getActionsForTicket(ticket._id);
   return {
     ...detail,
     reporterAccountId: ticket.reporterAccountId ? String(ticket.reporterAccountId) : null,
@@ -83,13 +88,14 @@ export async function getStaffTicketDetail(reference: string) {
       at: entry.at,
       kind: entry.kind,
     })),
-    staffActions: actions.map((action) => ({
+    staffActions: staffActionRecords.map((action) => ({
       action: action.action,
       staffId: String(action.staffId),
       staffName: action.staffName,
       details: action.details,
       at: action.at,
     })),
+    actions: actionRecords.map((record) => toActionRecordJson(record, ticket.reference)),
     profile,
   };
 }
