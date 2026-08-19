@@ -19,6 +19,7 @@ import { staffRosterRouter } from "./api/routes/staff-roster.js";
 import { staffTicketsRouter } from "./api/routes/staff-tickets.js";
 import { staffUsersRouter } from "./api/routes/staff-users.js";
 import { staffImportsRouter } from "./api/routes/staff-imports.js";
+import { staffMetricsRouter } from "./api/routes/staff-metrics.js";
 import { testSupportRouter } from "./api/routes/test-support.js";
 import { ticketsRouter } from "./api/routes/tickets.js";
 import { transcriptionsRouter } from "./api/routes/transcriptions.js";
@@ -47,6 +48,7 @@ export function createApp(): Express {
   app.use("/api", staffApprovalsRouter);
   app.use("/api", staffActionsRouter);
   app.use("/api", staffRemediationRouter);
+  app.use("/api", staffMetricsRouter);
   app.use("/api", staffUsersRouter);
   app.use("/api", staffImportsRouter);
   app.use("/api", staffRosterRouter);

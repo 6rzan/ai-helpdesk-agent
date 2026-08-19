@@ -264,18 +264,18 @@ that a non-staff account cannot reach the surface.
 
 ### Tests for User Story 5 (MANDATORY) ⚠️
 
-- [ ] T099 [P] [US5] Write a failing integration test in `backend/tests/integration/metrics.test.ts` seeding a known mix and asserting every figure matches an independently counted expectation exactly, for each period preset (US5 AS1, SC-009)
-- [ ] T100 [P] [US5] Write a failing test asserting an empty period returns `hasData: false` with empty groupings rather than a zero-filled shape, and that an out-of-set `period` returns `METRICS_PERIOD_INVALID` (US5 AS3)
-- [ ] T101 [P] [US5] Write a failing frontend test in `frontend/tests/components/MetricsSummary.test.tsx` asserting the no-data state states plainly there is nothing to report, that figures use tabular numerals, and that no numeral is animated (Design Direction, US5 AS3)
+- [X] T099 [P] [US5] Write a failing integration test in `backend/tests/integration/metrics.test.ts` seeding a known mix and asserting every figure matches an independently counted expectation exactly, for each period preset (US5 AS1, SC-009)
+- [X] T100 [P] [US5] Write a failing test asserting an empty period returns `hasData: false` with empty groupings rather than a zero-filled shape, and that an out-of-set `period` returns `METRICS_PERIOD_INVALID` (US5 AS3)
+- [X] T101 [P] [US5] Write a failing frontend test in `frontend/tests/components/MetricsSummary.test.tsx` asserting the no-data state states plainly there is nothing to report, that figures use tabular numerals, and that no numeral is animated (Design Direction, US5 AS3)
 
 ### Implementation for User Story 5
 
-- [ ] T102 [US5] Implement `backend/src/services/metrics/metrics-service.ts` with the aggregation pipelines and the exact metric definitions from research.md R8, including median rather than mean resolution time, computed on demand with no cache, so T099 passes
-- [ ] T103 [US5] Implement `GET /staff/metrics` in `backend/src/api/routes/staff-metrics.ts` with the four period presets, so T100 passes
-- [ ] T104 [US5] Mount `staff-metrics.ts` in `backend/src/app.ts` behind the staff role guard, with an access test asserting 403 for non-staff (US5 AS4)
-- [ ] T105 [US5] Load the `dataviz` skill, then create `frontend/src/components/staff/MetricsSummary.tsx` as stat tiles plus labelled horizontal bar rows backed by real text values, with **no** charting dependency and no filled-track progress bars (Design Direction, research R12)
-- [ ] T106 [US5] Implement the period selector so figures update in place without a manual reload (US5 AS2), with a frontend test
-- [ ] T107 [US5] Place the metrics band on `frontend/src/pages/DashboardPage.tsx` alongside the ticket list per IR §1.5, keeping the page under the 500-line ceiling by extracting rather than inflating
+- [X] T102 [US5] Implement `backend/src/services/metrics/metrics-service.ts` with the aggregation pipelines and the exact metric definitions from research.md R8, including median rather than mean resolution time, computed on demand with no cache, so T099 passes
+- [X] T103 [US5] Implement `GET /staff/metrics` in `backend/src/api/routes/staff-metrics.ts` with the four period presets, so T100 passes
+- [X] T104 [US5] Mount `staff-metrics.ts` in `backend/src/app.ts` behind the staff role guard, with an access test asserting 403 for non-staff (US5 AS4)
+- [X] T105 [US5] Load the `dataviz` skill, then create `frontend/src/components/staff/MetricsSummary.tsx` as stat tiles plus labelled horizontal bar rows backed by real text values, with **no** charting dependency and no filled-track progress bars (Design Direction, research R12)
+- [X] T106 [US5] Implement the period selector so figures update in place without a manual reload (US5 AS2), with a frontend test
+- [X] T107 [US5] Place the metrics band on `frontend/src/pages/DashboardPage.tsx` alongside the ticket list per IR §1.5, keeping the page under the 500-line ceiling by extracting rather than inflating
 
 **Checkpoint**: Objective O-4's workload-reduction claim becomes measurable rather than asserted.
 

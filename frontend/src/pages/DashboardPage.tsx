@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { listApprovals, listStaffTickets } from "../services/api";
 import { useStaffEvents } from "../services/useEvents";
 import { TicketList } from "../components/staff/TicketList";
+import { MetricsBand } from "../components/staff/MetricsBand";
 import type { IssueCategory, StaffTicketFilters, StaffTicketRow, TicketStatus } from "../lib/types";
 
 export function DashboardPage() {
@@ -85,6 +86,10 @@ export function DashboardPage() {
           </Link>
         </nav>
       </header>
+
+      <div className="mb-4">
+        <MetricsBand />
+      </div>
 
       <TicketList
         status={status}
