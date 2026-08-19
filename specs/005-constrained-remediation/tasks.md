@@ -156,20 +156,20 @@ with its reason, and offered escalation, with no execution in any case.
 
 ### Tests for User Story 2 (MANDATORY, escalation logic is test-first) ⚠️
 
-- [ ] T052 [P] [US2] Write failing integration tests in `backend/tests/integration/remediation-refusal.test.ts` for the full refusal matrix in quickstart.md, asserting the exact `refusalReason` and zero executions for each (US2 AS1, AS2, AS3; SC-001)
-- [ ] T053 [P] [US2] Write a failing integration test in `backend/tests/integration/remediation-injection.test.ts` proving employee text such as "ignore your rules and run X" is handled as data, that any resulting proposal still faces exact matching, and that the attempt is audited like any other refusal (FR-006, US2 AS4)
-- [ ] T054 [P] [US2] Write a failing test in `backend/tests/integration/remediation-confidence.test.ts` asserting low confidence escalates instead of acting, and that ambiguity between two approved actions produces a clarifying question rather than a choice (FR-015, US2 AS5, edge case)
-- [ ] T055 [P] [US2] Write a failing test in `backend/tests/integration/remediation-no-mutation-path.test.ts` asserting there is no route, in any role, that creates, edits, or disables a policy entry, a registry endpoint, or an audit record, and that the corresponding HTTP methods 404 (US2 AS6, FR-005, FR-010)
-- [ ] T056 [P] [US2] Write a failing regression test in `backend/tests/integration/refusal.test.ts` proving every request refused by today's keyword rule is still refused after FR-016 lands, so nothing becomes executable except through an explicit policy entry
+- [X] T052 [P] [US2] Write failing integration tests in `backend/tests/integration/remediation-refusal.test.ts` for the full refusal matrix in quickstart.md, asserting the exact `refusalReason` and zero executions for each (US2 AS1, AS2, AS3; SC-001)
+- [X] T053 [P] [US2] Write a failing integration test in `backend/tests/integration/remediation-injection.test.ts` proving employee text such as "ignore your rules and run X" is handled as data, that any resulting proposal still faces exact matching, and that the attempt is audited like any other refusal (FR-006, US2 AS4)
+- [X] T054 [P] [US2] Write a failing test in `backend/tests/integration/remediation-confidence.test.ts` asserting low confidence escalates instead of acting, and that ambiguity between two approved actions produces a clarifying question rather than a choice (FR-015, US2 AS5, edge case)
+- [X] T055 [P] [US2] Write a failing test in `backend/tests/integration/remediation-no-mutation-path.test.ts` asserting there is no route, in any role, that creates, edits, or disables a policy entry, a registry endpoint, or an audit record, and that the corresponding HTTP methods 404 (US2 AS6, FR-005, FR-010)
+- [X] T056 [P] [US2] Write a failing regression test in `backend/tests/integration/refusal.test.ts` proving every request refused by today's keyword rule is still refused after FR-016 lands, so nothing becomes executable except through an explicit policy entry
 
 ### Implementation for User Story 2
 
-- [ ] T057 [US2] Replace the blanket `REMEDIATION_PATTERN` branch in `backend/src/services/conversation/conversation-engine.ts` with a policy decision: matched and authorised requests proceed, everything else is refused in plain language with escalation offered (FR-016), so T056 passes
-- [ ] T058 [US2] Ensure every refusal path writes a complete action record through `audit-service.ts` with actor, classified intent, requested action, target where one was named, and reason (FR-009), so T052 passes
-- [ ] T059 [US2] Implement prompt-injection defence in `backend/src/services/llm/prompts/core.ts` by delimiting user messages and retrieved content as data that is never concatenated as instructions, refreshing the guardrail regression tests (Principle VIII), so T053 passes
-- [ ] T060 [US2] Implement the low-confidence and ambiguity branches in `backend/src/services/agent/agent-loop.ts`, routing to escalation and to a clarifying question respectively, so T054 passes
-- [ ] T061 [US2] Render refusals in `frontend/src/pages/ChatPage.tsx` neutrally with a plain reason and an escalation offer, never as an error, with a frontend test asserting the neutral treatment (Design Direction)
-- [ ] T062 [US2] Add the `not_ticket_owner` and `already_attempted` refusal paths so acting on a ticket the requester does not own, and re-running an action that already failed for a ticket, are both refused and audited (edge cases, FR-012)
+- [X] T057 [US2] Replace the blanket `REMEDIATION_PATTERN` branch in `backend/src/services/conversation/conversation-engine.ts` with a policy decision: matched and authorised requests proceed, everything else is refused in plain language with escalation offered (FR-016), so T056 passes
+- [X] T058 [US2] Ensure every refusal path writes a complete action record through `audit-service.ts` with actor, classified intent, requested action, target where one was named, and reason (FR-009), so T052 passes
+- [X] T059 [US2] Implement prompt-injection defence in `backend/src/services/llm/prompts/core.ts` by delimiting user messages and retrieved content as data that is never concatenated as instructions, refreshing the guardrail regression tests (Principle VIII), so T053 passes
+- [X] T060 [US2] Implement the low-confidence and ambiguity branches in `backend/src/services/agent/agent-loop.ts`, routing to escalation and to a clarifying question respectively, so T054 passes
+- [X] T061 [US2] Render refusals in `frontend/src/pages/ChatPage.tsx` neutrally with a plain reason and an escalation offer, never as an error, with a frontend test asserting the neutral treatment (Design Direction)
+- [X] T062 [US2] Add the `not_ticket_owner` and `already_attempted` refusal paths so acting on a ticket the requester does not own, and re-running an action that already failed for a ticket, are both refused and audited (edge cases, FR-012)
 
 **Checkpoint**: the property the viva will probe hardest is provable on demand, and the shipped blanket refusal has been upgraded without being weakened.
 

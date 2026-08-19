@@ -93,6 +93,18 @@ export async function proposeActionForStep(ctx: StepProposalContext): Promise<St
   );
   const untried = candidates.filter((tool) => !failedPolicyEntryIds.has(tool.policyEntryId));
   if (untried.length === 0) {
+    // FR-012 edge case: every candidate for this step already failed for
+    // this ticket. Never re-offer it silently -- the refusal is audited like
+    // any other, not just swallowed as "nothing to propose" (FR-009).
+    await recordAction({
+      actor: "agent",
+      ticketId: ctx.ticket._id,
+      conversationId: ctx.conversationId,
+      classifiedIntent: ctx.stepInstruction,
+      requestedAction: candidates.map((tool) => tool.policyEntryId).join(", "),
+      outcome: "refused",
+      refusalReason: "already_attempted",
+    });
     return null;
   }
 

@@ -30,4 +30,21 @@ describe("MessageBubble", () => {
 
     expect(container.firstElementChild).toHaveClass(expectedClass);
   });
+
+  // FR-016/T061 Design Direction: a policy refusal is a normal agent reply,
+  // never an error state. It must render with the same neutral bubble as any
+  // other agent message -- no red/amber "error" treatment keyed off content.
+  it("renders a policy refusal in the plain agent style, never as an error", () => {
+    const { container } = render(
+      <MessageBubble
+        author="agent"
+        text="I don't have an approved way to do that myself, but I can report it and bring in IT staff who can — just ask me to escalate it and I will."
+      />,
+    );
+
+    const bubble = container.firstElementChild;
+    expect(bubble).toHaveClass("self-start", "bg-gray-100", "text-gray-900");
+    expect(bubble).not.toHaveClass("border-red-200", "bg-red-50", "text-red-900");
+    expect(bubble?.getAttribute("role")).not.toBe("alert");
+  });
 });

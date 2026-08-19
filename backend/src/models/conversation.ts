@@ -48,6 +48,39 @@ const conversationSchema = new Schema(
       ),
       default: null,
     },
+    // FR-015: set once, right after asking which of two approved actions the
+    // employee meant. The next message either resolves it or, if still
+    // unclear, escalates rather than the agent choosing for them.
+    pendingAmbiguousRemediation: {
+      type: new Schema(
+        {
+          candidates: {
+            type: [
+              new Schema(
+                {
+                  description: { type: String, required: true },
+                  attempt: {
+                    type: new Schema(
+                      {
+                        policyEntryId: { type: String, required: true },
+                        arguments: { type: Schema.Types.Mixed, default: {} },
+                        endpointId: { type: String, required: true },
+                      },
+                      { _id: false },
+                    ),
+                    required: true,
+                  },
+                },
+                { _id: false },
+              ),
+            ],
+            required: true,
+          },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
   },
   { timestamps: true },
 );
