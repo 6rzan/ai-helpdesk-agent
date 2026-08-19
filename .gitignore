@@ -40,6 +40,10 @@ coverage/
 *.pem
 *.key
 
+# Remediation SSH key material (Principle VI) — never committed
+.keys/
+backend/test-endpoints/*/authorized_keys
+
 # Logs
 *.log
 

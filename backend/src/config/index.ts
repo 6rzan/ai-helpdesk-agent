@@ -29,6 +29,26 @@ export const envSchema = z.object({
     .optional(),
   CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.7),
   MAX_CLARIFICATION_ROUNDS: z.coerce.number().int().min(0).default(2),
+  // R4: ordered fallback chain, mirroring STT_PROVIDERS. Absent means "derive from
+  // LLM_PROVIDER", so an existing single-provider .env keeps working unchanged (FR-024).
+  LLM_PROVIDERS: z.string().min(1).optional(),
+  // R5/FR-011: hard per-turn iteration cap on the agent's bounded plan -> act -> observe loop.
+  AGENT_MAX_STEPS: z.coerce.number().int().positive().default(3),
+  // Global posture for automated remediation (FR-8, NFR-4). Off until deliberately enabled.
+  // z.coerce.boolean() would treat the string "false" as truthy, so this parses explicitly.
+  REMEDIATION_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => v === "true")
+    .pipe(z.boolean()),
+  // Private key for SSH access to registered test endpoints. Never committed (Principle VI);
+  // see .gitignore's `.keys/` entry.
+  REMEDIATION_SSH_KEY_PATH: z.string().optional(),
+  REMEDIATION_SSH_KEY_PASSPHRASE: z.string().optional(),
+  REMEDIATION_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(5_000),
+  REMEDIATION_COMMAND_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
+  // R6: pending approval requests expire lazily after this many minutes.
+  REMEDIATION_APPROVAL_TTL_MINUTES: z.coerce.number().int().positive().default(30),
   SESSION_INACTIVITY_MINUTES: z.coerce.number().int().positive().default(30),
   AUTH_SESSION_TTL_MINUTES: z.coerce.number().int().positive().default(60 * 24 * 7),
   STT_PROVIDERS: z.string().min(1).default("local"),

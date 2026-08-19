@@ -1,0 +1,19 @@
+# Designated isolated test endpoints for constrained automated remediation
+# (research.md R1). Never run this against anything but the local demo machine.
+#
+# Do not run `docker compose build`/`up` directly — use reset.ps1, which
+# generates the SSH keypairs these images need before building.
+services:
+  test-node-a:
+    build: ./node-a
+    container_name: test-node-a
+    ports:
+      - "2201:22"
+    restart: "no"
+
+  test-node-b:
+    build: ./node-b
+    container_name: test-node-b
+    ports:
+      - "2202:22"
+    restart: "no"

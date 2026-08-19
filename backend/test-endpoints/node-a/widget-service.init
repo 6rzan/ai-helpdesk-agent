@@ -1,0 +1,46 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          widget-service
+# Short-Description: Dummy approved service for the service-status/restart-service
+#                     remediation actions (research.md R11). Not a real product;
+#                     it exists only so those actions have something genuine to
+#                     observe and change on the endpoint.
+### END INIT INFO
+
+PIDFILE=/var/run/widget-service.pid
+DAEMON=/usr/local/bin/widget-service-daemon.sh
+
+start() {
+    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+        echo "widget-service is already running"
+        return 0
+    fi
+    "$DAEMON" &
+    echo $! > "$PIDFILE"
+    echo "widget-service started"
+}
+
+stop() {
+    if [ -f "$PIDFILE" ]; then
+        kill "$(cat "$PIDFILE")" 2>/dev/null
+        rm -f "$PIDFILE"
+    fi
+    echo "widget-service stopped"
+}
+
+status() {
+    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+        echo "widget-service is running, pid $(cat "$PIDFILE")"
+        exit 0
+    fi
+    echo "widget-service is not running"
+    exit 3
+}
+
+case "$1" in
+    start) start ;;
+    stop) stop ;;
+    restart) stop; start ;;
+    status) status ;;
+    *) echo "Usage: $0 {start|stop|restart|status}"; exit 1 ;;
+esac

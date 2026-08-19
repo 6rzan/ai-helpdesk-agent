@@ -1,0 +1,3 @@
+# Least-privilege: the remediation SSH user may run exactly these scripts as
+# root, and nothing else. No shell, no wildcard, no interactive sudo (research.md R2).
+remediation ALL=(root) NOPASSWD: /usr/local/bin/account-status.sh, /usr/local/bin/unlock-account.sh, /usr/local/bin/expire-password.sh, /usr/local/bin/service-status.sh, /usr/local/bin/restart-service.sh

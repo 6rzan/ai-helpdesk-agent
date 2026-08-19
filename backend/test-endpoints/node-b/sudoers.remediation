@@ -1,0 +1,6 @@
+# Least-privilege: the remediation SSH user may run exactly these scripts as
+# root, and nothing else (research.md R2). print-queue-status and clear-print-queue
+# use `lpstat`/`cancel` against CUPS's own socket, which the remediation user
+# already has permission for via the lpadmin group, so no sudo entries are needed
+# here today; this file exists so a future privileged print action has a place
+# to land without inventing a new grant mechanism.

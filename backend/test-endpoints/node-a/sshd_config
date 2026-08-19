@@ -1,0 +1,5 @@
+# Key-based auth only (research.md R2). No password login, no root login.
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
