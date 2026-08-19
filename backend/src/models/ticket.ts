@@ -1,5 +1,5 @@
 import mongoose, { Schema, model, Types, type InferSchemaType, type Model } from "mongoose";
-import { ACTORS, ESCALATION_REASONS, HANDLING_MODES, TICKET_STATUSES } from "./enums.js";
+import { ACTION_TIERS, ACTORS, ESCALATION_REASONS, HANDLING_MODES, TICKET_STATUSES } from "./enums.js";
 
 const transitionRecordSchema = new Schema(
   {
@@ -32,6 +32,27 @@ const assignmentRecordSchema = new Schema(
     byName: { type: String, required: true },
     at: { type: Date, required: true, default: () => new Date() },
     kind: { type: String, enum: ["takeover", "reassign"], required: true },
+  },
+  { _id: false },
+);
+
+// 005/US1: the agent's current in-chat offer to run one approved action on this
+// ticket, mirroring the existing `Conversation.pendingDuplicate` pattern —
+// transient state that lives on the record it concerns rather than in a
+// separate collection. Single-use: cleared as soon as a consent decision is
+// recorded (FR-004, contracts/api.md — a stale or unknown proposalId is refused).
+const pendingActionProposalSchema = new Schema(
+  {
+    proposalId: { type: String, required: true },
+    toolName: { type: String, required: true },
+    policyEntryId: { type: String, required: true },
+    tier: { type: String, enum: ACTION_TIERS, required: true },
+    description: { type: String, required: true },
+    arguments: { type: Schema.Types.Mixed, default: {} },
+    endpointId: { type: String, required: true },
+    endpointLabel: { type: String, required: true },
+    raisedAt: { type: Date, required: true, default: () => new Date() },
+    raisedInMessageId: { type: Schema.Types.ObjectId, ref: "Message", required: true },
   },
   { _id: false },
 );
@@ -111,6 +132,11 @@ const ticketSchema = new Schema(
     assignmentHistory: {
       type: [assignmentRecordSchema],
       default: [],
+    },
+    pendingActionProposal: {
+      type: pendingActionProposalSchema,
+      required: false,
+      default: null,
     },
   },
   { timestamps: true },

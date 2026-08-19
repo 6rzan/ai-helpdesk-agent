@@ -3,18 +3,21 @@ import { logger } from "../../lib/logger.js";
 import { CHAT_SYSTEM_PROMPT } from "./prompts/core.js";
 import { buildClassificationPrompt } from "./prompts/classification.js";
 import { buildStepReplyPrompt } from "./prompts/guidance.js";
-import { classificationOutputSchema, stepReplyOutputSchema } from "./schema.js";
+import { buildProposeActionPrompt } from "./prompts/tools.js";
+import { classificationOutputSchema, proposeActionOutputSchema, stepReplyOutputSchema } from "./schema.js";
 import type {
   ClassifyAndReplyInput,
   ClassifyAndReplyResult,
   InterpretStepReplyInput,
   InterpretStepReplyResult,
   LlmProvider,
+  ProposeActionInput,
+  ProposeActionResult,
   StreamReplyInput,
 } from "./types.js";
 
 function buildPrompt(
-  input: ClassifyAndReplyInput | StreamReplyInput | InterpretStepReplyInput,
+  input: ClassifyAndReplyInput | StreamReplyInput | InterpretStepReplyInput | ProposeActionInput,
 ): string {
   const historyText = input.history.map((turn) => `${turn.author}: ${turn.text}`).join("\n");
   return `${historyText}\nuser: ${input.latestMessage}`.trim();
@@ -175,6 +178,61 @@ export class OllamaProvider implements LlmProvider {
       return { ok: true, ...parsed.data };
     } catch (err) {
       logger.warn({ err }, "ollama step-reply call errored");
+      return { ok: false, reason: "llm_unavailable" };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async proposeAction(input: ProposeActionInput): Promise<ProposeActionResult> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), config.LLM_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(`${config.OLLAMA_URL}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: config.LLM_MODEL,
+          stream: false,
+          format: "json",
+          messages: [
+            {
+              role: "system",
+              content: buildProposeActionPrompt(input.tools, input.attempts, input.stepInstruction),
+            },
+            { role: "user", content: buildPrompt(input) },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        logger.warn({ status: response.status }, "ollama propose-action request failed");
+        return { ok: false, reason: "llm_unavailable" };
+      }
+
+      const body = (await response.json()) as OllamaChatResponse;
+      const raw = body.message?.content ?? "";
+
+      let candidate: unknown;
+      try {
+        candidate = JSON.parse(raw);
+      } catch (parseErr) {
+        logger.warn({ err: parseErr }, "ollama propose-action output was not valid JSON");
+        return { ok: false, reason: "llm_unavailable" };
+      }
+
+      const parsed = proposeActionOutputSchema.safeParse(candidate);
+      if (!parsed.success) {
+        logger.warn({ error: parsed.error.message }, "ollama propose-action output failed schema validation");
+        return { ok: false, reason: "llm_unavailable" };
+      }
+
+      const { toolName, arguments: args } = parsed.data;
+      return { ok: true, proposal: toolName ? { toolName, arguments: args } : null };
+    } catch (err) {
+      logger.warn({ err }, "ollama propose-action call errored");
       return { ok: false, reason: "llm_unavailable" };
     } finally {
       clearTimeout(timer);

@@ -5,6 +5,8 @@ import type {
   InterpretStepReplyInput,
   InterpretStepReplyResult,
   LlmProvider,
+  ProposeActionInput,
+  ProposeActionResult,
   StreamReplyInput,
 } from "./types.js";
 
@@ -19,6 +21,19 @@ const KEYWORD_RULES: { category: IssueCategory; keywords: string[] }[] = [
 
 // Lightweight lexicon scan used by the conversation loop to spot messages that
 // bundle several distinct problems (spec edge case: one issue at a time).
+// 005: the fixed set of read-only test tools (contracts/tools.md), each with
+// one known-valid argument set so the mock provider can propose something
+// real without a model. Not present here at all means "never propose this
+// tool" — currently every state-changing tool, deliberately, since Phase 3
+// registers no state-changing tools and later phases gate them on approval.
+const KNOWN_TOOL_ARGUMENTS: Record<string, Record<string, string>> = {
+  account_status: { username: "test-user-locked" },
+  network_probe: { target: "test-node-a" },
+  print_queue_status: {},
+  peripheral_list: {},
+  service_status: { service: "widget-service" },
+};
+
 export function detectTopics(text: string): IssueCategory[] {
   const lower = text.toLowerCase();
   return KEYWORD_RULES.filter((rule) => rule.keywords.some((kw) => lower.includes(kw))).map(
@@ -96,6 +111,28 @@ export class MockLlmProvider implements LlmProvider {
     }
 
     return { ok: true, outcome: "unclear", confidence: 0.3, reply: "Sorry, could you tell me if that step worked?" };
+  }
+
+  // Deterministic stand-in for a real model's tool selection, using known-good
+  // arguments for each of the fixed test tools (mirrors KEYWORD_RULES above) —
+  // this is what lets integration tests exercise the full plan/validate/act
+  // pipeline against the test endpoints without a real LLM. Proposes the first
+  // offered tool it recognizes and has not already tried this turn; anything
+  // it does not recognize gets no proposal, matching a real model asked about
+  // an unregistered tool it was never told about.
+  async proposeAction(input: ProposeActionInput): Promise<ProposeActionResult> {
+    for (const tool of input.tools) {
+      const args = KNOWN_TOOL_ARGUMENTS[tool.name];
+      if (!args) {
+        continue;
+      }
+      const alreadyTried = input.attempts.some((attempt) => attempt.toolName === tool.name);
+      if (alreadyTried) {
+        continue;
+      }
+      return { ok: true, proposal: { toolName: tool.name, arguments: args } };
+    }
+    return { ok: true, proposal: null };
   }
 
   async health(): Promise<boolean> {

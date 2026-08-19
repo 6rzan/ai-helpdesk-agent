@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 import { X } from "@phosphor-icons/react";
+import { ActionRecordCard } from "../components/ActionRecordCard";
+import { ConsentBlock } from "../components/ConsentBlock";
 import { EscalationNotice } from "../components/EscalationNotice";
 import { MessageBubble } from "../components/MessageBubble";
 import { QuickReplies } from "../components/QuickReplies";
 import { TicketCard } from "../components/TicketCard";
 import { VoiceControl } from "../components/VoiceControl";
-import { createSession, sendMessage } from "../services/api";
+import { createSession, getTicketActions, recordActionConsent, sendMessage } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useEvents } from "../services/useEvents";
-import type { CreateSessionResponse, InputOrigin, Message, TicketSummary } from "../lib/types";
+import type {
+  ActionProposal,
+  ActionRecord,
+  CreateSessionResponse,
+  InputOrigin,
+  Message,
+  TicketSummary,
+} from "../lib/types";
 
 interface StreamingReply {
   messageId: string;
@@ -29,6 +38,26 @@ export function ChatPage() {
   const [voiceError, setVoiceError] = useState<string>();
   const [hasTypedContent, setHasTypedContent] = useState(false);
   const [hasTranscriptContent, setHasTranscriptContent] = useState(false);
+  const [pendingProposal, setPendingProposal] = useState<ActionProposal | null>(null);
+  const [consentDeciding, setConsentDeciding] = useState(false);
+  const [actionRecords, setActionRecords] = useState<ActionRecord[]>([]);
+
+  const pushSystemMessage = useCallback(
+    (text: string) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          _id: crypto.randomUUID(),
+          conversationId: session?.conversationId ?? "",
+          author: "system",
+          text,
+          inputOrigin: "typed",
+          sentAt: new Date().toISOString(),
+        },
+      ]);
+    },
+    [session?.conversationId],
+  );
 
   useEvents(session?.sessionId, {
     onAgentToken: (data) =>
@@ -59,6 +88,34 @@ export function ChatPage() {
           sentAt: data.at,
         },
       ]);
+    },
+    onActionProposed: (data) => {
+      setPendingProposal(data);
+    },
+    onActionRecorded: (data) => {
+      setPendingProposal((prev) => (prev?.ticketId === data.ticketId ? null : prev));
+      getTicketActions(data.ticketId)
+        .then((res) => {
+          const record = res.actions.find((a) => a.id === data.actionRecordId);
+          if (record) {
+            setActionRecords((prev) => [...prev, record]);
+          }
+        })
+        .catch(() => undefined);
+    },
+    onApprovalPending: (data) => {
+      pushSystemMessage(`Waiting on IT staff to approve: ${data.description}`);
+    },
+    onApprovalDecided: (data) => {
+      const text =
+        data.status === "approved"
+          ? "IT staff approved the action."
+          : data.status === "declined"
+            ? "IT staff declined the action."
+            : data.status === "expired"
+              ? "The approval request expired before it was decided."
+              : "The approval request no longer applies.";
+      pushSystemMessage(text);
     },
   });
 
@@ -157,6 +214,28 @@ export function ChatPage() {
     [submitMessage],
   );
 
+  const handleConsentDecide = useCallback(
+    (granted: boolean) => {
+      if (!pendingProposal || consentDeciding) {
+        return;
+      }
+      setConsentDeciding(true);
+      recordActionConsent(pendingProposal.ticketId, pendingProposal.proposalId, granted)
+        .then(() => {
+          // No optimistic outcome here (Design Direction) — the transcript
+          // shows what happened only once the server's own reply arrives
+          // (via onAgentMessage), so the proposal simply stops being asked.
+          setPendingProposal(null);
+        })
+        .catch((err: unknown) => {
+          const errorText = err instanceof Error ? err.message : "Failed to record your decision, please try again.";
+          pushSystemMessage(errorText);
+        })
+        .finally(() => setConsentDeciding(false));
+    },
+    [pendingProposal, consentDeciding, pushSystemMessage],
+  );
+
   if (!session) {
     return <div className="mx-auto max-w-3xl p-6 text-sm text-gray-600">{sessionError ?? "Starting your support session…"}</div>;
   }
@@ -184,10 +263,18 @@ export function ChatPage() {
               {!streaming && index === messages.length - 1 && message.author === "agent" && message.guidance && (
                 <QuickReplies onSend={handleQuickReply} />
               )}
+              {!streaming && index === messages.length - 1 && message.author === "agent" && pendingProposal && (
+                <ConsentBlock proposal={pendingProposal} onDecide={handleConsentDecide} disabled={consentDeciding} />
+              )}
             </div>
           );
         })}
         {streaming && <MessageBubble author="agent" text={streaming.text} isStreaming />}
+        {actionRecords.map((record) => (
+          <div key={record.id} className="self-start">
+            <ActionRecordCard record={record} />
+          </div>
+        ))}
       </section>
       <div className="mt-4 flex flex-col gap-2">
         {voiceError && (

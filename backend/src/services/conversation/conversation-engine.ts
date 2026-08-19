@@ -13,7 +13,7 @@ import type { ConversationTurn } from "../llm/types.js";
 import { handlingModeLabel, notifyTicketUpdated, statusLabel } from "../ticket/notifications.js";
 import { transitionHandlingMode, transitionStatus, type TransitionableTicket } from "../ticket/state-machine.js";
 import { createTicket } from "../ticket/ticket-service.js";
-import { sendAgentReply, startGuidedFlowForTicket, tryHandleGuidedReply, toTicketSummary } from "./conversation-guidance.js";
+import { maybeOfferActionForStep, sendAgentReply, startGuidedFlowForTicket, tryHandleGuidedReply, toTicketSummary } from "./conversation-guidance.js";
 
 const GREETING_PATTERN =
   /^(hi+|hello|hey+|hiya|yo|greetings|good\s?(morning|afternoon|evening))[\s!.,]*$/i;
@@ -280,6 +280,9 @@ async function processReply(ctx: ReplyContext): Promise<void> {
       `${outcome.reply} Your ticket reference is ${ticket.reference} — you can quote this any time. ${guided.text}`,
       guided.guidance,
     );
+    if (guided.step0) {
+      await maybeOfferActionForStep(ctx, ticket, guided.step0.categoryName, 0, guided.step0.instruction);
+    }
     return;
   }
 
@@ -368,6 +371,9 @@ async function handlePendingDuplicateReply(ctx: ReplyContext, conversation: Conv
     `${pending.reply} Your ticket reference is ${ticket.reference} — you can quote this any time. ${guided.text}`,
     guided.guidance,
   );
+  if (guided.step0) {
+    await maybeOfferActionForStep(ctx, ticket, guided.step0.categoryName, 0, guided.step0.instruction);
+  }
 }
 
 // US2-AS4/FR-004: after staff mark a ticket resolved, the reporter's next reply

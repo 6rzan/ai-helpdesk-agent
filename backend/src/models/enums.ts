@@ -34,6 +34,7 @@ export const ESCALATION_REASONS = [
   "llm_unavailable",
   "no_guide",
   "guidance_exhausted",
+  "remediation_issue",
 ] as const;
 export type EscalationReason = (typeof ESCALATION_REASONS)[number];
 

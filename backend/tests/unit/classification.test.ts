@@ -7,6 +7,8 @@ import type {
   InterpretStepReplyInput,
   InterpretStepReplyResult,
   LlmProvider,
+  ProposeActionInput,
+  ProposeActionResult,
   StreamReplyInput,
 } from "../../src/services/llm/types.js";
 
@@ -31,6 +33,9 @@ function stubProvider(result: ClassifyAndReplyResult): LlmProvider {
     },
     async interpretStepReply(_input: InterpretStepReplyInput): Promise<InterpretStepReplyResult> {
       return { ok: true, outcome: "unclear", confidence: 0.3, reply: "" };
+    },
+    async proposeAction(_input: ProposeActionInput): Promise<ProposeActionResult> {
+      return { ok: true, proposal: null };
     },
     async health(): Promise<boolean> {
       return true;

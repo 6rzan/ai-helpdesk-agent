@@ -27,3 +27,13 @@ export const stepReplyOutputSchema = z.object({
 });
 
 export type StepReplyOutput = z.infer<typeof stepReplyOutputSchema>;
+
+// 005: agent-loop planning step (research.md R5 "Plan"). `toolName: null` is the
+// model's own way of saying "no tool call this step" — validated here rather than
+// left as a bare omitted field so every provider produces the same shape.
+export const proposeActionOutputSchema = z.object({
+  toolName: z.string().nullable(),
+  arguments: z.record(z.string(), z.unknown()).default({}),
+});
+
+export type ProposeActionOutput = z.infer<typeof proposeActionOutputSchema>;

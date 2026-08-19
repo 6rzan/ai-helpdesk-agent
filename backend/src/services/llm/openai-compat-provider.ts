@@ -3,7 +3,8 @@ import { logger } from "../../lib/logger.js";
 import { CHAT_SYSTEM_PROMPT } from "./prompts/core.js";
 import { buildClassificationPrompt } from "./prompts/classification.js";
 import { buildStepReplyPrompt } from "./prompts/guidance.js";
-import { classificationOutputSchema, stepReplyOutputSchema, STEP_REPLY_OUTCOMES } from "./schema.js";
+import { buildProposeActionPrompt } from "./prompts/tools.js";
+import { classificationOutputSchema, proposeActionOutputSchema, stepReplyOutputSchema, STEP_REPLY_OUTCOMES } from "./schema.js";
 import type {
   ClassificationCategoryOption,
   ClassifyAndReplyInput,
@@ -11,6 +12,8 @@ import type {
   InterpretStepReplyInput,
   InterpretStepReplyResult,
   LlmProvider,
+  ProposeActionInput,
+  ProposeActionResult,
   StreamReplyInput,
 } from "./types.js";
 
@@ -68,8 +71,29 @@ function buildStepReplyResponseFormat() {
   } as const;
 }
 
+// Not `strict: true`: each tool's own argument shape differs (contracts/tools.md),
+// so `arguments` stays an open object here — the agent loop is what actually
+// validates it against the proposed tool's own zod schema.
+function buildProposeActionResponseFormat(toolNames: string[]) {
+  return {
+    type: "json_schema",
+    json_schema: {
+      name: "propose_action",
+      strict: false,
+      schema: {
+        type: "object",
+        properties: {
+          toolName: { type: ["string", "null"], enum: [...toolNames, null] },
+          arguments: { type: "object" },
+        },
+        required: ["toolName", "arguments"],
+      },
+    },
+  } as const;
+}
+
 function buildMessages(
-  input: ClassifyAndReplyInput | StreamReplyInput | InterpretStepReplyInput,
+  input: ClassifyAndReplyInput | StreamReplyInput | InterpretStepReplyInput | ProposeActionInput,
   systemPrompt: string,
 ): { role: string; content: string }[] {
   const historyMessages = input.history.map((turn) => ({
@@ -225,6 +249,63 @@ export class OpenAiCompatProvider implements LlmProvider {
       return { ok: true, ...parsed.data };
     } catch (err) {
       logger.warn({ err }, "openai-compat step-reply call errored");
+      return { ok: false, reason: "llm_unavailable" };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async proposeAction(input: ProposeActionInput): Promise<ProposeActionResult> {
+    if (this.missingApiKey()) {
+      logger.warn({ baseUrl: this.baseUrl }, "openai-compat provider has no LLM_API_KEY configured");
+      return { ok: false, reason: "llm_unavailable" };
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), config.LLM_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: this.headers(),
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: config.LLM_MODEL,
+          temperature: 0,
+          response_format: buildProposeActionResponseFormat(input.tools.map((tool) => tool.name)),
+          messages: buildMessages(input, buildProposeActionPrompt(input.tools, input.attempts, input.stepInstruction)),
+        }),
+      });
+
+      if (!response.ok) {
+        logger.warn({ status: response.status }, "openai-compat propose-action request failed");
+        return { ok: false, reason: "llm_unavailable" };
+      }
+
+      const body = (await response.json()) as OpenAiChatCompletion;
+      const raw = body.choices?.[0]?.message?.content ?? "";
+
+      let candidate: unknown;
+      try {
+        candidate = JSON.parse(raw);
+      } catch (parseErr) {
+        logger.warn({ err: parseErr }, "openai-compat propose-action output was not valid JSON");
+        return { ok: false, reason: "llm_unavailable" };
+      }
+
+      const parsed = proposeActionOutputSchema.safeParse(candidate);
+      if (!parsed.success) {
+        logger.warn(
+          { error: parsed.error.message },
+          "openai-compat propose-action output failed schema validation",
+        );
+        return { ok: false, reason: "llm_unavailable" };
+      }
+
+      const { toolName, arguments: args } = parsed.data;
+      return { ok: true, proposal: toolName ? { toolName, arguments: args } : null };
+    } catch (err) {
+      logger.warn({ err }, "openai-compat propose-action call errored");
       return { ok: false, reason: "llm_unavailable" };
     } finally {
       clearTimeout(timer);

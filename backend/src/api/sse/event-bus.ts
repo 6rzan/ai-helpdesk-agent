@@ -1,4 +1,14 @@
-export type SseEventName = "agent_token" | "agent_message" | "ticket_created" | "ticket_updated";
+export type SseEventName =
+  | "agent_token"
+  | "agent_message"
+  | "ticket_created"
+  | "ticket_updated"
+  // --- 005: Constrained Automated Remediation (contracts/api.md "Server-sent events") ---
+  | "action_proposed"
+  | "action_recorded"
+  | "approval_pending"
+  | "approval_decided"
+  | "remediation_availability_changed";
 
 export interface SseEvent {
   id: string;

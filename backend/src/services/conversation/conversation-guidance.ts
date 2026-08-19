@@ -11,10 +11,14 @@ import type { GuidedSessionDoc } from "../../models/guided-session.js";
 import type { ConversationTurn } from "../llm/types.js";
 import type { ReplyContext } from "./conversation-engine.js";
 import { detectCategoryKeyword } from "./conversation-engine.js";
+import { proposeActionForStep } from "../remediation/consent-service.js";
 
 export interface GuidedFlowStart {
   text: string;
   guidance?: { stepIndex: number; stepCount: number };
+  /** Set only when a guide actually started, so the caller can offer an
+   * action for step 0 after sending this reply (T046) without a re-fetch. */
+  step0?: { categoryName: string; instruction: string };
 }
 
 // FR-012: no active guide for the newly-created ticket's category means we
@@ -49,6 +53,7 @@ export async function startGuidedFlowForTicket(
   return {
     text: formatStepPrompt(guide, 0),
     guidance: { stepIndex: 0, stepCount: guide.steps.length },
+    step0: { categoryName: guide.categoryName, instruction: guide.steps[0]?.instruction ?? "" },
   };
 }
 
@@ -125,6 +130,16 @@ export async function tryHandleGuidedReply(ctx: ReplyContext, resumedTicketIds: 
         stepIndex: decision.nextStepIndex,
         stepCount: guide.steps.length,
       });
+      const ticketForOffer = await Ticket.findById(session.ticketId);
+      if (ticketForOffer) {
+        await maybeOfferActionForStep(
+          ctx,
+          ticketForOffer,
+          guide.categoryName,
+          decision.nextStepIndex,
+          guide.steps[decision.nextStepIndex]?.instruction ?? "",
+        );
+      }
       return true;
     }
     case "escalate": {
@@ -179,10 +194,14 @@ async function escalateGuidedTicket(
   await escalateTicketForGuidance(ctx, ticket, reason);
 }
 
-async function escalateTicketForGuidance(
+// Exported for the remediation loop (consent-service.ts): reaching the
+// AGENT_MAX_STEPS cap, no-progress detection, or an endpoint failure all
+// route through this same single ticket-mutation path (T051) rather than a
+// second copy of the handlingMode transition.
+export async function escalateTicketForGuidance(
   ctx: ReplyContext,
   ticket: HydratedDocument<TicketDoc>,
-  reason: "no_guide" | "guidance_exhausted" | "user_request" | "llm_unavailable",
+  reason: "no_guide" | "guidance_exhausted" | "user_request" | "llm_unavailable" | "remediation_issue",
 ): Promise<void> {
   if (ticket.escalated) {
     return;
@@ -206,7 +225,7 @@ export async function sendAgentReply(
   ctx: ReplyContext,
   text: string,
   guidance?: { stepIndex: number; stepCount: number },
-): Promise<void> {
+): Promise<HydratedDocument<MessageDoc>> {
   const message = await Message.create({
     conversationId: ctx.conversationId,
     author: "agent",
@@ -229,6 +248,7 @@ export async function sendAgentReply(
   });
 
   await Conversation.findByIdAndUpdate(ctx.conversationId, { lastActivityAt: clock.now() });
+  return message;
 }
 
 function toMessageJson(message: MessageDoc) {
@@ -241,6 +261,30 @@ function toMessageJson(message: MessageDoc) {
     sentAt: message.sentAt,
     ...(message.guidance ? { guidance: message.guidance } : {}),
   };
+}
+
+// T046: the one integration point where an approved action may apply. Called
+// only after the step prompt itself has already been sent (so a proposal
+// always follows, never replaces or reorders, the step it applies to —
+// FR-014) — a genuinely separate, supplementary message, sent only when the
+// loop actually validates something worth offering.
+export async function maybeOfferActionForStep(
+  ctx: ReplyContext,
+  ticket: HydratedDocument<TicketDoc>,
+  categoryName: string,
+  stepIndex: number,
+  stepInstruction: string,
+): Promise<void> {
+  const history = await Message.find({ conversationId: ctx.conversationId }).sort({ sentAt: 1 }).lean();
+  await proposeActionForStep({
+    sessionId: ctx.sessionId,
+    conversationId: ctx.conversationId,
+    ticket,
+    categoryName,
+    stepIndex,
+    stepInstruction,
+    history: history.map((m): ConversationTurn => ({ author: m.author, text: m.text })),
+  });
 }
 
 export function toTicketSummary(ticket: TicketDoc) {
