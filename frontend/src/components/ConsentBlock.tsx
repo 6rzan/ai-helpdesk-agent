@@ -29,8 +29,8 @@ export function ConsentBlock({ proposal, onDecide, disabled = false }: ConsentBl
         <span>{isStateChanging ? "State-changing action" : "Read-only diagnostic"}</span>
       </div>
       <p className="mt-1 text-gray-800">
-        I can run <strong>{proposal.description}</strong> against <strong>{proposal.endpointLabel}</strong> — a
-        test system, not your own device. Would you like me to?
+        I can run <strong>{proposal.description}</strong> against <strong>{proposal.endpointLabel}</strong>, a test
+        system, not your own device. Would you like me to?
       </p>
       <div className="mt-2 flex gap-2">
         <button

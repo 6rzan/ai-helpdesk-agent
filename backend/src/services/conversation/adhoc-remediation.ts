@@ -23,15 +23,15 @@ import { escalateForUserRequest } from "./conversation-engine.js";
 function adHocRefusalReply(reason: RefusalReason): string {
   switch (reason) {
     case "no_matching_entry":
-      return "I don't have an approved way to do that myself, but I can report it and bring in IT staff who can — just ask me to escalate it and I will.";
+      return "I don't have an approved way to do that myself, but I can report it and bring in IT staff who can. Just ask me to escalate it and I will.";
     case "argument_mismatch":
-      return "That's close to something I'm approved to run, but not quite in the form I can act on. I can report this and bring in IT staff who can — just ask me to escalate it and I will.";
+      return "That's close to something I'm approved to run, but not quite in the form I can act on. I can report this and bring in IT staff who can. Just ask me to escalate it and I will.";
     case "unregistered_target":
-      return "I can only run approved actions against our own registered test systems, never your own device. I can report this and bring in IT staff who can — just ask me to escalate it and I will.";
+      return "I can only run approved actions against our own registered test systems, never your own device. I can report this and bring in IT staff who can. Just ask me to escalate it and I will.";
     case "endpoint_not_permitted":
-      return "That's not something I'm approved to run against that particular system. I can report this and bring in IT staff who can — just ask me to escalate it and I will.";
+      return "That's not something I'm approved to run against that particular system. I can report this and bring in IT staff who can. Just ask me to escalate it and I will.";
     default:
-      return "I can't do that myself right now, but I can report this and bring in IT staff who can — just ask me to escalate it and I will.";
+      return "I can't do that myself right now, but I can report this and bring in IT staff who can. Just ask me to escalate it and I will.";
   }
 }
 
@@ -61,7 +61,7 @@ export async function handleAdHocRemediationRequest(ctx: ReplyContext, conversat
       pendingAmbiguousRemediation: { candidates: interpretation.candidates },
     });
     const options = interpretation.candidates.map((candidate) => candidate.description).join(", or ");
-    await sendAgentReply(ctx, `Just to be sure — did you mean I should ${options}?`);
+    await sendAgentReply(ctx, `Just to be sure, did you mean I should ${options}?`);
     return;
   }
 

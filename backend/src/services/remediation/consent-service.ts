@@ -184,7 +184,7 @@ export async function proposeActionForStep(ctx: StepProposalContext): Promise<St
 
   const proposalId = randomUUID();
   const offerText =
-    `I can run "${tool.description}" against ${endpoint.label} (a test system, not your own device) — ` +
+    `I can run "${tool.description}" against ${endpoint.label} (a test system, not your own device), ` +
     "would you like me to?";
 
   const message = await sendAgentReply(
@@ -282,8 +282,8 @@ export async function recordConsent(input: ConsentDecisionInput): Promise<Consen
     conversationId: ticket.conversationId,
     author: "user",
     text: input.granted
-      ? `Yes, go ahead — ${proposal.description}`
-      : `No, don't run that — ${proposal.description}`,
+      ? `Yes, go ahead: ${proposal.description}`
+      : `No, don't run that: ${proposal.description}`,
     inputOrigin: "typed",
   });
 
@@ -329,7 +329,7 @@ export async function recordConsent(input: ConsentDecisionInput): Promise<Consen
       consent: consentInput,
     });
 
-    await sendAgentReply(replyCtx, `That needs IT staff sign-off first — ${proposal.description}. I'll let you know as soon as it's decided.`);
+    await sendAgentReply(replyCtx, `That needs IT staff sign-off first: ${proposal.description}. I'll let you know as soon as it's decided.`);
 
     return { outcome: "pending_approval", observedOutput: null, description: proposal.description, approvalId: request._id.toString() };
   }
@@ -377,15 +377,15 @@ export async function recordConsent(input: ConsentDecisionInput): Promise<Consen
 function chatReportFor(description: string, outcome: string, refusalReason?: RefusalReason): string {
   switch (outcome) {
     case "succeeded":
-      return `I ran that check — ${description} — and it completed successfully.`;
+      return `I ran that check (${description}) and it completed successfully.`;
     case "failed":
-      return `I tried that — ${description} — but it didn't succeed. I'm bringing in a person to help from here.`;
+      return `I tried that (${description}) but it didn't succeed. I'm bringing in a person to help from here.`;
     case "timed_out":
-      return `I tried that — ${description} — but the test system didn't respond in time. I'm bringing in a person to help from here.`;
+      return `I tried that (${description}) but the test system didn't respond in time. I'm bringing in a person to help from here.`;
     case "attempted_unverified":
-      return `I ran that — ${description} — but couldn't confirm the result. I'm bringing in a person to help from here.`;
+      return `I ran that (${description}) but couldn't confirm the result. I'm bringing in a person to help from here.`;
     case "refused":
-      return `I wasn't able to do that (${refusalReason ?? "refused"}) — ${description}.`;
+      return `I wasn't able to do that (${refusalReason ?? "refused"}): ${description}.`;
     default:
       return `${description}: ${outcome}`;
   }
@@ -400,7 +400,7 @@ function describeOutcome(description: string, outcome: string, refusalReason?: R
     return `Ran successfully: ${description}`;
   }
   if (outcome === "refused") {
-    return `Not run — ${refusalReason ?? "refused"}: ${description}`;
+    return `Not run (${refusalReason ?? "refused"}): ${description}`;
   }
   return `${outcome}: ${description}`;
 }

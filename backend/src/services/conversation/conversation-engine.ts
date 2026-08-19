@@ -182,12 +182,12 @@ async function processReply(ctx: ReplyContext): Promise<void> {
   }
 
   if (isContentFree(ctx.text)) {
-    await sendAgentReply(ctx, "I didn't quite catch a problem there — could you describe what's going wrong?");
+    await sendAgentReply(ctx, "I didn't quite catch a problem there, could you describe what's going wrong?");
     return;
   }
 
   if (GREETING_PATTERN.test(ctx.text.trim())) {
-    await sendAgentReply(ctx, "Hi there! I'm here to help with IT issues — what's going on?");
+    await sendAgentReply(ctx, "Hi there! I'm here to help with IT issues. What's going on?");
     return;
   }
 
@@ -203,7 +203,7 @@ async function processReply(ctx: ReplyContext): Promise<void> {
   if (ESCALATION_PATTERN.test(ctx.text)) {
     await sendAgentReply(
       ctx,
-      "Understood — I'm escalating this to our IT staff now. Someone will take it from here.",
+      "Understood, I'm escalating this to our IT staff now. Someone will take it from here.",
     );
     await escalateForUserRequest(ctx);
     return;
@@ -213,7 +213,7 @@ async function processReply(ctx: ReplyContext): Promise<void> {
   if (scope === "off_topic") {
     await sendAgentReply(
       ctx,
-      "I can only help with IT issues — things like passwords, network, printers, peripherals, or slow machines. Is there an IT problem I can help you report?",
+      "I can only help with IT issues, things like passwords, network, printers, peripherals, or slow machines. Is there an IT problem I can help you report?",
     );
     return;
   }
@@ -227,7 +227,7 @@ async function processReply(ctx: ReplyContext): Promise<void> {
     const [first, second] = multiProblem;
     await sendAgentReply(
       ctx,
-      `Sounds like two separate things — ${first.label} and ${second.label}. Let's handle one at a time: which would you like to start with? I can open a second ticket for the other one once we're done.`,
+      `Sounds like two separate things: ${first.label} and ${second.label}. Let's handle one at a time, which would you like to start with? I can open a second ticket for the other one once we're done.`,
     );
     return;
   }
@@ -285,7 +285,7 @@ async function processReply(ctx: ReplyContext): Promise<void> {
     const guided = await startGuidedFlowForTicket(ctx, ticket);
     await sendAgentReply(
       ctx,
-      `${outcome.reply} Your ticket reference is ${ticket.reference} — you can quote this any time. ${guided.text}`,
+      `${outcome.reply} Your ticket reference is ${ticket.reference}. You can quote this any time. ${guided.text}`,
       guided.guidance,
     );
     if (guided.step0) {
@@ -314,8 +314,8 @@ async function processReply(ctx: ReplyContext): Promise<void> {
     });
     const replyText =
       decision.reason === "llm_unavailable"
-        ? `I'm having trouble reaching the assistant right now, so I've saved your report and flagged it for a person to review. Your ticket reference is ${ticket.reference} — you can quote this any time.`
-        : `I still can't quite classify this, so I'm flagging it for a person to take a look. Your ticket reference is ${ticket.reference} — you can quote this any time.`;
+        ? `I'm having trouble reaching the assistant right now, so I've saved your report and flagged it for a person to review. Your ticket reference is ${ticket.reference}. You can quote this any time.`
+        : `I still can't quite classify this, so I'm flagging it for a person to take a look. Your ticket reference is ${ticket.reference}. You can quote this any time.`;
     await sendAgentReply(ctx, replyText);
     await Conversation.findByIdAndUpdate(ctx.conversationId, { clarificationRounds: 0 });
     publishEvent(ctx.sessionId, "ticket_created", { ticket: toTicketSummary(ticket) });
@@ -357,7 +357,7 @@ async function handlePendingDuplicateReply(ctx: ReplyContext, conversation: Conv
   }
 
   if (DUPLICATE_SAME_PATTERN.test(ctx.text)) {
-    await sendAgentReply(ctx, `Got it — I'll leave this with ticket ${pending.existingReference}, no need to open a new one.`);
+    await sendAgentReply(ctx, `Got it, I'll leave this with ticket ${pending.existingReference}, no need to open a new one.`);
     await Conversation.findByIdAndUpdate(ctx.conversationId, { pendingDuplicate: null, clarificationRounds: 0 });
     return;
   }
@@ -376,7 +376,7 @@ async function handlePendingDuplicateReply(ctx: ReplyContext, conversation: Conv
   const guided = await startGuidedFlowForTicket(ctx, ticket);
   await sendAgentReply(
     ctx,
-    `${pending.reply} Your ticket reference is ${ticket.reference} — you can quote this any time. ${guided.text}`,
+    `${pending.reply} Your ticket reference is ${ticket.reference}. You can quote this any time. ${guided.text}`,
     guided.guidance,
   );
   if (guided.step0) {
@@ -413,7 +413,7 @@ async function handleResolutionReply(ctx: ReplyContext): Promise<boolean> {
   if (stillBroken) {
     await sendAgentReply(
       ctx,
-      `Sorry to hear it's still not right — I've reopened ticket ${references} and work on it will continue.`,
+      `Sorry to hear it's still not right, I've reopened ticket ${references} and work on it will continue.`,
     );
   } else {
     await sendAgentReply(
@@ -429,7 +429,7 @@ async function sendStatusSummary(ctx: ReplyContext): Promise<void> {
   if (tickets.length === 0) {
     await sendAgentReply(
       ctx,
-      "You don't have any tickets on file yet — tell me what's going wrong and I'll get one opened for you.",
+      "You don't have any tickets on file yet, tell me what's going wrong and I'll get one opened for you.",
     );
     return;
   }

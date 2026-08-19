@@ -51,7 +51,7 @@ export class MockLlmProvider implements LlmProvider {
         ok: true,
         category: match.category,
         confidence: 0.9,
-        reply: `Thanks — I've noted this as a ${match.category.replace("_", " ")} issue. I'm creating a ticket for you now.`,
+        reply: `Thanks, I've noted this as a ${match.category.replace("_", " ")} issue. I'm creating a ticket for you now.`,
       };
     }
 
@@ -67,7 +67,7 @@ export class MockLlmProvider implements LlmProvider {
         ok: true,
         category: dynamicMatch.name,
         confidence: 0.9,
-        reply: `Thanks — I've noted this as a ${dynamicMatch.name.replace(/_/g, " ")} issue. I'm creating a ticket for you now.`,
+        reply: `Thanks, I've noted this as a ${dynamicMatch.name.replace(/_/g, " ")} issue. I'm creating a ticket for you now.`,
       };
     }
 
@@ -101,13 +101,13 @@ export class MockLlmProvider implements LlmProvider {
       return { ok: true, outcome: "question", confidence: 0.7, reply: "Let me clarify that step for you." };
     }
     if (/already (tried|did|done)/.test(text)) {
-      return { ok: true, outcome: "already_tried", confidence: 0.85, reply: "Got it — let's move to the next step." };
+      return { ok: true, outcome: "already_tried", confidence: 0.85, reply: "Got it, let's move to the next step." };
     }
     if (/\b(worked|fixed|resolved|solved|working now)\b/.test(text)) {
       return { ok: true, outcome: "worked", confidence: 0.9, reply: "Great, glad that fixed it!" };
     }
     if (/\b(still|not working|didn't work|doesn't work|no luck|nope)\b/.test(text)) {
-      return { ok: true, outcome: "not_worked", confidence: 0.85, reply: "Thanks — let's try the next step." };
+      return { ok: true, outcome: "not_worked", confidence: 0.85, reply: "Thanks, let's try the next step." };
     }
 
     return { ok: true, outcome: "unclear", confidence: 0.3, reply: "Sorry, could you tell me if that step worked?" };
