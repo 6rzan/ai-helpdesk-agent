@@ -4,7 +4,7 @@ Conversational IT support automation for organisations. Employees describe an is
 
 This is a B.Sc. (Hons) Computer Science Final Year Project at Asia Pacific University (APU): *Designing Artificial Intelligence Help Desk Agent for Organisational IT Support Automation*.
 
-> Project status: active development. Feature 004 — account authentication, the two-role model, staff dashboard, assignment, profiles, settings, and Excel import workflows — is implemented and its quality gates pass. Interfaces may change before the project is finalised.
+> Project status: active development. Feature 004 — account authentication, the two-role model, staff dashboard, assignment, profiles, settings, and Excel import workflows — is implemented and its quality gates pass. Feature 005 — constrained automated remediation against a whitelisted set of read-only and state-changing actions, with consent, staff approval, an immutable audit trail, a kill switch, and outcome metrics — is implemented and its quality gates pass. Interfaces may change before the project is finalised.
 
 ## What is available now
 
@@ -36,9 +36,19 @@ This is a B.Sc. (Hons) Computer Science Final Year Project at Asia Pacific Unive
 - Staff-appended profile notes and corrections on a reporter’s profile, and an initial-password reset that revokes that account’s sessions.
 - Excel (`.xlsx`) user import with column mapping, a dry-run preview, and a transactional apply step. Every staff action is written to an append-only `StaffActionRecord` audit trail.
 
+**Constrained automated remediation**
+
+- A whitelisted set of read-only and state-changing diagnostic actions, defined as versioned policy data rather than executor code, each scoped to a specific issue category and a specific test endpoint.
+- Every proposed action is matched against that whitelist by a default-deny policy engine before anything runs. There is no code path from an LLM proposal straight to execution.
+- Read-only actions execute the moment the reporter consents; state-changing actions additionally wait on a staff approval decision. A decline, an expiry, or a policy mismatch is refused and recorded, never a silent no-op or a hard error.
+- Every executed **and** every refused action is written to an append-only `ActionRecord`, visible per-ticket to the reporter (plain language) and cross-ticket to staff (full detail, filterable) at **Audit trail** (`/staff/audit`).
+- An asymmetric kill switch — global or per-endpoint — at **Automation** (`/staff/remediation`) lets staff disable remediation instantly; a disabled state is visible everywhere it matters and blocks new proposals immediately.
+- An ordered LLM provider fallback chain: if the primary provider is unavailable, the request retries against the next configured provider. No action is ever executed on a classification produced while the model was in a degraded fallback state — that proposal is refused and audited instead of offered.
+- Outcome metrics (attempted/succeeded/refused/failed, by category and endpoint) for a selectable period at **Metrics** (`/staff/metrics`), including an explicit no-data state.
+
 ## Safety and data handling
 
-The application does not execute commands, scripts, or remediation on employee devices. LLM output is treated as untrusted input: it is schema-validated, and a returned category is accepted only if it matches an active category in the database — anything else falls back to `unclassified` and escalates. Ticket transitions are validated and recorded in append-only history.
+The application does not execute arbitrary commands. Automated remediation is limited to a small, versioned whitelist of actions (`backend/src/policy/action-policy.json`) against dedicated, isolated test endpoints (`backend/test-endpoints/`) — never against employee devices or production infrastructure. Every action is default-denied unless it matches the whitelist exactly; read-only actions still require reporter consent, and state-changing actions additionally require staff approval before anything runs. The feature is off by default (`REMEDIATION_ENABLED=false`) and can be disabled globally or per-endpoint at any time from the staff automation kill switch. LLM output is treated as untrusted input throughout: it is schema-validated, and a returned category is accepted only if it matches an active category in the database — anything else falls back to `unclassified` and escalates. Ticket transitions are validated and recorded in append-only history.
 
 Staff-only endpoints require both an authenticated session and the `staff` role; no HTTP endpoint can grant that role. The maintainer admin surface is a separate axis: it is mounted only when `MAINTAINER_KEY` is configured, and is protected by a constant-time key comparison rather than by a session — it does not touch accounts or roles at all.
 
@@ -52,13 +62,21 @@ backend/                         Express API (TypeScript, strict)
 │   ├── api/
 │   │   ├── middleware/          Validation, session/role guards, maintainer key, errors
 │   │   ├── routes/              Auth, chat, tickets, own tickets/profile, staff tickets,
-│   │   │                        staff roster/users/imports, admin guides, health
+│   │   │                        staff roster/users/imports, staff actions/approvals/
+│   │   │                        remediation/metrics, admin guides, health
 │   │   └── sse/                 Reporter, own-ticket, and staff event streams
 │   ├── models/                  Mongoose schemas: accounts, auth sessions, tickets,
 │   │                            conversations, categories, guides, support profiles,
-│   │                            profile imports, and staff-action records
+│   │                            profile imports, staff-action records, action records,
+│   │                            approval requests, remediation settings, provider
+│   │                            fallback events
+│   ├── policy/                  Versioned action whitelist and endpoint registry
+│   │                            (action-policy.json, test-endpoints.json) plus schema
+│   │                            validation and the runtime loader
 │   ├── services/
-│   │   ├── llm/                 Ollama, OpenAI-compatible, and mock providers
+│   │   ├── llm/                 Ollama, OpenAI-compatible, mock, and chained
+│   │   │                        (ordered-fallback) providers — the only module
+│   │   │                        permitted to call a model directly
 │   │   ├── classification/      Category classification against the active category set
 │   │   ├── conversation/        Chat orchestration and guided troubleshooting
 │   │   ├── guidance/, guide/    Step interpretation and versioned guide administration
@@ -70,16 +88,26 @@ backend/                         Express API (TypeScript, strict)
 │   │   ├── profile/             Self-service and staff-appended support profiles
 │   │   ├── import/              Excel parsing, mapping, preview, transactional apply
 │   │   ├── staff/               Dashboard queries, takeover, reassignment, roster
-│   │   └── stt/                 Local and OpenAI-compatible speech-to-text
+│   │   ├── stt/                 Local and OpenAI-compatible speech-to-text
+│   │   ├── agent/               Tool-calling loop and remediation tool definitions
+│   │   ├── remediation/         Default-deny policy engine, SSH executor, consent,
+│   │   │                        approvals, availability (kill switch), audit
+│   │   └── metrics/             Outcome metrics aggregation
 │   └── scripts/                 Guide/category and staff-account seeding
+├── test-endpoints/              Isolated Dockerised SSH endpoints remediation runs
+│                                against (never employee devices), plus the reset
+│                                and host-key-capture scripts used before a demo
 └── tests/                       Vitest + Supertest integration and unit tests
 
 frontend/                        React + Vite + Tailwind CSS SPA
 ├── src/
 │   ├── context/                 Authentication state
 │   ├── components/              Navigation, route guards, dashboard/assignment/profile UI
+│   │   └── staff/               Approval queue, audit trail, metrics band/summary,
+│   │                            remediation (kill switch) controls, ticket list
 │   ├── pages/                   Chat, login, registration, my tickets, profile, settings
-│   │   └── staff/               Dashboard, ticket detail, user profile, Excel import
+│   │   └── staff/               Dashboard, ticket detail, user profile, Excel import,
+│   │                            approvals, audit, remediation (kill switch), metrics
 │   ├── lib/                     Shared types
 │   └── services/                Typed API client and SSE subscriptions
 └── tests/                       Testing Library component/page tests
@@ -96,8 +124,9 @@ docs/                            Design diagrams, test traceability, implementat
 | Backend | Express, Mongoose, Zod, Pino |
 | Frontend | React, Vite, Tailwind CSS |
 | Database | MongoDB Community Edition |
-| LLM runtime | Ollama, OpenAI-compatible server, or deterministic mock |
+| LLM runtime | Ollama, OpenAI-compatible server, or deterministic mock, in an ordered fallback chain |
 | Realtime | Server-Sent Events |
+| Remediation | `ssh2` against a versioned action whitelist and endpoint registry |
 | Testing | Vitest, Supertest, mongodb-memory-server, Testing Library |
 
 ## Getting started
@@ -109,6 +138,7 @@ docs/                            Design diagrams, test traceability, implementat
 | Node.js 20+ | `node --version` |
 | MongoDB | `mongosh --eval "db.runCommand({ping:1})"` |
 | LLM runtime (optional for mock-backed development) | `ollama pull llama3.1:8b` |
+| Docker Desktop with the WSL2 backend (only if exercising remediation) | `docker compose version` |
 
 Feature 004's Excel Import **Apply** operation uses a MongoDB transaction. Run the
 local demo database as a single-node replica set (not a standalone `mongod`):
@@ -124,6 +154,19 @@ The final command must print `true` before starting the backend. The reference
 MongoDB service after starting it with `--replSet rs0`. Existing standalone databases
 can still run ordinary chat and dashboard flows, but Import Apply deliberately returns
 MongoDB code 20 because atomic imports are not safe without transactions.
+
+Automated remediation targets a pair of isolated, disposable Docker containers rather
+than any real machine. Bring them up (and reset them to a known baseline, e.g. before a
+demo) with the single reset script, which also generates the SSH client keypair and
+captures each container's host key fingerprint into the pinned endpoint registry:
+
+```powershell
+powershell -File backend/test-endpoints/reset.ps1
+```
+
+Set `REMEDIATION_SSH_KEY_PATH` and `REMEDIATION_ENABLED=true` as printed by the script
+(see [Configuration](#configuration)). Skip this step entirely if you only want the
+chat/dashboard/import feature set — remediation is off by default.
 
 ### Install and run
 
@@ -161,7 +204,8 @@ Open `http://localhost:5173`. The health endpoint is available at `http://localh
 1. Register an account or sign in at `/register` or `/login`.
 2. Open the chat and describe one IT problem in everyday language.
 3. Follow the offered troubleshooting steps, ask for a person, or ask for a ticket update. Status changes appear in the conversation without a page refresh.
-4. Review past cases under **My tickets** (`/tickets`), which lists only tickets reported by the signed-in account.
+   - When the agent proposes a whitelisted diagnostic action, it explains in plain language what will run and where, and waits for explicit consent in the chat before doing anything. Declining is always safe: it is refused and recorded, never a hard error. Read-only actions run the moment consent is granted; state-changing actions additionally wait on a staff approval decision, and the reporter is told which is happening.
+4. Review past cases under **My tickets** (`/tickets`), which lists only tickets reported by the signed-in account. Each ticket's detail view includes its own action history: every attempted action and its outcome, in plain language.
 5. Fill in the support profile at `/profile` — remote-access tool IDs, location, hardware notes — so staff have that context on escalation. Change the account password at `/settings`.
 
 The conversation flow remains deliberately conservative. If the agent cannot confidently classify the issue, a guide is unavailable, or the user asks for staff, it escalates rather than improvising.
@@ -187,6 +231,11 @@ The generated initial password is written to the backend log. Share it through a
 
 Staff can also set their availability to `available`, `busy`, or `away` in the top navigation. Roster entries expose availability and current open-case counts to make reassignment decisions visible.
 
+6. Decide state-changing action requests at **Approvals** (`/staff/approvals`): approve to execute, or decline with an optional reason. Both surfaces update live for every open staff tab the instant anyone decides.
+7. Review every attempted and refused action across all tickets, filterable by ticket, endpoint, and outcome, at **Audit trail** (`/staff/audit`). It is append-only: there is no edit or delete affordance anywhere in this surface.
+8. Turn automated remediation off — globally or for one endpoint — at **Automation** (`/staff/remediation`). The toggle takes effect immediately and blocks new proposals across every session.
+9. Review attempted/succeeded/refused/failed action counts by category and endpoint, for a selectable period, at **Metrics** (`/staff/metrics`).
+
 On a reporter's profile page (`/staff/users/:accountId/profile`) staff can append notes or corrections without overwriting what the employee entered, and issue a new initial password — which immediately revokes that account's sessions and forces a change at next sign-in. Bulk profile data is loaded through **Import** (`/staff/import`): upload an `.xlsx` workbook, map its columns, review the dry-run preview, then apply. Apply runs in a MongoDB transaction and therefore requires a replica-set deployment (see Prerequisites). Every one of these actions is recorded in the staff-action audit trail.
 
 ## Configuration
@@ -198,7 +247,8 @@ Copy [`.env.example`](.env.example) to `backend/.env` to override defaults. The 
 | `MONGODB_URI` | `mongodb://127.0.0.1:27017/helpdesk?replicaSet=rs0` | Replica-set-capable MongoDB connection string required for transactional import Apply |
 | `PORT` | `3000` | Backend HTTP port |
 | `APP_MODE` | `development` | `development`, `test`, or `demo` |
-| `LLM_PROVIDER` | `ollama` | `ollama`, `openai_compat`, or `mock` |
+| `LLM_PROVIDER` | `ollama` | `ollama`, `openai_compat`, or `mock`. Used when `LLM_PROVIDERS` is unset. |
+| `LLM_PROVIDERS` | unset | Comma-separated ordered fallback chain, e.g. `openai_compat,ollama,mock`. Falls back to `LLM_PROVIDER` if unset, empty, or naming an unrecognised provider. A single unrecognised entry is treated the same way (no silent partial chain). |
 | `LLM_MODEL` | `llama3.1:8b` | Model identifier for the configured provider |
 | `OLLAMA_URL` | `http://127.0.0.1:11434` | Ollama endpoint |
 | `LLM_TIMEOUT_MS` | `10000` | LLM timeout before fallback behaviour |
@@ -208,6 +258,13 @@ Copy [`.env.example`](.env.example) to `backend/.env` to override defaults. The 
 | `STT_PROVIDERS` | `local` | Ordered speech-to-text provider list |
 | `STT_MODEL_DIR` | `./models/stt` | Local speech-to-text model directory |
 | `VOICE_MAX_SECONDS` | `120` | Voice-recording duration cap |
+| `REMEDIATION_ENABLED` | `false` | Master kill switch for automated remediation. Staff can additionally disable it at runtime, globally or per-endpoint, without restarting. |
+| `AGENT_MAX_STEPS` | `3` | Maximum tool-calling steps the remediation agent takes per proposal |
+| `REMEDIATION_SSH_KEY_PATH` | `./.keys/remediation_id_ed25519` | Path to the SSH client private key used against the whitelisted test endpoints |
+| `REMEDIATION_SSH_KEY_PASSPHRASE` | unset | Passphrase for the SSH client key, if it has one |
+| `REMEDIATION_CONNECT_TIMEOUT_MS` | `5000` | SSH connection timeout |
+| `REMEDIATION_COMMAND_TIMEOUT_MS` | `15000` | Remote command execution timeout |
+| `REMEDIATION_APPROVAL_TTL_MINUTES` | `30` | How long a state-changing action waits for staff approval before it expires and is refused |
 | `MAINTAINER_KEY` | unset | Enables and protects `/api/admin/*`. Leave unset and the admin routes are never mounted. |
 
 For an OpenAI-compatible server, set `LLM_PROVIDER=openai_compat`, `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL`. The complete annotated reference, including speech-to-text options, is in [`.env.example`](.env.example).
@@ -222,6 +279,8 @@ npm run seed:guides
 ```
 
 This populates the `categories` collection. Further categories and guide versions are managed at runtime through the maintainer API rather than by editing the seed script — set `MAINTAINER_KEY`, restart the backend, and use the `/api/admin` endpoints listed below.
+
+The remediation action whitelist and endpoint registry are versioned data files, not code: [`backend/src/policy/action-policy.json`](backend/src/policy/action-policy.json) and [`backend/src/policy/test-endpoints.json`](backend/src/policy/test-endpoints.json). No SSH key material is ever committed — `backend/.keys/` and the test endpoints' `authorized_keys` files are git-ignored, regenerated build inputs produced by `backend/test-endpoints/reset.ps1`.
 
 ## API surface
 
@@ -246,6 +305,8 @@ All routes are prefixed with `/api`. Authenticated browser requests use the sess
 | `POST /sessions/:sessionId/transcriptions` | public | Upload audio for local speech-to-text |
 | `GET /tickets?sessionId=…` | public | List tickets belonging to the current chat session |
 | `GET /tickets/:reference?sessionId=…` | public | Read a ticket available to the current chat flow |
+| `GET /tickets/:reference/actions?sessionId=…` | public | Plain-language action history and any approval requests for one ticket |
+| `POST /tickets/:reference/actions/consent?sessionId=…` | public | Grant or decline consent for one proposed action. A read-only grant executes immediately; a decline is refused and recorded, never a hard error. |
 | `GET /events?sessionId=…` | public | Reporter SSE stream for replies and ticket updates |
 | `GET /health` | public | Liveness plus LLM/database readiness |
 
@@ -278,7 +339,14 @@ All routes are prefixed with `/api`. Authenticated browser requests use the sess
 | `PUT /staff/imports/:id/mapping` | staff | Map spreadsheet columns to profile fields |
 | `POST /staff/imports/:id/preview` | staff | Dry-run the import and report per-row outcomes |
 | `POST /staff/imports/:id/apply` | staff | Commit the import inside a MongoDB transaction |
-| `GET /staff/events` | staff | SSE stream for ticket created/updated events |
+| `GET /staff/actions` | staff | Cross-ticket audit trail; filterable by ticket, endpoint, outcome, and date range, paginated |
+| `GET /staff/approvals?status=…` | staff | Approval queue; `pending` by default, or filtered by status. Past-due `pending` rows lazily transition to `expired` first. |
+| `POST /staff/approvals/:id/approve` | staff | Approve a pending state-changing action; executes it |
+| `POST /staff/approvals/:id/decline` | staff | Decline a pending state-changing action; never executes |
+| `GET /staff/remediation` | staff | Read the current automation kill-switch state, global and per-endpoint |
+| `POST /staff/remediation/toggle` | staff | Enable or disable automation, globally or for one endpoint |
+| `GET /staff/metrics?period=…` | staff | Attempted/succeeded/refused/failed action counts by category and endpoint for a selectable period |
+| `GET /staff/events` | staff | SSE stream for ticket created/updated events, action recorded, approval pending/decided, and remediation availability changed |
 
 ### Maintainer
 
@@ -295,7 +363,7 @@ Mounted at `/api/admin` and only when `MAINTAINER_KEY` is set — otherwise the 
 
 A `PATCH /test-support/...` router is additionally mounted when `APP_MODE` is `test` or `demo`. It is absent in `development` and production.
 
-The detailed contracts are maintained in [`specs/004-staff-dashboard/contracts/api.md`](specs/004-staff-dashboard/contracts/api.md).
+The detailed contracts are maintained in [`specs/004-staff-dashboard/contracts/api.md`](specs/004-staff-dashboard/contracts/api.md) and, for the remediation routes, [`specs/005-constrained-remediation/contracts/api.md`](specs/005-constrained-remediation/contracts/api.md).
 
 ## Verification
 
@@ -317,12 +385,12 @@ The backend suite excludes `tests/benchmark/` by default; run those separately w
 
 | Gate | Result |
 |---|---|
-| Backend typecheck / lint | PASS / PASS (no issues) |
-| Backend Vitest | PASS — 38 files, 217 tests |
+| Backend typecheck / lint | PASS / PASS (0 errors) |
+| Backend Vitest | PASS — 76 files, 420 tests |
 | Frontend typecheck | PASS |
-| Frontend Vitest | PASS — 81 tests |
+| Frontend Vitest | PASS — 133 tests |
 
-Role and access control specifically are covered by `tests/integration/access-control.test.ts`, `tests/integration/my-tickets.test.ts` (own-ticket isolation), and `tests/integration/test-support-guard.test.ts`.
+Role and access control specifically are covered by `tests/integration/access-control.test.ts`, `tests/integration/my-tickets.test.ts` (own-ticket isolation), and `tests/integration/test-support-guard.test.ts`. The default-deny remediation policy engine, the immutability of the audit trail, and the degraded-model refusal path are covered by `tests/unit/policy-engine.test.ts`, `tests/integration/audit-trail-view.test.ts`, and `tests/integration/degraded-model-remediation.test.ts`, among others.
 
 Feature 004 staff-dashboard evidence and test traceability:
 
@@ -334,6 +402,8 @@ Feature 004 staff-dashboard evidence and test traceability:
 ## Current delivery scope
 
 Feature 004 covers account authentication, staff-role enforcement, dashboard ticket management, live events, takeover/reassignment, roster availability, account-linked ticket history, self-service profiles/settings, staff profile actions, and Excel user import. See [`specs/004-staff-dashboard/tasks.md`](specs/004-staff-dashboard/tasks.md) and the [UAT record](docs/testing/feature-004-uat.md).
+
+Feature 005 covers constrained automated remediation: the versioned action whitelist and default-deny policy engine, the SSH executor against isolated test endpoints, per-proposal reporter consent, staff approval for state-changing actions, the immutable action audit trail, the global/per-endpoint kill switch, outcome metrics, and the ordered LLM provider fallback chain with degraded-model refusal. See [`specs/005-constrained-remediation/tasks.md`](specs/005-constrained-remediation/tasks.md).
 
 ## Troubleshooting
 
@@ -348,6 +418,11 @@ Feature 004 covers account authentication, staff-role enforcement, dashboard tic
 | All issues escalate as unclassified | LLM provider is unavailable | Check `/api/health`, then verify `LLM_PROVIDER`, `LLM_MODEL`, and provider URL settings. |
 | Microphone is unavailable | Permission, device, or local model issue | Allow browser microphone access; verify `STT_MODEL_DIR` if local transcription fails. Typing remains available. |
 | Tests initially fail while downloading MongoDB binaries | `mongodb-memory-server` is preparing its binary | Run the suite again after the download completes. |
+| Every proposed action is refused as `remediation_disabled` | `REMEDIATION_ENABLED=false`, or a staff member disabled the kill switch (globally or for that endpoint) | Check **Automation** (`/staff/remediation`) and re-enable it, or set `REMEDIATION_ENABLED=true` and restart the backend. |
+| An action is refused as `no_matching_entry`, `unregistered_target`, or `endpoint_not_permitted` | The test endpoint containers are not running, or the endpoint registry is stale relative to them | Run `powershell -File backend/test-endpoints/reset.ps1` and confirm the containers are up with `docker compose -f backend/test-endpoints/docker-compose.yml ps`. |
+| A remediation action fails with an SSH host key or authentication error | The client keypair or `authorized_keys` is stale relative to the running containers | Re-run `backend/test-endpoints/reset.ps1` — it regenerates the keypair (if missing), restages `authorized_keys`, and recaptures host-key fingerprints into the pinned endpoint registry after `docker compose down -v`. |
+| A proposed action is refused as `degraded_model` | The primary LLM provider was unavailable and the request fell back to a later provider in `LLM_PROVIDERS` | Expected behaviour, not a bug (FR-025): no automated action ever executes on a classification made while the model was degraded. Check `/api/health` and the primary provider's own status; the proposal can be retried once it recovers. |
+| A state-changing action never runs even after the reporter consents | It is a `state_changing` tier action, which additionally requires a staff decision at **Approvals** (`/staff/approvals`) | Expected behaviour. If it is missing from the queue, it may have expired past `REMEDIATION_APPROVAL_TTL_MINUTES` and was auto-refused. |
 
 ## License
 

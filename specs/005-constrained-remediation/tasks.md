@@ -317,13 +317,13 @@ visible-degradation and escalation behaviour still holds.
 - [ ] T120 [P] Add named Chapter 4.6 sample-code excerpts to `docs/` for the policy engine's default-deny path, the executor's structured-parameter connection, and the audit model's immutability hooks (Principle V)
 - [ ] T121 [P] Update the architecture, sequence, and ERD/schema diagrams in `docs/` for the three new collections, the two policy files, and the plan → act → observe loop (Principle V)
 - [ ] T122 [P] Generate Chapter 5 TC tables from the new suites via `npm --prefix backend run tc-tables` and file the output in `docs/`
-- [ ] T123 [P] Update `README.md` — How to use, Troubleshooting, configuration, API, and roadmap — for the container prerequisite, the new environment variables, the new endpoints, and the remediation feature
+- [X] T123 [P] Update `README.md` — How to use, Troubleshooting, configuration, API, and roadmap — for the container prerequisite, the new environment variables, the new endpoints, and the remediation feature
 - [ ] T124 Run the impeccable refinement sequence on every changed frontend file: `critique → layout → colorize → typeset → polish → audit`, then the taste §14 pre-flight, then `node "%USERPROFILE%/.claude/skills/impeccable/scripts/detect.mjs" --json <changed files>` and address the findings (before_implement hook)
-- [ ] T125 Audit every new user-visible string for em-dashes and remove them, including the test-account disclosure and the no-data message (Design Direction, taste §9.G)
-- [ ] T126 [P] Verify accessibility on the new surfaces: WCAG AA contrast on the outcome vocabulary, keyboard operability of the approval queue and its confirmation step, and `prefers-reduced-motion` honoured on every new transition
-- [ ] T127 Run all quality gates: `npm --prefix backend run typecheck`, `lint`, `test`, and the same three for `frontend`, and confirm no file exceeds 500 lines
-- [ ] T128 Run `graphify update .` to refresh the knowledge graph after implementation
-- [ ] T129 Remove the stray zero-byte files in `frontend/` (`draft.length`, `m.author`, `m.text.includes(ticket.reference)`, `{,`, `{,+`) left by mis-redirected shell commands
+- [X] T125 Audit every new user-visible string for em-dashes and remove them, including the test-account disclosure and the no-data message (Design Direction, taste §9.G)
+- [X] T126 [P] Verify accessibility on the new surfaces: WCAG AA contrast on the outcome vocabulary, keyboard operability of the approval queue and its confirmation step, and `prefers-reduced-motion` honoured on every new transition
+- [X] T127 Run all quality gates: `npm --prefix backend run typecheck`, `lint`, `test`, and the same three for `frontend`, and confirm no file exceeds 500 lines
+- [X] T128 Run `graphify update .` to refresh the knowledge graph after implementation
+- [X] T129 Remove the stray zero-byte files in `frontend/` (`draft.length`, `m.author`, `m.text.includes(ticket.reference)`, `{,`, `{,+`) left by mis-redirected shell commands
 - [ ] T130 Run `/speckit-constitution` to strike Compliance Debt Register entries **CD-1** and **CD-2**, citing the closing evidence: `chained-provider.test.ts` and the preserved `degradation.test.ts` for CD-1, and the policy engine, executor, registry, tool registry, and audit suites plus the passing remediation demo leg for CD-2. Per Governance, this runs **after** the evidence exists, never on intent
 
 ---
