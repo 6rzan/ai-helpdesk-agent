@@ -20,10 +20,17 @@ COPY sshd_config /etc/ssh/sshd_config.d/remediation.conf
 
 # Virtual printer: cups-pdf renders raw print jobs to PDF instead of hardware,
 # which is what makes queue listing and clearing genuine without a physical
-# printer (research.md R11 honesty note).
-RUN lpadmin -p test-printer -E -v cups-pdf:/ -m drv:///cups-pdf.drv/CUPS-PDF_opt.ppd \
+# printer (research.md R11 honesty note). lpadmin needs a live cupsd to talk
+# to, and the build stage has none running yet -- start one just for this
+# step, configure the printer (persisted to /etc/cups/printers.conf), then
+# stop it; CMD starts its own cupsd at container run time.
+RUN /usr/sbin/cupsd \
+    && sleep 2 \
+    && lpadmin -p test-printer -E -v cups-pdf:/ -P /usr/share/ppd/cups-pdf/CUPS-PDF_opt.ppd \
     && cupsenable test-printer \
-    && cupsaccept test-printer
+    && cupsaccept test-printer \
+    && pkill cupsd \
+    && sleep 1
 
 COPY scripts/ /usr/local/bin/
 RUN chmod 755 /usr/local/bin/*.sh

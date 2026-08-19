@@ -315,6 +315,159 @@ export class SttProviderError extends Error {
 }
 ```
 
+### 4.6 Constrained Automated Remediation
+
+Three excerpts covering the default-deny decision, the SSH connection's structured
+parameters, and the audit record's structural immutability (Constitution Principle II).
+
+#### The policy engine's default-deny path
+
+**File**: `backend/src/services/remediation/policy-engine.ts` (TC-070-089 range)
+
+`matchAction` is the single decision point every proposed action passes through: the
+action id, every argument, and the target endpoint must all match a whitelisted policy
+entry exactly, or the request is refused with a specific, auditable reason. There is no
+fuzzy, prefix, or nearest-neighbour acceptance anywhere in this function — a
+near-miss is not a match.
+
+```typescript
+export type MatchResult =
+  | { ok: true; entry: ActionPolicyEntry; endpoint: TestEndpoint; command: string }
+  | { ok: false; reason: RefusalReason };
+
+// Pure exact-match decision: does (policyEntryId, args, endpointId) resolve to
+// exactly one whitelisted, endpoint-permitted action? No side effects, no
+// execution, no audit write -- callers decide what to do with the result.
+export function matchAction(policyEntryId: string, args: Record<string, string>, endpointId: string): MatchResult {
+  const policy = getPolicy();
+
+  const entry = policy.available ? policy.entries.get(policyEntryId) : undefined;
+  if (!entry) {
+    return { ok: false, reason: "no_matching_entry" };
+  }
+
+  const declaredNames = new Set(entry.arguments.map((spec) => spec.name));
+  for (const key of Object.keys(args)) {
+    if (!declaredNames.has(key)) {
+      return { ok: false, reason: "argument_mismatch" };
+    }
+  }
+  for (const spec of entry.arguments) {
+    const value = args[spec.name];
+    if (value === undefined) {
+      return { ok: false, reason: "argument_mismatch" };
+    }
+    if (spec.kind === "enum") {
+      if (!spec.values.includes(value)) {
+        return { ok: false, reason: "argument_mismatch" };
+      }
+    } else {
+      const anchored = new RegExp(`^(?:${spec.pattern})$`);
+      if (!anchored.test(value)) {
+        return { ok: false, reason: "argument_mismatch" };
+      }
+    }
+  }
+
+  const endpoint = policy.endpoints.get(endpointId);
+  if (!endpoint) {
+    return { ok: false, reason: "unregistered_target" };
+  }
+  if (!entry.allowedEndpointIds.includes(endpointId)) {
+    return { ok: false, reason: "endpoint_not_permitted" };
+  }
+
+  return { ok: true, entry, endpoint, command: substitute(entry.command, args) };
+}
+```
+
+`attemptAction` wraps `matchAction` with the remaining gates — the degraded-model check
+runs first (US6 AS4), then the kill switch, then consent, then approval — and only calls
+the executor once every gate has passed. Every branch, executed or refused, calls
+`recordAction` before returning:
+
+```typescript
+export async function attemptAction(input: AttemptActionInput): Promise<AttemptActionResult> {
+  // US6 AS4: no automated action executes on a classification produced while
+  // the system is in a degraded model state. Checked before matching so a
+  // degraded proposal is refused even if it would otherwise resolve cleanly.
+  if (input.modelDegraded) {
+    await recordAction({ /* ... */ outcome: "refused", refusalReason: "degraded_model" });
+    return { outcome: "refused", refusalReason: "degraded_model", observedOutput: null };
+  }
+
+  const match = matchAction(input.policyEntryId, input.arguments, input.endpointId);
+  if (!match.ok) {
+    await recordAction({ /* ... */ outcome: "refused", refusalReason: match.reason });
+    return { outcome: "refused", refusalReason: match.reason, observedOutput: null };
+  }
+
+  // ...remediation_disabled, missing_consent, and missing_approval gates follow
+  // the same shape: check, audit the refusal, return. Only after all four pass
+  // does execution happen:
+
+  const result = await executor({ endpoint: match.endpoint, command: match.command, timeoutMs: /* ... */ });
+  const record = await recordAction({ /* ... */ outcome: result.outcome, observedOutput: result.observedOutput });
+  return { outcome: record.outcome, observedOutput: result.observedOutput, actionRecordId: record._id };
+}
+```
+
+#### The executor's structured-parameter connection
+
+**File**: `backend/src/services/remediation/executor.ts` (TC-090-095 range)
+
+The only module that opens an SSH connection. Host, port, and username are structured
+fields read off the matched `TestEndpoint`, passed straight to `ssh2`'s `connect()` as
+object properties — there is no command line assembled anywhere, so there is no place
+for an injected value to land. The host key fingerprint captured at endpoint-registry
+setup time is verified on every connection via `hostVerifier`, not trusted on first use.
+
+```typescript
+client.connect({
+  host: request.endpoint.host,
+  port: request.endpoint.port,
+  username: request.endpoint.username,
+  ...(config.REMEDIATION_SSH_KEY_PATH ? { privateKey: readFileSync(config.REMEDIATION_SSH_KEY_PATH) } : {}),
+  ...(config.REMEDIATION_SSH_KEY_PASSPHRASE ? { passphrase: config.REMEDIATION_SSH_KEY_PASSPHRASE } : {}),
+  readyTimeout: config.REMEDIATION_CONNECT_TIMEOUT_MS,
+  hostHash: "sha256",
+  hostVerifier: (digest: string): boolean => digest === request.endpoint.hostKeyFingerprint,
+});
+```
+
+The command string itself is not free text either: it is `policy-engine.ts`'s own
+`substitute()` output, built by filling named placeholders in the whitelisted entry's
+fixed command template with the same argument values `matchAction` already validated
+against an enum or an anchored regex — never the reporter's raw words.
+
+#### The audit model's immutability hooks
+
+**File**: `backend/src/models/action-record.ts` (TC-096-098 range)
+
+No route, service, or repository function may update or delete an `ActionRecord`, from
+any surface, under any role (Constitution Principle II, FR-010). That guarantee is
+enforced structurally on the schema, not left to every caller's discipline:
+
+```typescript
+const MUTATION_ERROR = "ActionRecord is append-only: updates and deletes are not permitted (Constitution Principle II)";
+
+function rejectMutation(this: unknown): never {
+  throw new Error(MUTATION_ERROR);
+}
+
+actionRecordSchema.pre("findOneAndUpdate", rejectMutation);
+actionRecordSchema.pre("updateOne", rejectMutation);
+actionRecordSchema.pre("updateMany", rejectMutation);
+actionRecordSchema.pre("deleteOne", rejectMutation);
+actionRecordSchema.pre("deleteMany", rejectMutation);
+actionRecordSchema.pre("findOneAndDelete", rejectMutation);
+```
+
+Any attempt to call one of these six Mongoose operations against the `ActionRecord`
+collection throws before touching the database, regardless of which layer issued the
+call — there is no code path, staff-privileged or otherwise, that reaches the
+collection through anything but `create()`.
+
 ---
 
 ## Design Principles

@@ -25,7 +25,20 @@ const endpoints = [
   { id: "test-node-b", host: "127.0.0.1", port: 2202 },
 ];
 
-function fingerprintFor(host, port) {
+const KEYSCAN_ATTEMPTS = 5;
+const KEYSCAN_RETRY_DELAY_MS = 1_500;
+
+function sleepSync(ms) {
+  const target = Date.now() + ms;
+  while (Date.now() < target) {
+    // A container that just started (esp. right after `--build`) can take a
+    // moment before sshd is ready to complete key exchange; ssh-keyscan then
+    // fails outright rather than waiting. Busy-wait rather than pull in an
+    // async runtime here — this script is a short-lived one-shot CLI.
+  }
+}
+
+function scanOnce(host, port) {
   // ssh-keyscan prints "host key-type base64blob" lines (comments start with '#').
   const output = execFileSync("ssh-keyscan", ["-p", String(port), "-t", "ed25519", host], {
     encoding: "utf8",
@@ -33,12 +46,30 @@ function fingerprintFor(host, port) {
   });
   const line = output.split("\n").find((l) => l.trim() && !l.startsWith("#"));
   if (!line) {
-    throw new Error(`No host key returned for ${host}:${port} — is the container running?`);
+    throw new Error(`No host key returned for ${host}:${port}`);
   }
-  const parts = line.trim().split(/\s+/);
-  const base64Blob = parts[parts.length - 1];
-  const rawBlob = Buffer.from(base64Blob, "base64");
-  return createHash("sha256").update(rawBlob).digest("hex");
+  return line;
+}
+
+function fingerprintFor(host, port) {
+  let lastError;
+  for (let attempt = 1; attempt <= KEYSCAN_ATTEMPTS; attempt++) {
+    try {
+      const line = scanOnce(host, port);
+      const parts = line.trim().split(/\s+/);
+      const base64Blob = parts[parts.length - 1];
+      const rawBlob = Buffer.from(base64Blob, "base64");
+      return createHash("sha256").update(rawBlob).digest("hex");
+    } catch (err) {
+      lastError = err;
+      if (attempt < KEYSCAN_ATTEMPTS) {
+        sleepSync(KEYSCAN_RETRY_DELAY_MS);
+      }
+    }
+  }
+  throw new Error(
+    `No host key returned for ${host}:${port} after ${KEYSCAN_ATTEMPTS} attempts — is the container running? (${lastError?.message})`,
+  );
 }
 
 function main() {
