@@ -292,18 +292,18 @@ visible-degradation and escalation behaviour still holds.
 
 ### Tests for User Story 6 (MANDATORY) ⚠️
 
-- [ ] T108 [P] [US6] Write failing unit tests in `backend/tests/unit/chained-provider.test.ts`: `classifyAndReply` and `interpretStepReply` fall through to the next provider; `streamReply` falls through **only before the first token** and otherwise ends the stream and degrades visibly; `health` is true if any provider is healthy (research R4)
-- [ ] T109 [P] [US6] Write a failing test asserting a single configured provider behaves exactly as today, and that an existing `.env` carrying only `LLM_PROVIDER` still works (US6 AS3, FR-024)
-- [ ] T110 [P] [US6] Write a failing integration test asserting no automated action executes on a classification produced while the system is in a degraded model state, refused with `degraded_model` and audited (FR-025, US6 AS4)
+- [X] T108 [P] [US6] Write failing unit tests in `backend/tests/unit/chained-provider.test.ts`: `classifyAndReply` and `interpretStepReply` fall through to the next provider; `streamReply` falls through **only before the first token** and otherwise ends the stream and degrades visibly; `health` is true if any provider is healthy (research R4)
+- [X] T109 [P] [US6] Write a failing test asserting a single configured provider behaves exactly as today, and that an existing `.env` carrying only `LLM_PROVIDER` still works (US6 AS3, FR-024)
+- [X] T110 [P] [US6] Write a failing integration test asserting no automated action executes on a classification produced while the system is in a degraded model state, refused with `degraded_model` and audited (FR-025, US6 AS4)
 
 ### Implementation for User Story 6
 
-- [ ] T111 [US6] Implement `backend/src/services/llm/chained-provider.ts` implementing the existing `LlmProvider` interface, mirroring the chain shape in `backend/src/services/stt/stt-service.ts`, so T108 passes
-- [ ] T112 [US6] Extend `backend/src/services/llm/factory.ts` to parse `LLM_PROVIDERS` and build the chain, deriving it from `LLM_PROVIDER` when the list is absent, so T109 passes
-- [ ] T113 [US6] Export the chained provider from `backend/src/services/llm/index.ts` and confirm no module outside the abstraction calls a provider directly (Principle VI), with a test asserting it
-- [ ] T114 [US6] Record fallbacks per research.md R4: a `warn` log always, a system entry on the ticket history when the conversation has a ticket, and a `providerFallbacks` count in the metrics period summary — and **not** in the action audit trail
-- [ ] T115 [US6] Add the `degraded_model` refusal path to `backend/src/services/remediation/policy-engine.ts`, so T110 passes
-- [ ] T116 [US6] Confirm `backend/tests/integration/degradation.test.ts` still passes unchanged, since total-provider-failure behaviour must not regress (CD-1 closing evidence)
+- [X] T111 [US6] Implement `backend/src/services/llm/chained-provider.ts` implementing the existing `LlmProvider` interface, mirroring the chain shape in `backend/src/services/stt/stt-service.ts`, so T108 passes
+- [X] T112 [US6] Extend `backend/src/services/llm/factory.ts` to parse `LLM_PROVIDERS` and build the chain, deriving it from `LLM_PROVIDER` when the list is absent, so T109 passes
+- [X] T113 [US6] Export the chained provider from `backend/src/services/llm/index.ts` and confirm no module outside the abstraction calls a provider directly (Principle VI), with a test asserting it
+- [X] T114 [US6] Record fallbacks per research.md R4: a `warn` log always, a system entry on the ticket history when the conversation has a ticket, and a `providerFallbacks` count in the metrics period summary — and **not** in the action audit trail
+- [X] T115 [US6] Add the `degraded_model` refusal path to `backend/src/services/remediation/policy-engine.ts`, so T110 passes
+- [X] T116 [US6] Confirm `backend/tests/integration/degradation.test.ts` still passes unchanged, since total-provider-failure behaviour must not regress (CD-1 closing evidence)
 
 **Checkpoint**: CD-1's closing evidence exists.
 

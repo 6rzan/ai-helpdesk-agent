@@ -57,10 +57,23 @@ export interface ProposeActionInput {
   stepInstruction: string;
   tools: ProposeActionTool[];
   attempts: ProposeActionAttempt[];
+  /** T114/R4: when the caller has a ticket in hand, threaded through so a
+   * `ChainedLlmProvider` fallback during this proposal can be recorded
+   * against that ticket, not just as a bare infrastructure event. */
+  ticketId?: string | null;
 }
 
 export type ProposeActionResult =
-  | { ok: true; proposal: { toolName: string; arguments: Record<string, unknown> } | null }
+  | {
+      ok: true;
+      proposal: { toolName: string; arguments: Record<string, unknown> } | null;
+      /** research.md R4/FR-025: set by `ChainedLlmProvider` when this proposal
+       * came from a fallback provider rather than the configured primary. A
+       * single-provider setup never sets this (T109 — behaves exactly as
+       * today). The caller (consent-service) refuses the resulting action
+       * with `degraded_model` rather than offering it (US6 AS4). */
+      degraded?: boolean;
+    }
   | { ok: false; reason: "llm_unavailable" };
 
 export interface LlmProvider {

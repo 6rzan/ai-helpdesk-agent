@@ -42,10 +42,19 @@ function toolLikeMap(tools: RegisteredTool[]): Map<string, ToolLike> {
   return new Map(tools.map((tool) => [tool.name, tool as ToolLike]));
 }
 
+/**
+ * `degradedRef` is a closure-captured mutable flag rather than a field on the
+ * agent loop's own types (agent-loop.ts stays pure/provider-agnostic): it
+ * records whether the most recent proposal this planner returned came from a
+ * fallback LLM provider (`ProposeActionResult.degraded`, US6/FR-025). The
+ * caller reads it once `runAgentLoop` settles on a valid proposal.
+ */
 function makeLlmPlanner(
   history: ConversationTurn[],
   stepInstruction: string,
   tools: { name: string; description: string }[],
+  degradedRef: { current: boolean },
+  ticketId: Types.ObjectId,
 ): Planner {
   const provider = getLlmProvider();
   return async (attempts) => {
@@ -59,10 +68,12 @@ function makeLlmPlanner(
         arguments: attempt.proposal.arguments,
         valid: attempt.valid,
       })),
+      ticketId: ticketId.toString(),
     });
     if (!result.ok || !result.proposal) {
       return null;
     }
+    degradedRef.current = result.degraded === true;
     return result.proposal;
   };
 }
@@ -126,10 +137,13 @@ export async function proposeActionForStep(ctx: StepProposalContext): Promise<St
     return null;
   }
 
+  const degradedRef = { current: false };
   const planner = makeLlmPlanner(
     ctx.history,
     ctx.stepInstruction,
     runnable.map((tool) => ({ name: tool.name, description: tool.description })),
+    degradedRef,
+    ctx.ticket._id,
   );
 
   const result = await runAgentLoop(planner, toolLikeMap(runnable));
@@ -148,6 +162,23 @@ export async function proposeActionForStep(ctx: StepProposalContext): Promise<St
   const endpointId = entry?.allowedEndpointIds[0];
   const endpoint = endpointId ? policy.endpoints.get(endpointId) : undefined;
   if (!tool || !entry || !endpoint) {
+    return null;
+  }
+
+  if (degradedRef.current) {
+    // US6 AS4/FR-025: no automated action executes on a classification
+    // produced while the system is in a degraded model state -- refused and
+    // audited here, before the reporter is ever offered it.
+    await attemptAction({
+      actor: "agent",
+      ticketId: ctx.ticket._id,
+      conversationId: ctx.conversationId,
+      classifiedIntent: ctx.stepInstruction,
+      policyEntryId: tool.policyEntryId,
+      arguments: result.arguments as Record<string, string>,
+      endpointId: endpoint.id,
+      modelDegraded: true,
+    });
     return null;
   }
 

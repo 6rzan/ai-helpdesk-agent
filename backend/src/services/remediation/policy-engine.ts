@@ -106,6 +106,11 @@ export interface AttemptActionInput {
   endpointId: string;
   consent?: ConsentRecordInput | null;
   approval?: ApprovalReferenceInput | null;
+  /** research.md R4/FR-025, US6 AS4: set when the proposal this attempt would
+   * execute came from a fallback LLM provider (`ProposeActionResult.degraded`)
+   * rather than the configured primary. Checked before anything else so a
+   * degraded classification never reaches the executor. */
+  modelDegraded?: boolean;
 }
 
 export interface AttemptActionResult {
@@ -159,6 +164,28 @@ function judgeVerification(policyEntryId: string, output: string | null): Verifi
  * outcome, executed or refused, is audited (FR-009, FR-010).
  */
 export async function attemptAction(input: AttemptActionInput): Promise<AttemptActionResult> {
+  // US6 AS4: no automated action executes on a classification produced while
+  // the system is in a degraded model state. Checked before matching so a
+  // degraded proposal is refused even if it would otherwise resolve cleanly.
+  if (input.modelDegraded) {
+    await recordAction({
+      actor: input.actor,
+      ticketId: input.ticketId,
+      conversationId: input.conversationId,
+      classifiedIntent: input.classifiedIntent,
+      policyEntryId: null,
+      tier: null,
+      requestedAction: input.policyEntryId,
+      arguments: input.arguments,
+      endpointId: null,
+      consent: input.consent ?? null,
+      approval: input.approval ?? null,
+      outcome: "refused",
+      refusalReason: "degraded_model",
+    });
+    return { outcome: "refused", refusalReason: "degraded_model", observedOutput: null };
+  }
+
   const match = matchAction(input.policyEntryId, input.arguments, input.endpointId);
 
   if (!match.ok) {
