@@ -12,6 +12,14 @@ erDiagram
     TICKET ||--o{ GUIDED_SESSION : "drives"
     CATEGORY ||--o{ GUIDE : "has versions"
     GUIDE ||--o{ GUIDED_SESSION : "pinned by (categoryName+guideVersion)"
+    TICKET ||--o{ APPROVAL_REQUEST : "may await"
+    TICKET ||--o{ ACTION_RECORD : "accumulates (or null, pre-ticket refusal)"
+    CONVERSATION ||--o{ APPROVAL_REQUEST : "returns outcome into"
+    CONVERSATION ||--o{ ACTION_RECORD : "may attribute"
+    APPROVAL_REQUEST ||--o| ACTION_RECORD : "resultingActionRecordId, on approval"
+    ACTION_POLICY_ENTRY ||--o{ APPROVAL_REQUEST : "policyEntryId (file, not FK)"
+    ACTION_POLICY_ENTRY ||--o{ ACTION_RECORD : "policyEntryId (file, not FK)"
+    ACTION_POLICY_ENTRY }o--o{ TEST_ENDPOINT : "allowedEndpointIds (file, not FK)"
 
     REPORTER {
         ObjectId _id PK
@@ -89,6 +97,77 @@ erDiagram
         Date createdAt
         Date updatedAt
     }
+
+    %% --- 005-constrained-remediation: three new Mongo collections ---
+
+    REMEDIATION_SETTINGS {
+        string _id PK "fixed singleton key"
+        boolean globallyEnabled "kill switch, default from REMEDIATION_ENABLED, default false"
+        string_array disabledEndpointIds "endpoint ids disabled individually"
+        Date updatedAt
+    }
+
+    APPROVAL_REQUEST {
+        ObjectId _id PK
+        ObjectId ticketId FK "indexed"
+        ObjectId conversationId FK "for returning the outcome into the chat"
+        string policyEntryId "the exact action, file-referenced not FK"
+        map arguments "already validated against the entry at creation"
+        string endpointId "resolved target, file-referenced not FK"
+        ConsentRecord consent "reporter consent, required at creation"
+        string status "pending|approved|declined|expired|no_longer_applicable"
+        Date raisedAt
+        Date expiresAt "raisedAt + REMEDIATION_APPROVAL_TTL_MINUTES"
+        object decidedBy "{accountId, displayName} or null"
+        Date decidedAt "null until decided"
+        string closureReason "set for expired and no_longer_applicable"
+        ObjectId resultingActionRecordId FK "null until execution produces a record"
+    }
+
+    ACTION_RECORD {
+        ObjectId _id PK
+        Date at "indexed"
+        string actor "agent|user|staff|system, reuses ACTORS enum"
+        ObjectId ticketId FK "indexed, null only for pre-ticket refusals"
+        ObjectId conversationId FK
+        string classifiedIntent "what the agent understood the request to be"
+        string policyEntryId "null when nothing in the whitelist matched"
+        string tier "read_only|state_changing|null, from the matched entry"
+        string requestedAction "exact command, or the unmatched request as classified"
+        map arguments
+        string endpointId "null for unmatched or unregistered-target refusals"
+        AuthorisationRecord authorisation "consent and approval relied upon"
+        string outcome "succeeded|failed|timed_out|attempted_unverified|refused"
+        string refusalReason "12-value vocabulary, null unless outcome=refused"
+        string observedOutput "captured command output, length-bounded, nullable"
+        object verification "{entryId, outcome, observedOutput} or null, R10"
+        number durationMs "nullable"
+    }
+
+    %% --- 005-constrained-remediation: committed policy files, not Mongo (no _id, no FK) ---
+
+    ACTION_POLICY_ENTRY {
+        string id PK "kebab-case, stable, never reused"
+        string description "shown to the employee, feeds the tool description"
+        string category "issue category served, or null for any"
+        string guidedStepRef "optional guided step this action can satisfy, nullable"
+        string tier "read_only|state_changing"
+        string command "fixed template, literals + named placeholders only"
+        ArgumentSpec_array arguments
+        string_array allowedEndpointIds "non-empty, must exist in TEST_ENDPOINT"
+        string verifiedBy "id of a read_only entry that observes success (R10), nullable"
+        number timeoutMs "per-entry override of the default, nullable"
+    }
+
+    TEST_ENDPOINT {
+        string id PK "unique, stable, the only way an action names a target"
+        string label "shown to staff"
+        string host "container host reachable from the demo machine"
+        number port "SSH port"
+        string username "account the executor connects as"
+        string hostKeyFingerprint "pinned at setup, verified on every connection, R2"
+        string description "shown in the audit view"
+    }
 ```
 
 ## Embedded Subdocument: TransitionRecord
@@ -122,6 +201,37 @@ Embedded within `GuidedSession.stepAttempts[]`, append-only — one record per i
 | `outcome` | `"worked"` \| `"not_worked"` \| `"already_tried"` \| `"skipped"` | LLM-interpreted reply classification |
 | `at` | Date | timestamp of the attempt |
 
+## Embedded Subdocument: ConsentRecord (005-constrained-remediation)
+
+Embedded on both `ApprovalRequest.consent` and `ActionRecord.authorisation.consent`:
+
+| Field | Type | Notes |
+|---|---|---|
+| `given` | boolean | |
+| `byAccountId` | ObjectId → UserAccount | the reporter |
+| `at` | Date | |
+| `messageId` | ObjectId → Message | the exact message that constituted consent — silence, ambiguity, or earlier general willingness is not consent (FR-004) |
+
+## Embedded Subdocument: AuthorisationRecord (005-constrained-remediation)
+
+Embedded on `ActionRecord.authorisation`:
+
+| Field | Type | Notes |
+|---|---|---|
+| `consent` | ConsentRecord \| null | |
+| `approval` | `{requestId, byAccountId, displayName, at}` \| null | present for every executed state-changing action, without exception (SC-005a) |
+
+## Embedded Subdocument: ArgumentSpec (005-constrained-remediation, policy file only)
+
+Embedded within `ActionPolicyEntry.arguments[]` in `action-policy.json` — not Mongo, not runtime-writable:
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | string | matches a placeholder in `command` |
+| `kind` | `"enum"` \| `"pattern"` | no free-text argument kind exists |
+| `values` | string[] | required when `kind` is `enum` — the complete permitted set |
+| `pattern` | string | required when `kind` is `pattern` — anchored regex, no alternation into whitespace or shell metacharacters |
+
 ## Enumerations Reference
 
 | Enum | Values |
@@ -134,6 +244,10 @@ Embedded within `GuidedSession.stepAttempts[]`, append-only — one record per i
 | `EscalationReason` | `user_request`, `low_confidence`, `out_of_scope`, `llm_unavailable`, `no_guide`, `guidance_exhausted` |
 | `GuidedSessionState` | `active`, `resolved`, `escalated`, `abandoned` |
 | `StepAttemptOutcome` | `worked`, `not_worked`, `already_tried`, `skipped` |
+| `ActionTier` | `read_only`, `state_changing` |
+| `ApprovalStatus` | `pending`, `approved`, `declined`, `expired`, `no_longer_applicable` |
+| `ActionOutcome` | `succeeded`, `failed`, `timed_out`, `attempted_unverified`, `refused` — separate from `TicketStatus`; `StatusBadge.tsx` never absorbs these values |
+| `RefusalReason` | `no_matching_entry`, `argument_mismatch`, `unregistered_target`, `endpoint_not_permitted`, `missing_consent`, `missing_approval`, `remediation_disabled`, `low_confidence`, `degraded_model`, `not_ticket_owner`, `already_attempted`, `step_cap_reached` |
 
 ## Cardinality Notes
 
@@ -145,3 +259,7 @@ Embedded within `GuidedSession.stepAttempts[]`, append-only — one record per i
 - **Category → Guide**: one-to-many. Guide versions are immutable and append-only (R7); publishing an edit inserts version n+1 and flips version n's `active` off in the same operation, so at most one version per category has `active: true`.
 - **Conversation → GuidedSession**: one-to-many over time, but a partial unique index on `{conversationId}` filtered to `state: "active"` enforces at most one *active* session per conversation at once (data-model.md). Reporting a new, different problem mid-guide abandons the prior active session first (conversation-service.ts).
 - **Guide → GuidedSession**: a session pins `categoryName` + `guideVersion` at creation (FR-017), so later edits to the guide never change which steps an in-flight session presents, even after a service restart.
+- **Ticket → ApprovalRequest**: one-to-many over time, but the approval lifecycle (data-model.md §4) means at most one request is ever `pending` for the same proposed action at once — `pending → approved | declined | expired | no_longer_applicable` is a one-way transition on a conditional update, so a concurrent second decision loses cleanly (R6).
+- **Ticket → ActionRecord**: one-to-many, and the only Mongo relationship in this feature that tolerates a null FK — a refusal raised before any ticket exists (e.g. `no_matching_entry` off a bare classification) still gets an audited record with `ticketId: null` (FR-009/010).
+- **ApprovalRequest → ActionRecord**: zero-or-one, set only on approval (`resultingActionRecordId`). A declined, expired, or no-longer-applicable request never produces an ActionRecord of its own — the case proceeds by guidance or escalation instead (US3 AS3).
+- **ActionPolicyEntry / TestEndpoint → everything**: these two are committed JSON files (`backend/src/policy/action-policy.json`, `backend/src/policy/test-endpoints.json`), read once at startup, zod-validated, and frozen — not Mongo documents. `policyEntryId` and `endpointId` on `ApprovalRequest` and `ActionRecord` are therefore string references into a file, never a Mongo `$ref`/populate path, and there is no write path anywhere in the codebase that could add, remove, or mutate an entry at runtime (Principle II, FR-001/FR-003).

@@ -235,20 +235,25 @@ export function applyImport(id: string): Promise<ImportOutcomesResponse> { retur
 
 export function recordActionConsent(
   ticketId: string,
+  sessionId: string,
   proposalId: string,
   granted: boolean,
 ): Promise<{ result: ConsentDecisionResult }> {
-  return request<{ result: ConsentDecisionResult }>(`/tickets/${encodeURIComponent(ticketId)}/actions/consent`, {
-    method: "POST",
-    body: JSON.stringify({ proposalId, granted }),
-  });
+  return request<{ result: ConsentDecisionResult }>(
+    `/tickets/${encodeURIComponent(ticketId)}/actions/consent?sessionId=${encodeURIComponent(sessionId)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ proposalId, granted }),
+    },
+  );
 }
 
 export function getTicketActions(
   ticketId: string,
+  sessionId: string,
 ): Promise<{ actions: ActionRecord[]; approvals: ApprovalRequest[] }> {
   return request<{ actions: ActionRecord[]; approvals: ApprovalRequest[] }>(
-    `/tickets/${encodeURIComponent(ticketId)}/actions`,
+    `/tickets/${encodeURIComponent(ticketId)}/actions?sessionId=${encodeURIComponent(sessionId)}`,
   );
 }
 

@@ -6,8 +6,10 @@ export default defineConfig({
     env: {
       APP_MODE: "test",
       LLM_PROVIDER: "mock",
+      LLM_PROVIDERS: "mock",
       MAINTAINER_KEY: "test-maintainer-key",
       MONGOMS_MAX_STARTUP_TIME: "60000",
+      REMEDIATION_ENABLED: "false",
     },
     reporters: ["default", "json"],
     outputFile: {

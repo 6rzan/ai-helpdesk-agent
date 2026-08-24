@@ -118,7 +118,7 @@ const SEED_CATEGORIES: SeedCategory[] = [
       "asking whether a hosted service or application (email, portal, shared drive) is down or degraded for everyone — the service itself is out while connectivity otherwise works",
     steps: [
       {
-        instruction: "Refresh the page or fully close and reopen the application.",
+        instruction: "Check whether the widget service is currently running on your machine.",
         successHint: "The service loads and responds normally.",
       },
       {

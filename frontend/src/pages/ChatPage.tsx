@@ -94,7 +94,7 @@ export function ChatPage() {
     },
     onActionRecorded: (data) => {
       setPendingProposal((prev) => (prev?.ticketId === data.ticketId ? null : prev));
-      getTicketActions(data.ticketId)
+      getTicketActions(data.ticketId, session?.sessionId ?? "")
         .then((res) => {
           const record = res.actions.find((a) => a.id === data.actionRecordId);
           if (record) {
@@ -222,11 +222,11 @@ export function ChatPage() {
 
   const handleConsentDecide = useCallback(
     (granted: boolean) => {
-      if (!pendingProposal || consentDeciding) {
+      if (!pendingProposal || consentDeciding || !session) {
         return;
       }
       setConsentDeciding(true);
-      recordActionConsent(pendingProposal.ticketId, pendingProposal.proposalId, granted)
+      recordActionConsent(pendingProposal.ticketId, session.sessionId, pendingProposal.proposalId, granted)
         .then(({ result }) => {
           // No optimistic outcome here (Design Direction) — the transcript
           // shows what happened only once the server's own reply arrives
@@ -245,7 +245,7 @@ export function ChatPage() {
         })
         .finally(() => setConsentDeciding(false));
     },
-    [pendingProposal, consentDeciding, pushSystemMessage],
+    [pendingProposal, consentDeciding, session, pushSystemMessage],
   );
 
   if (!session) {

@@ -1,7 +1,43 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.1.1 → 1.2.0 (MINOR, 2026-08-19): amendment brings the constitution
+Version change: 1.2.0 → 1.3.0 (MINOR, 2026-08-21): feature 005 (Constrained Automated
+Remediation) shipped, with its closing evidence gathered during the T117 quickstart
+validation pass. Both Compliance Debt Register entries are struck — the register is now
+empty, satisfying the "MUST be empty before final submission" clause ahead of Transition.
+Modified principles:
+  - VII. RUP-Aligned Iterative Delivery — `005` moved from "Remaining order" into the
+    delivery record as shipped; "Remaining order" now names only the refining/Transition
+    phase.
+  - VIII. Agent Core & Prompt Engineering — the staging clause is restated in the past
+    tense: the plan→act→observe loop, the registered-tool registry, and the ordered LLM
+    provider fallback chain are now the delivered, tested form, not a staged aspiration.
+    The provider-abstraction bullet's "outstanding" cross-reference to the register is
+    removed since CD-1 is closed.
+Struck (Compliance Debt Register):
+  - CD-1 (ordered LLM provider fallback chain) — closed by `ChainedLlmProvider`
+    (`backend/src/services/llm/chained-provider.ts`), `backend/tests/unit/chained-provider.test.ts`,
+    and the unchanged, still-passing `backend/tests/integration/degradation.test.ts`.
+  - CD-2 (constrained automated remediation, FR-8) — closed by the full policy engine,
+    endpoint registry, executor, tool registry, and audit-trail suites (26 unit and
+    integration test files, all passing on a clean run against `backend/vitest.config.ts`),
+    and the T118 release-gated demo path completing its remediation leg on the demo
+    machine. The T117 validation pass that gathered this evidence also found and fixed an
+    unrelated test-isolation gap (the real `.env`'s `LLM_PROVIDERS`/`REMEDIATION_ENABLED`/
+    `REMEDIATION_SSH_KEY_PATH` leaking into `vitest` runs via `dotenv`'s default
+    no-override behaviour) so the suites' pass state is now reproducible rather than
+    environment-dependent; see `backend/vitest.config.ts` and
+    `backend/tests/unit/config.test.ts`.
+Templates:
+  - No change needed — the plan-template's Constitution Check and Compliance Debt clause
+    already handle an empty register (a plan with nothing to close simply states so).
+Other artifacts:
+  - Register history retained inline below the (now empty) active table, per this
+    project's own "keep the breach visible and dated" principle for debt entries —
+    closing a debt is a fact worth keeping on record, not erasing.
+Follow-up TODOs: none — the Compliance Debt Register is empty ahead of the refining/
+Transition phase, as Governance requires before final submission.
+Previous: 1.1.1 → 1.2.0 (MINOR, 2026-08-19): amendment brings the constitution
 back in line with the delivered system after features 001–004 shipped, and records two
 standing Principle VIII obligations as tracked compliance debt rather than leaving the
 repository silently in breach.
@@ -321,14 +357,15 @@ Chapter 3, realised as speckit cycles.
      administration) — shipped.
   4. `004` Staff Dashboard & User Accounts — FR-9, plus accounts, the two-role model,
      self-service profiles, assignment, and NFR-5 role-restricted access — shipped.
+  5. `005` Constrained Automated Remediation — FR-8, the half of Objective O-3 that
+     activates NFR-4 in substance rather than vacuously (policy engine, endpoint
+     registry, executor, tool registry, audit trail, staff approval and kill-switch
+     control) — shipped.
 - **Remaining order:**
-  5. `005` Constrained automated remediation — FR-8, the outstanding half of Objective
-     O-3, and the increment that activates NFR-4 in substance rather than vacuously.
-     This is the next feature; nothing may be specified ahead of it without supervisor
-     agreement.
   6. **Refining / Transition phase** — system-wide testing, the Objective-4 evaluation
      (Principle IV), UAT with at least 3 testers, feedback-driven tuning within
-     experimental boundaries, and role-specific user guidance drafts.
+     experimental boundaries, and role-specific user guidance drafts. This is the next
+     phase; nothing may be specified ahead of it without supervisor agreement.
 - The refining phase MUST NOT be specified until every feature has shipped. It is a
   system-wide phase, not an early increment; specifying it sooner produces polish work
   against a moving target. Per-feature tests remain mandatory throughout (Principle IV)
@@ -351,13 +388,15 @@ as code.
 
 **Agent core (loop, tools, memory, providers):**
 
-- **Staging clause.** The loop and tool-registry obligations below bind from the moment
-  the first **side-effecting tool** exists — that is, with FR-8 (feature 005). Until
-  then, a deterministic classification-and-guidance pipeline that calls the model for
-  interpretation only, and exposes no tools, is the compliant form: with no tool to
-  select, a tool-selection loop would be ceremony without a safety function. The memory,
-  provider, and prompt obligations bind **now** and are not staged.
-- Once tools exist, the agent core MUST implement an explicit **plan → act → observe**
+- **Staging clause (resolved).** The loop and tool-registry obligations below bound from
+  the moment the first **side-effecting tool** existed — that is, with FR-8 (feature
+  005), now shipped. Before then, a deterministic classification-and-guidance pipeline
+  that called the model for interpretation only, and exposed no tools, was the compliant
+  form: with no tool to select, a tool-selection loop would have been ceremony without a
+  safety function. The obligations below are now the delivered, tested form, not a
+  future aspiration — see `backend/src/services/agent/`. The memory, provider, and
+  prompt obligations bound from the start and were never staged.
+- Now that tools exist, the agent core MUST implement an explicit **plan → act → observe**
   loop: the model plans, at most one policy-checked tool call executes per step, and the
   observed result feeds the next step. The loop MUST enforce a hard iteration cap per
   user turn; hitting the cap or detecting no progress triggers escalation (FR-7), never a
@@ -370,11 +409,12 @@ as code.
   never RAM-only — so context survives restarts and transfers intact onto the ticket at
   escalation (Principle III handover).
 - The provider abstraction (Principle VI) MUST implement an **ordered fallback chain**
-  (the speech-to-text path already models this via a provider list). Total provider
-  failure MUST degrade visibly: the user is told the assistant is degraded and the
-  request escalates to staff — it MUST NOT error silently. No module may hardcode a
-  single provider. *The visible-degradation half is implemented and tested; the ordered
-  chain itself is outstanding — see the Compliance Debt Register.*
+  (the speech-to-text path already models this via a provider list, and the LLM path now
+  mirrors it via `ChainedLlmProvider`). Total provider failure MUST degrade visibly: the
+  user is told the assistant is degraded and the request escalates to staff — it MUST
+  NOT error silently. No module may hardcode a single provider. *Both halves — the
+  ordered chain and the visible degradation on total failure — are implemented and
+  tested (CD-1, closed).*
 - When a hosted (non-local) provider is configured, prompts MUST be treated as
   potentially retained by that provider: only ticket-necessary information may be sent
   (NFR-5), and the reference configuration keeps all inference local.
@@ -470,10 +510,14 @@ MUST name its evidence and the feature that closes it. Adding an entry is not a 
 avoid an obligation — it is a way to keep the breach visible and dated. This register is
 reviewed at every phase gate (see Governance) and MUST be empty before final submission.
 
-| # | Obligation | Evidence of gap | Closes in | Raised |
-|---|---|---|---|---|
-| CD-1 | Principle VIII — the LLM provider abstraction MUST implement an ordered fallback chain | `backend/src/services/llm/factory.ts` selects exactly one provider from `LLM_PROVIDER` and returns it; there is no chain. Visible degradation on total failure *is* implemented and covered by `backend/tests/integration/degradation.test.ts`. The speech-to-text path already models the intended shape via `STT_PROVIDERS`. | Feature 005 | 2026-08-19 |
-| CD-2 | Principle I / O-3 — constrained automated remediation (FR-8) | No policy engine, endpoint registry, executor, or tool registry exists; `backend/src/services/conversation/conversation-engine.ts` refuses remediation requests by design, and specs 001, 003, and 004 each defer FR-8 explicitly. NFR-4 is therefore satisfied only vacuously. | Feature 005 | 2026-08-19 |
+**Active entries**: none.
+
+**Closed entries** (kept on record — a closed debt is a fact worth keeping, not erasing):
+
+| # | Obligation | Evidence of gap (as raised) | Closed by | Closing evidence | Raised | Closed |
+|---|---|---|---|---|---|---|
+| CD-1 | Principle VIII — the LLM provider abstraction MUST implement an ordered fallback chain | `backend/src/services/llm/factory.ts` selected exactly one provider from `LLM_PROVIDER` and returned it; there was no chain. Visible degradation on total failure *was* implemented and covered by `backend/tests/integration/degradation.test.ts`. The speech-to-text path already modelled the intended shape via `STT_PROVIDERS`. | Feature 005 | `ChainedLlmProvider` (`backend/src/services/llm/chained-provider.ts`), `backend/tests/unit/chained-provider.test.ts` (fall-through on first-provider failure, unchanged single-provider behaviour), and `backend/tests/integration/degradation.test.ts` unchanged and still passing. | 2026-08-19 | 2026-08-21 |
+| CD-2 | Principle I / O-3 — constrained automated remediation (FR-8) | No policy engine, endpoint registry, executor, or tool registry existed; `backend/src/services/conversation/conversation-engine.ts` refused remediation requests by design, and specs 001, 003, and 004 each deferred FR-8 explicitly. NFR-4 was therefore satisfied only vacuously. | Feature 005 | The policy engine, endpoint registry, executor, tool registry, and audit trail (`backend/src/policy/`, `backend/src/services/remediation/`, `backend/src/services/agent/`), with 26 unit and integration test files passing on a clean run (`policy-schema`, `policy-loader`, `policy-engine`, `executor`, `audit-service`, `audit-immutability`, `audit-trail-view`, `tools-registry`, `agent-loop`, `availability-service`, `config`, `chained-provider`, `degradation`, `degraded-model-remediation`, and the full `remediation-*` integration suite), plus the T118 release-gated demo path completing its whitelisted-remediation leg on the demo machine (SC-008, Principle IV). | 2026-08-19 | 2026-08-21 |
 
 ## Governance
 
@@ -497,4 +541,4 @@ reviewed at every phase gate (see Governance) and MUST be empty before final sub
 - Runtime development guidance for agents lives in repository-local agent instruction
   files; where they conflict, this constitution wins.
 
-**Version**: 1.2.0 | **Ratified**: 2026-07-07 | **Last Amended**: 2026-08-19
+**Version**: 1.3.0 | **Ratified**: 2026-07-07 | **Last Amended**: 2026-08-21

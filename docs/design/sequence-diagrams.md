@@ -319,3 +319,147 @@ sequenceDiagram
 
     Note over Guidance,DB: A GuidedSession pins (categoryName, guideVersion) at start (FR-017) —<br/>a maintainer publishing guide v(n+1) mid-session never changes what this session shows.<br/>State is read from MongoDB on every turn (FR-011): a service restart resumes at the correct step.
 ```
+
+## 5. Constrained Automated Remediation — Read-Only Action (005-constrained-remediation, US1/US2)
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as Chat UI
+    participant API as Express Routes
+    participant Guidance as Guidance Service
+    participant Consent as Consent Service
+    participant Loop as Agent Loop<br/>(agent-loop.ts)
+    participant LLM as LLM Gateway<br/>(chained provider)
+    participant Policy as Policy Engine<br/>(policy-engine.ts)
+    participant PolicyFiles as Policy Files<br/>(action-policy.json,<br/>test-endpoints.json)
+    participant Avail as Availability Service
+    participant Exec as Executor<br/>(ssh2)
+    participant Endpoint as Test Endpoint<br/>(Docker/SSH)
+    participant Audit as Audit Service
+    participant DB as MongoDB
+    participant SSE as Event Bus
+
+    User->>UI: "the widget service seems to be down"
+    UI->>API: POST /api/conversations/:id/messages
+    API->>Guidance: processReply(text) [existing guided-flow turn]
+    Guidance->>Consent: proposeActionForStep(ctx)
+    Consent->>Loop: runAgentLoop(registeredTools, step budget=AGENT_MAX_STEPS)
+
+    loop up to AGENT_MAX_STEPS iterations (default 3)
+        Note over Loop: 1. PLAN
+        Loop->>LLM: propose at most one tool call, or none
+        LLM-->>Loop: { tool: "service_status", arguments }
+        Note over Loop: 2. VALIDATE
+        Loop->>Loop: zod-check args against tool's argumentSchema
+        Loop->>Policy: matchAction(policyEntryId, args, endpointId)
+        Policy->>PolicyFiles: exact match — id, every argument, endpoint
+        alt no exact match (US2 AS3)
+            PolicyFiles-->>Policy: no entry
+            Policy-->>Loop: refused (no_matching_entry / argument_mismatch)
+            Loop->>Audit: recordAction(outcome=refused, ticketId=null-or-set)
+            Note over Loop: same (tool, arguments) pair proposed twice,<br/>or two consecutive empty proposals → escalate (FR-012)
+        else exact match
+            PolicyFiles-->>Policy: ActionPolicyEntry { tier: read_only, ... }
+            Policy-->>Loop: candidate action, tier=read_only
+        end
+    end
+
+    Note over Loop,Consent: read-only tier needs only reporter consent (FR-004)
+    Loop-->>Consent: validated proposal
+    Consent-->>Guidance: ActionProposal
+    Guidance->>DB: save Message(agent, description) + ticket.pendingActionProposal
+    Guidance->>SSE: publish(action_proposed)
+    SSE-->>UI: ConsentBlock rendered inline in chat
+
+    User->>UI: grants consent
+    UI->>API: POST /tickets/:id/actions/consent { proposalId, granted:true }
+    API->>Consent: recordConsent(input)
+    Consent->>Avail: check globallyEnabled && endpoint not disabled
+    alt remediation disabled (kill switch)
+        Avail-->>Consent: disabled
+        Consent->>Audit: recordAction(outcome=refused, refusalReason=remediation_disabled)
+    else remediation enabled
+        Avail-->>Consent: enabled
+        Note over Consent: 4. ACT — policy engine is the sole caller of the executor
+        Consent->>Policy: attemptAction(input)
+        Policy->>Exec: executeViaSsh(request) [pinned host key, bounded timeout]
+        Exec->>Endpoint: run fixed command template with substituted args
+        Endpoint-->>Exec: stdout/stderr, exit code
+        Exec-->>Policy: ExecutionResult { outcome, observedOutput, durationMs }
+        Note over Policy: 5. OBSERVE — read-only actions have no separate<br/>verification leg (verifiedBy applies to state_changing only)
+        Policy->>Audit: recordAction(outcome, observedOutput, authorisation.consent)
+        Audit->>DB: insert ActionRecord (immutable — pre hooks throw on any update/delete)
+        Policy-->>Consent: AttemptActionResult
+        Consent->>DB: save Message(agent, plain-language outcome report)
+        Consent->>SSE: publish(action_recorded)
+    end
+    SSE-->>UI: ActionRecordCard appended to the transcript
+    UI-->>User: "I checked — the widget service is not running (HD-0038)."
+```
+
+## 6. Constrained Automated Remediation — State-Changing Action with Staff Approval (005-constrained-remediation, US3/US4)
+
+```mermaid
+sequenceDiagram
+    actor User as Reporter
+    actor Staff
+    participant UI as Chat UI
+    participant API as Express Routes
+    participant Consent as Consent Service
+    participant Approval as Approval Service
+    participant Policy as Policy Engine
+    participant Exec as Executor
+    participant Endpoint as Test Endpoint
+    participant Verify as Verification read<br/>(policy entry's verifiedBy)
+    participant Audit as Audit Service
+    participant DB as MongoDB
+    participant SSE as Event Bus
+    participant StaffUI as Staff Approval Queue
+
+    Note over User,Consent: Agent loop already proposed a state_changing action<br/>(same PLAN → VALIDATE path as diagram 5) and the reporter consented
+    User->>UI: grants consent to "clear the print queue on Test Node B"
+    UI->>API: POST /tickets/:id/actions/consent { proposalId, granted:true }
+    API->>Consent: recordConsent(input)
+    Note over Consent: tier=state_changing needs consent **and** staff approval (FR-004)
+    Consent->>Approval: raiseApprovalRequest({ ticketId, policyEntryId, arguments, endpointId, consent })
+    Approval->>DB: insert ApprovalRequest(status=pending, expiresAt=raisedAt+TTL)
+    Approval->>SSE: publish(approval_pending) [account-scoped channel]
+    SSE-->>UI: "Waiting on IT staff to approve: clear the print queue…"
+    SSE-->>StaffUI: new row in the pending approval queue
+
+    Staff->>StaffUI: open queue, click Approve
+    StaffUI-->>Staff: "This will run: clear-print-queue on test-node-b — Confirm / Cancel"
+    Staff->>StaffUI: Confirm
+    StaffUI->>API: POST /staff/approvals/:id/approve
+    API->>Approval: decideApproval({ requestId, staff, decision:"approve" })
+    Approval->>DB: conditional update on status:"pending" [first writer wins, R6]
+    alt lost the race or preconditions no longer hold
+        DB-->>Approval: no match / precondition failed
+        Approval->>DB: close as no_longer_applicable
+        Approval-->>API: 409 / already resolved
+        API-->>StaffUI: current status shown, no execution
+    else won the race, preconditions hold
+        DB-->>Approval: request now approved
+        Note over Approval: preconditions re-checked: ticket still open,<br/>remediation enabled, action not already executed (R6)
+        Approval->>Policy: attemptAction(input) [same policy engine as read-only path]
+        Policy->>Exec: executeViaSsh(request)
+        Exec->>Endpoint: run fixed command template (state-changing)
+        Endpoint-->>Exec: stdout/stderr, exit code
+        Exec-->>Policy: ExecutionResult
+        Note over Policy: 5. OBSERVE — state_changing entries run their verifiedBy<br/>read-only action and judge the output (judgeVerification, R10)
+        Policy->>Exec: executeViaSsh(verification request)
+        Exec->>Endpoint: run the verifiedBy read-only command
+        Endpoint-->>Exec: stdout/stderr
+        Exec-->>Verify: observed output
+        Verify->>Policy: judgeVerification(policyEntryId, output) → confirmed | contradicted | inconclusive
+        Policy->>Audit: recordAction(outcome, verification, authorisation={consent, approval})
+        Audit->>DB: insert ActionRecord (immutable)
+        Policy-->>Approval: AttemptActionResult
+        Approval->>DB: update ApprovalRequest.resultingActionRecordId, status stays approved
+        Approval->>DB: save Message(agent, plain-language outcome) on the conversation
+        Approval->>SSE: publish(approval_decided) [account-scoped] + publish(action_recorded) [session-scoped]
+        SSE-->>StaffUI: queue row moves to decided
+        SSE-->>UI: "IT staff approved the action." then the outcome report
+    end
+```

@@ -364,6 +364,7 @@ async function handlePendingDuplicateReply(ctx: ReplyContext, conversation: Conv
 
   const ticket = await createTicket({
     reporterId: ctx.reporterId,
+    reporterAccountId: conversation.accountId ?? null,
     conversationId: ctx.conversationId,
     description: pending.description,
     category: pending.category as IssueCategory,
@@ -476,8 +477,10 @@ export async function escalateForUserRequest(ctx: ReplyContext, reason: Escalati
     return;
   }
 
+  const conversation = await Conversation.findById(ctx.conversationId);
   const ticket = await createTicket({
     reporterId: ctx.reporterId,
+    reporterAccountId: conversation?.accountId ?? null,
     conversationId: ctx.conversationId,
     description: ctx.text,
     category: "unclassified",

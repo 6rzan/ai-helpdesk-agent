@@ -52,8 +52,19 @@ describe("envSchema — remediation and provider-chain config", () => {
   });
 
   it("leaves REMEDIATION_SSH_KEY_PATH and REMEDIATION_SSH_KEY_PASSPHRASE optional", () => {
-    const config = parse();
-    expect(config.REMEDIATION_SSH_KEY_PATH).toBeUndefined();
-    expect(config.REMEDIATION_SSH_KEY_PASSPHRASE).toBeUndefined();
+    // Explicit undefined override, same pattern as the LLM_PROVIDERS test above:
+    // the demo machine's own .env sets a real key path, so relying on ambient
+    // process.env alone would assert against the developer's local secrets
+    // rather than the schema's actual default.
+    const unset = envSchema.safeParse({
+      ...process.env,
+      REMEDIATION_SSH_KEY_PATH: undefined,
+      REMEDIATION_SSH_KEY_PASSPHRASE: undefined,
+    });
+    expect(unset.success).toBe(true);
+    if (unset.success) {
+      expect(unset.data.REMEDIATION_SSH_KEY_PATH).toBeUndefined();
+      expect(unset.data.REMEDIATION_SSH_KEY_PASSPHRASE).toBeUndefined();
+    }
   });
 });

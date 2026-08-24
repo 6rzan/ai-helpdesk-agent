@@ -9,6 +9,7 @@ import { getPolicy } from "../../policy/policy-loader.js";
 import { publishEvent, publishStaffEvent } from "../../api/sse/event-bus.js";
 import { runAgentLoop, type Planner, type ToolLike } from "../agent/agent-loop.js";
 import { getToolsForGuideStep, type RegisteredTool } from "../agent/tools/index.js";
+import { describeArgumentSchema } from "../agent/tools/argument-hint.js";
 import { escalateTicketForGuidance, sendAgentReply } from "../conversation/conversation-guidance.js";
 import { getLlmProvider } from "../llm/factory.js";
 import type { ConversationTurn } from "../llm/types.js";
@@ -141,7 +142,14 @@ export async function proposeActionForStep(ctx: StepProposalContext): Promise<St
   const planner = makeLlmPlanner(
     ctx.history,
     ctx.stepInstruction,
-    runnable.map((tool) => ({ name: tool.name, description: tool.description })),
+    runnable.map((tool) => ({
+      name: tool.name,
+      // LLM-facing only (T046 fix): appends a schema-derived argument hint so
+      // the model knows the exact argument key(s) and enum value(s) to use,
+      // never mixed into `tool.description` itself — that string is also
+      // shown verbatim to the employee in chat and the audit trail below.
+      description: `${tool.description} ${describeArgumentSchema(tool.argumentSchema)}`.trim(),
+    })),
     degradedRef,
     ctx.ticket._id,
   );

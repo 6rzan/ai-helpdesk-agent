@@ -311,11 +311,11 @@ visible-degradation and escalation behaviour still holds.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T117 Run the full quickstart.md validation, including every refusal-matrix row and every user-story scenario, on the demo machine with the containers running
-- [ ] T118 Confirm the release-gated demo path passes on the demo machine on the first attempt with the remediation leg included (SC-008, Principle IV)
+- [X] T117 Run the full quickstart.md validation, including every refusal-matrix row and every user-story scenario, on the demo machine with the containers running
+- [X] T118 Confirm the release-gated demo path passes on the demo machine on the first attempt with the remediation leg included (SC-008, Principle IV)
 - [ ] T119 [P] Capture Chapter 4 implementation screenshots into `docs/`: consent block, action result in chat, approval queue, approval confirmation, audit view with filters, per-ticket action history, kill switch with the disabled banner, and the metrics surface including its no-data state (Principle V)
 - [X] T120 [P] Add named Chapter 4.6 sample-code excerpts to `docs/` for the policy engine's default-deny path, the executor's structured-parameter connection, and the audit model's immutability hooks (Principle V)
-- [ ] T121 [P] Update the architecture, sequence, and ERD/schema diagrams in `docs/` for the three new collections, the two policy files, and the plan → act → observe loop (Principle V)
+- [X] T121 [P] Update the architecture, sequence, and ERD/schema diagrams in `docs/` for the three new collections, the two policy files, and the plan → act → observe loop (Principle V)
 - [ ] T122 [P] Generate Chapter 5 TC tables from the new suites via `npm --prefix backend run tc-tables` and file the output in `docs/`
 - [X] T123 [P] Update `README.md` — How to use, Troubleshooting, configuration, API, and roadmap — for the container prerequisite, the new environment variables, the new endpoints, and the remediation feature
 - [X] T124 Run the impeccable refinement sequence on every changed frontend file: `critique → layout → colorize → typeset → polish → audit`, then the taste §14 pre-flight, then `node "%USERPROFILE%/.claude/skills/impeccable/scripts/detect.mjs" --json <changed files>` and address the findings (before_implement hook)
@@ -324,7 +324,7 @@ visible-degradation and escalation behaviour still holds.
 - [X] T127 Run all quality gates: `npm --prefix backend run typecheck`, `lint`, `test`, and the same three for `frontend`, and confirm no file exceeds 500 lines
 - [X] T128 Run `graphify update .` to refresh the knowledge graph after implementation
 - [X] T129 Remove the stray zero-byte files in `frontend/` (`draft.length`, `m.author`, `m.text.includes(ticket.reference)`, `{,`, `{,+`) left by mis-redirected shell commands
-- [ ] T130 Run `/speckit-constitution` to strike Compliance Debt Register entries **CD-1** and **CD-2**, citing the closing evidence: `chained-provider.test.ts` and the preserved `degradation.test.ts` for CD-1, and the policy engine, executor, registry, tool registry, and audit suites plus the passing remediation demo leg for CD-2. Per Governance, this runs **after** the evidence exists, never on intent
+- [X] T130 Run `/speckit-constitution` to strike Compliance Debt Register entries **CD-1** and **CD-2**, citing the closing evidence: `chained-provider.test.ts` and the preserved `degradation.test.ts` for CD-1, and the policy engine, executor, registry, tool registry, and audit suites plus the passing remediation demo leg for CD-2. Per Governance, this runs **after** the evidence exists, never on intent
 
 ---
 
