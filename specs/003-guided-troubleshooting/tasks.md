@@ -151,7 +151,7 @@ Web application layout per plan.md: `backend/src/`, `backend/tests/`, `frontend/
 
 - [X] T045 [P] Update README.md: How to use (guided flow, quick replies), Troubleshooting, configuration (`MAINTAINER_KEY`, `seed:guides`), admin API summary, roadmap tick for guided troubleshooting
 - [ ] T046 [P] Capture documentation evidence in docs/: chat screenshots of a guided flow to resolution and to escalation (Chapter 4) — **screenshots not captured (no live browser session run this pass)**; updated sequence diagram including the guidance stage (Chapter 4.2–4.4) — done, see `docs/design/sequence-diagrams.md` §4; TC tables generated from test names (Chapter 5) — done, `docs/testing/tc-tables.md` regenerated
-- [ ] T047 Run all five quickstart.md scenarios plus automated gates on the demo machine: `npm run typecheck --workspace backend`, lint, `npm test --workspace backend` (incl. classification regression + guardrail tests), `npm test --workspace frontend` (ChatPage + VoiceControl green) — **automated gates done and green** (166/166 backend, 47/47 frontend, typecheck + lint clean); the 5 manual quickstart.md walkthroughs on a live demo machine were not run this pass
+- [ ] T047 Run all five quickstart.md scenarios plus automated gates on the demo machine: `npm --prefix backend run typecheck`, lint, `npm --prefix backend test` (incl. classification regression + guardrail tests), `npm --prefix frontend test` (ChatPage + VoiceControl green) — **automated gates done and green** (166/166 backend, 47/47 frontend, typecheck + lint clean); the 5 manual quickstart.md walkthroughs on a live demo machine were not run this pass
 - [X] T048 Run `graphify update .` to refresh the knowledge graph after implementation
 
 ---

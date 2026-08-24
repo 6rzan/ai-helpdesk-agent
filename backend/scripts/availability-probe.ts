@@ -12,7 +12,12 @@ interface ProbeAttempt {
 const BASE_URL = process.env.PROBE_BASE_URL ?? `http://127.0.0.1:${process.env.PORT ?? 3000}`;
 const INTERVAL_MINUTES = Number(process.env.PROBE_INTERVAL_MINUTES ?? 60);
 const DURATION_HOURS = Number(process.env.PROBE_DURATION_HOURS ?? 24);
-const ORG_ID = process.env.PROBE_ORG_ID ?? "PROBE0001";
+// Since feature 005, POST /api/sessions requires an authenticated account: the legacy
+// { orgId, displayName } body is only honoured by the test harness. The probe therefore signs
+// in as its own throwaway account, registering it on first run.
+const PROBE_EMAIL = process.env.PROBE_EMAIL ?? "availability-probe@local.test";
+const PROBE_PASSWORD = process.env.PROBE_PASSWORD ?? "availability-probe-local";
+const PROBE_DISPLAY_NAME = process.env.PROBE_DISPLAY_NAME ?? "Availability Probe";
 // Overrides the duration/interval-derived attempt count — for smoke-testing the script itself.
 const MAX_ATTEMPTS_OVERRIDE = process.env.PROBE_MAX_ATTEMPTS ? Number(process.env.PROBE_MAX_ATTEMPTS) : undefined;
 
@@ -21,6 +26,62 @@ const OUTPUT_PATH = process.env.PROBE_OUTPUT_PATH
   : path.resolve("../docs/testing/availability-probe-log.md");
 const TABLE_HEADER = "| # | Timestamp (UTC) | Health | Session Created | Report Accepted | Result | Error |\n|---|---|---|---|---|---|---|";
 
+let authCookie: string | null = null;
+
+function readSessionCookie(res: Response): string | null {
+  const setCookies = typeof res.headers.getSetCookie === "function" ? res.headers.getSetCookie() : [];
+  const pairs = setCookies
+    .map((entry) => entry.split(";")[0]?.trim())
+    .filter((pair): pair is string => Boolean(pair));
+  return pairs.length > 0 ? pairs.join("; ") : null;
+}
+
+/** Signs the probe account in, registering it the first time the probe runs against a fresh DB. */
+async function authenticate(): Promise<string> {
+  const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: PROBE_EMAIL, password: PROBE_PASSWORD }),
+  });
+
+  if (loginRes.status === 200) {
+    const cookie = readSessionCookie(loginRes);
+    if (!cookie) {
+      throw new Error("login succeeded but returned no session cookie");
+    }
+    return cookie;
+  }
+  if (loginRes.status !== 401) {
+    throw new Error(`probe login returned ${loginRes.status}`);
+  }
+
+  const registerRes = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: PROBE_EMAIL,
+      displayName: PROBE_DISPLAY_NAME,
+      password: PROBE_PASSWORD,
+    }),
+  });
+  if (registerRes.status !== 201) {
+    throw new Error(`probe account registration returned ${registerRes.status}`);
+  }
+  const cookie = readSessionCookie(registerRes);
+  if (!cookie) {
+    throw new Error("registration succeeded but returned no session cookie");
+  }
+  return cookie;
+}
+
+function createSessionRequest(): Promise<Response> {
+  return fetch(`${BASE_URL}/api/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: authCookie ?? "" },
+    body: JSON.stringify({}),
+  });
+}
+
 async function probeOnce(): Promise<ProbeAttempt> {
   const timestamp = new Date().toISOString();
 
@@ -28,11 +89,12 @@ async function probeOnce(): Promise<ProbeAttempt> {
     const healthRes = await fetch(`${BASE_URL}/api/health`);
     const health = (await healthRes.json()) as { status: string };
 
-    const sessionRes = await fetch(`${BASE_URL}/api/sessions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId: ORG_ID, displayName: "Availability Probe" }),
-    });
+    let sessionRes = await createSessionRequest();
+    if (sessionRes.status === 401) {
+      // First attempt of the run, or the auth session lapsed mid-window — sign in and retry once.
+      authCookie = await authenticate();
+      sessionRes = await createSessionRequest();
+    }
     if (sessionRes.status !== 201) {
       throw new Error(`session creation returned ${sessionRes.status}`);
     }

@@ -7,11 +7,15 @@ Proves the feature end-to-end on the demo machine. Contracts: [contracts/api.md]
 
 - MongoDB running locally; LLM provider reachable (LM Studio/Ollama per `.env`)
 - `MAINTAINER_KEY` set in `backend/.env` (see `.env.example`)
-- Seeded guides: `npm run seed:guides --workspace backend` (idempotent; six mandated categories)
+- Seeded guides: `npm --prefix backend run seed:guides` (idempotent; six mandated categories)
+
+> There is no root `package.json`; run every npm command with `--prefix`, as the
+> feature-005 quickstart does. The `npm run … --workspace <pkg>` form used by earlier
+> drafts of this file fails here.
 
 ```powershell
-npm run dev --workspace backend    # API + SSE
-npm run dev --workspace frontend   # chat UI
+npm --prefix backend run dev     # API + SSE
+npm --prefix frontend run dev    # chat UI
 ```
 
 ## Scenario 1 — P1: guided flow to resolution (US1)
@@ -61,9 +65,9 @@ Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/admin/categories -
 ## Automated gates
 
 ```powershell
-npm run typecheck --workspace backend; npm run lint --workspace backend
-npm test --workspace backend        # incl. classification regression set (R2) + guardrail tests
-npm test --workspace frontend       # ChatPage + VoiceControl regressions stay green
+npm --prefix backend run typecheck; npm --prefix backend run lint
+npm --prefix backend test        # incl. classification regression set (R2) + guardrail tests
+npm --prefix frontend test       # ChatPage + VoiceControl regressions stay green
 ```
 
 All five scenarios plus the automated gates passing = feature demo-ready (Principle IV release gate).
