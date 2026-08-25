@@ -6,8 +6,12 @@ Proves the feature end-to-end on the demo machine. Contracts: [contracts/api.md]
 ## Prerequisites
 
 - MongoDB running locally; LLM provider reachable (LM Studio/Ollama per `.env`)
-- `MAINTAINER_KEY` set in `backend/.env` (see `.env.example`)
+- `MAINTAINER_KEY` set in `backend/.env` (see `.env.example`) — without it the whole
+  `/api/admin` router is *absent*, so Scenario 4 returns 404 rather than 401
 - Seeded guides: `npm --prefix backend run seed:guides` (idempotent; six mandated categories)
+- **A signed-in account.** Since feature 005 wired consent session auth, `POST /api/sessions`
+  returns 401 `UNAUTHENTICATED` without a session cookie, and the chat UI only starts a
+  session once an account is present. Register or sign in before Scenarios 1–3, 5.
 
 > There is no root `package.json`; run every npm command with `--prefix`, as the
 > feature-005 quickstart does. The `npm run … --workspace <pkg>` form used by earlier
@@ -24,7 +28,7 @@ npm --prefix frontend run dev    # chat UI
 2. **Expect**: category confirmation + ticket creation, then immediately a message marked "Step 1 of n" with a plain-language instruction (SC-001), plus quick-reply chips.
 3. Reply `Didn't work` → **expect** Step 2, no repeated or skipped steps.
 4. Reply `That worked` → **expect** resolution confirmation; ticket status flips to `resolved` in the UI without refresh (FR-006).
-5. `GET /api/tickets/:id` → **expect** `guidance.stepAttempts` listing both attempts with outcomes (FR-005).
+5. `GET /api/tickets/<reference>?sessionId=<sessionId>` → **expect** `guidance.stepAttempts` listing both attempts with outcomes (FR-005). The route keys on the ticket **reference**, not its id, and the `sessionId` query parameter is mandatory — omitting it is a 400, and the ticket must belong to that session's reporter.
 
 ## Scenario 2 — P2: exhaustion & user-requested escalation (US2)
 
@@ -57,10 +61,36 @@ Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/admin/categories -
 5. Wrong/missing `x-maintainer-key` → **expect** 401.
 6. `GET .../guide/versions` → **expect** history with `changedBy`/`changedAt` (SC-008).
 
-## Scenario 5 — resumption (FR-011, SC-006)
+## Scenario 5 — guidance state survives a restart (FR-011, SC-006)
 
-1. Start a guided session, reply to step 1, then restart the backend process.
-2. Reopen the conversation and reply → **expect** guidance continues at the correct step (session state from MongoDB, not memory).
+**What this proves**: guided-session progress lives in MongoDB and is read fresh after a
+restart, not held in server memory.
+
+**What it deliberately does not claim**: that a *chat session* survives a restart. Chat
+sessions are held in a module-level map in
+`backend/src/services/session/session-service.ts`, so restarting the process invalidates
+them by design — there is no reopen-this-conversation endpoint, and a new session always
+opens a new conversation. Step 4 below asserts that invalidation rather than glossing it.
+
+1. Signed in, start a guided session for a login issue and reply `Didn't work` to step 1
+   → **expect** `Step 2 of n`. Keep the `sessionId`, `conversationId`, and ticket reference.
+2. `GET /api/tickets/<reference>?sessionId=<sessionId>` → **expect** `guidance.state` is
+   `"active"` and `guidance.stepAttempts` holds one entry with `stepIndex: 0`, its outcome,
+   and the step-1 `instruction` text.
+3. Restart the backend process (`Ctrl-C`, then `npm --prefix backend run dev`).
+4. Replay the *old* session: `POST /api/conversations/<conversationId>/messages` with the
+   old `sessionId` → **expect** 403 `SESSION_INVALID`. This is the designed behaviour, not
+   a defect.
+5. Reload the chat UI → **expect** a new session on a new conversation, with the ticket from
+   step 1 still listed among the open tickets (the reporter record is keyed to the account,
+   so it is stable across sessions).
+6. `GET /api/tickets/<reference>?sessionId=<newSessionId>` → **expect** the `guidance` block
+   identical to step 2, reconstructed from MongoDB after the restart (SC-006).
+
+Automated counterpart: `tests/integration/guided-session-resume.test.ts` (GR-001), which
+asserts `currentStepIndex`, `state`, and `stepAttempts` persist across a database
+connection cycle. Note that GR-001 rebuilds the Express app but *not* the module-level
+session store, so it does not exercise step 4; that assertion exists only here.
 
 ## Automated gates
 

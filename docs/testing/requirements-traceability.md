@@ -65,6 +65,20 @@ produce a genuine pass in either condition.
 NFR-1 should therefore be read as resting on `docs/testing/benchmark-results.md` rather than
 on TC-025, until the benchmark file is given a database fixture.
 
+## Caveat on session resumption (affects FR-4)
+
+`integration/guided-session-resume.test.ts` (GR-001) is cited above for FR-4. It proves that
+`GuidedSession.currentStepIndex`, `state`, and `stepAttempts` persist in MongoDB and are read
+fresh after the database connection cycles. It does **not** prove that a chat session survives
+a process restart: the test rebuilds the Express app but the session store is a module-level
+map (`backend/src/services/session/session-service.ts`), so it is shared across `createApp()`
+instances and survives the simulated restart.
+
+Actual behaviour after a real restart is that the old `sessionId` is invalid (403
+`SESSION_INVALID`) and a new session opens a new conversation, while the ticket and its
+guidance record persist. Scenario 5 of the feature-003 quickstart was reworded on 2026-08-25
+to assert that behaviour rather than the resumption it previously claimed.
+
 ## Outstanding evidence
 
 These rows close when the corresponding manual artefacts are captured. All are tracked tasks.
