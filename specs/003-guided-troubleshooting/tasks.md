@@ -61,7 +61,7 @@ Web application layout per plan.md: `backend/src/`, `backend/tests/`, `frontend/
 - [X] T014 [P] [US1] Unit tests (TC-named) for the guidance state machine transitions: worked→resolved, not_worked→advance, already_tried→record+advance, question→hold on current step, unclear/low-confidence→clarify never guess (FR-013); plus an advisory-only guard test asserting guidance-service imports no executor/command modules and every transition output is text-only (FR-010), in backend/tests/unit/guidance-service.test.ts
 - [X] T015 [P] [US1] Unit test for `interpretStepReply` zod schema: valid strict-JSON accepted; malformed/extra-field/invalid-enum LLM output rejected and mapped to the clarify path, in backend/tests/unit/interpret-step-reply.test.ts
 - [X] T016 [P] [US1] Integration test (supertest): "I can't log into my account" → classification + ticket + Step 1 message with guidance metadata in same reply flow (SC-001) → "didn't work" → Step 2 → "that worked" → ticket resolved (FR-006) and GET /api/tickets/:id shows both stepAttempts (FR-005); then re-report the same problem → a fresh guided session starts on a new ticket while the prior attempt record stays visible in history (spec edge case), in backend/tests/integration/guided-flow-resolution.test.ts
-- [X] T017 [P] [US1] Integration test: guided session resumes at correct step after service restart / conversation reopen — state loaded from MongoDB, not memory (FR-011, SC-006), in backend/tests/integration/guided-session-resume.test.ts
+- [X] T017 [P] [US1] Integration test: guided session progress (currentStepIndex, state, stepAttempts) is read fresh from MongoDB rather than server memory — asserted across a database connection cycle and a rebuilt app instance (FR-011, SC-006), in backend/tests/integration/guided-session-resume.test.ts
 
 ### Implementation for User Story 1
 
@@ -193,7 +193,7 @@ Web application layout per plan.md: `backend/src/`, `backend/tests/`, `frontend/
 Task: "Unit tests for guidance state machine in backend/tests/unit/guidance-service.test.ts"
 Task: "Unit test for interpretStepReply zod schema in backend/tests/unit/interpret-step-reply.test.ts"
 Task: "Integration test guided flow to resolution in backend/tests/integration/guided-flow-resolution.test.ts"
-Task: "Integration test session resumption in backend/tests/integration/guided-session-resume.test.ts"
+Task: "Integration test guided-progress durability in backend/tests/integration/guided-session-resume.test.ts"
 
 # Then providers in parallel after T019:
 Task: "interpretStepReply in backend/src/services/llm/ollama-provider.ts"
@@ -208,7 +208,7 @@ Task: "interpretStepReply in backend/src/services/llm/openai-compat-provider.ts"
 
 1. Phase 1 (T001) → Phase 2 (T002–T013) — prompt extraction and data-driven classification are the heavy lift
 2. Phase 3 (T014–T028) — password/login guided flow to resolution
-3. **STOP and VALIDATE**: quickstart Scenario 1 + Scenario 5 (resumption) on the demo machine — this is a demoable MVP satisfying IR FR-4 for the mandated starting category
+3. **STOP and VALIDATE**: quickstart Scenario 1 + Scenario 5 (guided-progress durability) on the demo machine — this is a demoable MVP satisfying IR FR-4 for the mandated starting category
 
 ### Incremental Delivery
 

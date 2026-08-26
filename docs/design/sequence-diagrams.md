@@ -317,7 +317,7 @@ sequenceDiagram
         UI-->>User: plain-language escalation notice, no steps ever shown
     end
 
-    Note over Guidance,DB: A GuidedSession pins (categoryName, guideVersion) at start (FR-017) —<br/>a maintainer publishing guide v(n+1) mid-session never changes what this session shows.<br/>State is read from MongoDB on every turn (FR-011): a service restart resumes at the correct step.
+    Note over Guidance,DB: A GuidedSession pins (categoryName, guideVersion) at start (FR-017) —<br/>a maintainer publishing guide v(n+1) mid-session never changes what this session shows.<br/>State is read from MongoDB on every turn (FR-011): guided progress is durable across a<br/>service restart, though the in-memory chat session is not.
 ```
 
 ## 5. Constrained Automated Remediation — Read-Only Action (005-constrained-remediation, US1/US2)

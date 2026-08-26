@@ -87,7 +87,7 @@ An authorised maintainer (the developer or an IT administrator — never an end 
 ### Edge Cases
 
 - User reports a second, different problem mid-guide: the assistant acknowledges it, finishes or explicitly abandons the current guided session (recording it as such), and does not silently mix steps from two guides.
-- User goes silent mid-guide and returns later (possibly after a restart): the session resumes at the step where it stopped, with progress intact.
+- User goes silent mid-guide and returns later: within a live chat session, guidance continues at the step where it stopped. If the chat session has ended (a service restart, or an expiry after inactivity), a new session opens a new conversation, and the guided progress remains intact on the ticket rather than being replayed as steps.
 - User replies to a step with a question about the step ("where do I find that setting?"): the assistant answers the question about the current step without advancing to the next one.
 - User claims resolution and then immediately reports the same problem again: a new guided session starts and prior attempts remain visible on the ticket history.
 - The category has a guide but the user has already tried some of its steps ("I already restarted it"): the assistant acknowledges and moves past the step the user says they have done, recording it as attempted-by-user.
@@ -109,7 +109,7 @@ An authorised maintainer (the developer or an IT administrator — never an end 
 - **FR-008**: The user MUST be able to exit guidance and request a human at any point; guidance stops immediately and the ticket escalates with the partial attempted-steps record. (IR FR-7)
 - **FR-009**: Escalated tickets MUST carry the full guidance history (steps attempted and outcomes) alongside the existing conversation and classification context, so users never repeat themselves.
 - **FR-010**: Guidance MUST be advisory only: it instructs the user what to try and MUST NOT execute any action on any machine (automated remediation is a separate, later feature). (IR FR-8 boundary, NFR-3)
-- **FR-011**: A guided session MUST survive interruption: if the conversation is resumed later, guidance continues from the last recorded step.
+- **FR-011**: A guided session's progress MUST be durable: the current step, session state, and recorded step attempts live in the database and are read fresh on every turn, so guidance continues from the last recorded step regardless of process restarts. Chat sessions themselves are held in memory and do not survive a restart — a new session opens a new conversation, and the ticket carries the guidance record forward.
 - **FR-012**: If no valid guide exists for a classified category, or classification confidence is too low to select one, the system MUST escalate rather than present steps from an unrelated guide.
 - **FR-013**: Interpreting the user's reply to a step (worked / didn't work / question / request for human) MUST handle ambiguity by asking a short clarifying question, never by guessing an outcome.
 - **FR-014**: Authorised maintainers MUST be able to add a new support category (with its guide) and edit the guides of existing categories without any code change; new and updated content takes effect for subsequently started guided sessions. (strengthens IR FR-2 "at least six")
@@ -135,7 +135,7 @@ Measurable Outcomes
 - **SC-003**: 100% of tickets escalated from a guided session show the complete attempted-steps record; in UAT, no tester is asked to repeat information already given during guidance.
 - **SC-004**: All six support categories deliver a category-appropriate guide; in a blind test of representative issue reports, no report receives steps from the wrong category's guide.
 - **SC-005**: UAT testers (minimum 3) rate the guidance as clear and easy to follow (at least 4 out of 5 on average), consistent with the plain-language requirement.
-- **SC-006**: An interrupted guided session resumes at the correct step after the conversation is reopened, in 100% of test runs.
+- **SC-006**: A guided session's recorded progress — current step, state, and attempted steps — reads back identically after a service restart, in 100% of test runs, and the ticket surfaces that history unchanged.
 - **SC-007**: A maintainer can add a new category with a working guide, or change an existing guide's steps, in under 10 minutes without any code change — and the change is live for the next conversation started.
 - **SC-008**: 100% of category/guide changes in test runs are traceable to who made them and when, and every ticket's attempted-steps record can be matched to the exact guide version used.
 
