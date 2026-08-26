@@ -153,11 +153,7 @@ Run `graphify update .` after implementation edits.
 
 ## Planned build sequence
 
-`craft → critique → layout → colorize → typeset → polish → audit` (impeccable), executed during `/speckit-implement` under the `before_implement` hook, then taste §14 Final Pre-Flight Check, then the mechanical detector:
-
-```
-node "%USERPROFILE%/.claude/skills/impeccable/scripts/detect.mjs" --json <changed frontend files>
-```
+`craft → critique → layout → colorize → typeset → polish → audit` (impeccable), executed during `/speckit-implement` under the `before_implement` hook, then taste §14 Final Pre-Flight Check, then the mechanical detector run over the changed frontend files.
 
 Load the **`dataviz`** skill before writing the metrics surface. Load nothing new for the other surfaces.
 
