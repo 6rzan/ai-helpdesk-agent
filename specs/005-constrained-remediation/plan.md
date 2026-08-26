@@ -101,10 +101,10 @@ Per the Governance rule in constitution v1.2.0, neither entry is struck on inten
 them is a `/speckit-constitution` amendment made **after** the closing tests exist, and
 `tasks.md` must carry that as an explicit final task.
 
-## Design Direction (frontend-design-pro)
+## Design Direction
 
-Produced by the `before_plan` extension hook. Full text:
-[DESIGN-DIRECTION.md](DESIGN-DIRECTION.md). The `before_implement` hook re-validates it.
+Produced at planning time. Full text:
+[DESIGN-DIRECTION.md](DESIGN-DIRECTION.md). The pre-implementation gate re-validates it.
 
 **Design Read**: a safety and oversight layer added to an existing internal IT product UI, for
 IT staff authorising and auditing machine actions under time pressure and for an employee in
@@ -113,11 +113,11 @@ evidence-first, in the app's existing React + Vite + Tailwind idiom.
 
 **Dials**: DESIGN_VARIANCE 3, MOTION_INTENSITY 2, VISUAL_DENSITY 6, inherited from feature 004.
 
-**Design system**: taste-skill §13 places dashboards, dense product UI, and data tables outside
-its generation scope and would point at Fluent, Carbon, Atlassian, or Polaris. That pointer is
-**overridden by the constitution**, which locks the stack and forbids a new design-system
-package. Impeccable governs process and critique instead. Single light theme (Page Theme Lock),
-existing palette, `@phosphor-icons/react` only.
+**Design system**: dashboards, dense product UI, and data tables sit outside landing-page
+design conventions, whose conventional answer would be Fluent, Carbon, Atlassian, or Polaris.
+That answer is **overridden by the constitution**, which locks the stack and forbids a new
+design-system package. The product register governs process and critique instead. Single light
+theme (Page Theme Lock), existing palette, `@phosphor-icons/react` only.
 
 Load-bearing decisions carried into the build:
 
@@ -138,7 +138,7 @@ Load-bearing decisions carried into the build:
 - **Kill switch is asymmetric**: off is one click, on requires confirmation, and a persistent
   banner shows while remediation is disabled.
 - **Metrics without a chart library**: stat tiles plus labelled bar rows backed by real text
-  values. The `dataviz` skill loads before that code is written.
+  values. The data-visualisation conventions apply before that code is written.
 
 **Shared-component regression risk** (from graphify): `lib/types.ts`, `services/api.ts`,
 `services/useEvents.ts`, `DashboardPage.tsx`, `TicketDetailPage.tsx`, `ChatPage.tsx`,
@@ -147,7 +147,7 @@ Load-bearing decisions carried into the build:
 separate vocabularies.
 
 **Build sequence**: `craft → critique → layout → colorize → typeset → polish → audit`, then
-the taste §14 pre-flight, then `impeccable detect` on changed files.
+the final pre-flight check, then the mechanical detector on changed files.
 
 ## Project Structure
 
@@ -160,7 +160,7 @@ specs/005-constrained-remediation/
 ├── research.md             # Phase 0 output
 ├── data-model.md           # Phase 1 output
 ├── quickstart.md           # Phase 1 output
-├── DESIGN-DIRECTION.md     # before_plan hook output
+├── DESIGN-DIRECTION.md     # design direction, produced at planning time
 ├── contracts/
 │   ├── api.md              # HTTP + SSE contract
 │   └── tools.md            # Model-facing tool registry contract

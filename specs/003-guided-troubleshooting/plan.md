@@ -103,9 +103,9 @@ frontend/
 
 **Structure Decision**: Existing web-application layout (`backend/` + `frontend/`) is retained; guidance is a new backend service package plus a thin frontend rendering layer inside the existing chat page.
 
-## Design Direction (frontend-design-pro)
+## Design Direction
 
-- **Design Read**: Incremental addition to an existing help-desk chat product UI for stressed employees mid-IT-failure; language: the app's established React + Tailwind conventions; this is product UI, not a marketing surface, so taste-skill's landing-page machinery mostly stands down and its discipline rules (contrast, states, no AI tells) apply.
+- **Design Read**: Incremental addition to an existing help-desk chat product UI for stressed employees mid-IT-failure; language: the app's established React + Tailwind conventions; this is product UI, not a marketing surface, so the landing-page conventions mostly stand down and the discipline rules (contrast, states, no AI tells) apply.
 - **Dials**: DESIGN_VARIANCE 3 (consistency with existing chat beats novelty), MOTION_INTENSITY 2 (a single subtle enter transition on new messages, honoring `prefers-reduced-motion`), VISUAL_DENSITY 5 (chat is conversational but step progress must be scannable).
 - **Design system / stack**: No new system — extend existing Tailwind utility conventions and components (`StatusBadge`, message bubbles in `ChatPage`). One icon family if icons are needed (project convention; no hand-rolled SVGs, no emoji as icons).
 - **Palette commitment**: Existing app palette, locked — no new accent. Step-progress affordance uses the current neutral scale; resolution/escalation reuse the existing status colors already carried by `StatusBadge`.
@@ -114,7 +114,7 @@ frontend/
 - **Motion plan**: Only the existing/standard message-appear transition; quick-reply chips get hover/active states (`scale-[0.98]` on press). Nothing scroll-driven. All motion behind `prefers-reduced-motion`.
 - **Banned patterns (this feature)**: no emoji as icons; no em-dashes in UI copy; no purple/gradient accents; no card-in-card chrome around steps; no spinners (reuse existing typing/skeleton pattern while the assistant responds); no toast for step outcomes (they're conversation content); chips must pass WCAG AA contrast in both themes.
 - **Affected shared components (graphify)**: `frontend/src/pages/ChatPage.tsx` (shared with voice input flow — regression risk with `VoiceControl`), `frontend/src/lib/types.ts` and `frontend/src/services/api.ts` (shared typing for all API consumers), `useEvents.ts` SSE hook (unchanged contract — keep it that way), `StatusBadge`/`TicketCard` (reused, not modified). Regression tests: existing ChatPage + VoiceControl tests must stay green.
-- **Planned build sequence**: craft → critique → polish → audit (run via `/frontend-design-pro build` inside `/speckit-implement`).
+- **Planned build sequence**: craft → critique → polish → audit, run at implementation time.
 
 ## Complexity Tracking
 

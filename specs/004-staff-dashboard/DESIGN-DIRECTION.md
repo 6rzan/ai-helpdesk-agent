@@ -1,6 +1,6 @@
-# Design Direction (frontend-design-pro) — 004 Staff Dashboard & User Accounts
+# Design Direction — 004 Staff Dashboard & User Accounts
 
-Produced at specify time; to be absorbed into `plan.md`'s Design Direction section when `/speckit-plan` runs (the before_plan hook will re-validate it).
+Produced at specify time; to be absorbed into `plan.md`'s Design Direction section at planning time, which re-validates it.
 
 ## Design Read
 
@@ -10,7 +10,7 @@ Reading this as: internal IT-staff operations dashboard plus account/profile sur
 
 ## Design system / stack decision
 
-- taste-skill §13 places dashboards/dense product UI outside its generation scope; the **impeccable product register** (`reference/product.md`) governs this surface at build time.
+- Dashboards and dense product UI sit outside the landing-page design conventions; the **product register** (consistent affordances, full interactive-state coverage) governs this surface at build time.
 - Constitution locks the stack: Tailwind + existing component conventions. No new design system package; extend the app's own tokens/components.
 - Icons stay **@phosphor-icons/react** (already the project family — one family per project).
 
@@ -47,4 +47,4 @@ Run `graphify update .` after implementation edits.
 
 ## Planned build sequence
 
-`craft → critique → polish → audit` (impeccable), executed during `/speckit-implement` under the before_implement hook.
+`craft → critique → polish → audit`, executed at implementation time under the pre-implementation design gate.

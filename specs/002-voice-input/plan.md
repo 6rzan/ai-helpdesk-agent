@@ -126,7 +126,7 @@ frontend/
 everything else is an extension of existing files. `SessionForm.tsx` is deliberately
 untouched — reporter identification stays typed-only (clarification 2026-07-11).
 
-## Design Direction (frontend-design-pro)
+## Design Direction
 
 **Design Read**: Product-register addition to an existing internal help-desk chat —
 trust-first tooling for employees mid-task, extending feature 001's stock-Tailwind
@@ -139,8 +139,8 @@ chrome).
 
 **Design system / stack**: Existing React 18 + Vite + Tailwind (stock config, light
 theme locked — Page Theme Lock). No component library added. Icons: `@phosphor-icons/react`
-(one family, `weight="regular"`), because taste-skill bans hand-rolled SVG icons and 001
-has no icon library yet. Needed glyphs: `Microphone`, `Stop`, `X`.
+(one family, `weight="regular"`), because hand-rolled SVG icon paths are banned on this
+project and 001 has no icon library yet. Needed glyphs: `Microphone`, `Stop`, `X`.
 
 **Palette commitment**: 001's established palette, locked — gray neutrals
 (`gray-100…900`), primary accent `blue-600` (send/actions). Recording state uses the
@@ -171,12 +171,12 @@ recording timer so it doesn't jitter).
 on the recording dot (state-conveying, FR-002). `prefers-reduced-motion`: pulse becomes
 a static dot — the text label and timer are the primary indicators (also the a11y path).
 
-**Microcopy (FR-012, plain language, no em-dashes per taste ban)**:
+**Microcopy (FR-012, plain language, no em-dashes)**:
 "Recording", "Turning your speech into text…", "We couldn't hear any words. You can try
 again or type instead.", "The microphone is not available. You can keep typing as
 usual.", "Voice input is not available right now. Please type your message instead."
 
-**Banned for this feature** (union of taste + impeccable product bans + project):
+**Banned for this feature** (product-register bans plus project rules):
 modals for any part of the flow; decorative/looping motion beyond the recording pulse;
 gradients, glassmorphism, display fonts; emoji as icons; hand-rolled SVG icon paths; any
 new accent hue; auto-send affordances; placeholder-as-label; spinner replacing layout
@@ -191,8 +191,8 @@ displayed); `useEvents.ts` untouched; `SessionForm.tsx` untouched by rule (typed
 identification). Regression watch: MessageBubble/TicketCard type imports must compile
 with the extended Message.
 
-**Planned build sequence**: craft → critique → polish → audit (impeccable), with taste
-pre-flight before ship.
+**Planned build sequence**: craft → critique → polish → audit, with a design pre-flight
+check before ship.
 
 ## Complexity Tracking
 

@@ -6,7 +6,7 @@
 
 **Tests**: REQUIRED for every feature (Constitution Principle IV). Safety-critical components here are the **access-control middleware** (`requireAuth`/`requireStaff`, ownership checks — SC-003) and the **takeover/assignment concurrency logic**: their test tasks precede implementation and must FAIL first. All other stories ship tests in the same phase. Test names map to Chapter 5 TC-table format.
 
-**Organization**: Tasks grouped by user story (US1–US5 from spec.md) so each story is independently implementable, testable, and demoable. Frontend tasks follow the Design Direction in plan.md; the `before_implement` hook re-invokes `/frontend-design-pro build` at implementation time.
+**Organization**: Tasks grouped by user story (US1–US5 from spec.md) so each story is independently implementable, testable, and demoable. Frontend tasks follow the Design Direction in plan.md; the pre-implementation gate re-runs the design build sequence at implementation time.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -181,7 +181,7 @@ Web app per plan.md: `backend/src/`, `backend/tests/`, `frontend/src/`, `fronten
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [X] T062 Design audit per frontend-design-pro build sequence (critique → polish → audit) across all new pages: full interactive-state coverage (hover/focus/active/disabled/loading/error), WCAG AA contrast, keyboard navigation, `prefers-reduced-motion`, consistent component vocabulary — frontend/src/pages/ and frontend/src/components/
+- [X] T062 Design audit per the build sequence (critique → polish → audit) across all new pages: full interactive-state coverage (hover/focus/active/disabled/loading/error), WCAG AA contrast, keyboard navigation, `prefers-reduced-motion`, consistent component vocabulary — frontend/src/pages/ and frontend/src/components/
 - [X] T063 [P] Update README.md (How to use: accounts + dashboard, Configuration, API summary, Troubleshooting, Roadmap tick for feature 004)
 - [X] T064 [P] Update design diagrams for Chapter 4 (ERD/schema with new collections, use-case diagram with staff/user roles) in docs/
 - [X] T065 Extend the scripted end-to-end demo path with sign-in → escalation → dashboard takeover → resolve, then run all quality gates: `tsc --noEmit`, lint, full test suites in backend/ and frontend/ (Principle IV release gate)

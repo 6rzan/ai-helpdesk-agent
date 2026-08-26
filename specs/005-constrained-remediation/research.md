@@ -377,7 +377,7 @@ backed by real text values.
 
 **Rationale**: recorded in full in `DESIGN-DIRECTION.md`. Summarised: the metric set is
 counts, rates, splits, and durations rather than time series; `frontend/package.json` has no
-charting dependency today and taste-skill §3.F forbids assuming one; and every added
+charting dependency today and one must never be assumed; and every added
 megabyte competes with the local model for the demo machine's envelope (NFR-7). Bars backed
 by real text values also stay accessible and screenshot cleanly for Chapter 4 evidence.
 

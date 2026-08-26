@@ -139,7 +139,7 @@ frontend/
 retained per constitution; all work is additive modules inside it. No new top-level
 projects.
 
-## Design Direction (frontend-design-pro)
+## Design Direction
 
 **Design Read**: Internal IT-staff dashboard plus account/profile surfaces inside an
 existing help-desk product, for staff working cases and end users checking their own
@@ -147,8 +147,8 @@ tickets, with an earned-familiarity product language (Linear/Stripe-class trust,
 novelty for novelty's sake), leaning toward the project's existing Tailwind system
 (gray neutrals, blue-600 accent) extended with dense data patterns.
 
-**Dials** (product UI, not a landing page — taste-skill §13 defers dashboards to the
-product register; taste's engineering directives still govern generated code):
+**Dials** (product UI, not a landing page — dashboards follow the product register; the
+engineering directives still govern the generated code):
 
 - `DESIGN_VARIANCE: 3` — task surfaces earn trust through predictable structure; staff
   scan the same list dozens of times a day.
@@ -161,8 +161,8 @@ product register; taste's engineering directives still govern generated code):
 **Design system / stack decision**: No component library added — the constitution locks
 React + Vite + Tailwind, and the app already has a bespoke component vocabulary
 (`StatusBadge`, `TicketCard`, `MessageBubble`). Mode is **redesign–preserve** for shared
-components: extend, don't restyle. New staff components follow the impeccable product
-register (consistent affordances, full state coverage: default/hover/focus/active/
+components: extend, don't restyle. New staff components follow the product register
+(consistent affordances, full state coverage: default/hover/focus/active/
 disabled/loading/error on every interactive element).
 
 **Palette commitment** (existing lock, extended semantically — one accent, whole app):
@@ -230,7 +230,7 @@ behind `prefers-reduced-motion`.
 | Backend `state-machine.ts`, `notifications.ts`, `event-bus.ts` | entire ticket flow (001–003 tests) | Additive transitions/events only; full regression suite must stay green |
 
 **Planned build sequence**: `craft → critique → polish → audit` (per page group, staff
-dashboard first), enforced again at `/speckit-implement` by the `before_implement` hook.
+dashboard first), enforced again at implementation time by the pre-implementation gate.
 
 ## Complexity Tracking
 

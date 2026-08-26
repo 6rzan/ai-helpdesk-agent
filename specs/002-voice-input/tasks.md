@@ -142,7 +142,7 @@ the failure test set (SC-004)
 - [X] T031 [P] Export Chapter 5 TC tables from the Vitest runs (backend + frontend) into docs/ (Principle IV format: TC-No / input / expected / actual / Passed-Failed)
 - [X] T032 Execute specs/002-voice-input/quickstart.md scenarios 1–12 on the demo machine, including the SC-005 transience inspection (MongoDB + OS temp dir contain zero audio artifacts) and SC-003 latency measurement
 - [X] T033 Run quality gates: `tsc --noEmit`, lint, full backend+frontend test suites, and the scripted end-to-end demo path (report → classify → ticket → confirmation) with a voice-originated message
-- [X] T034 [P] frontend-design-pro review pass on the new composer states: impeccable critique/audit + taste pre-flight (theme lock, motion motivated, contrast, no banned patterns) against frontend/src/components/VoiceControl.tsx and frontend/src/pages/ChatPage.tsx
+- [X] T034 [P] Design review pass on the new composer states: critique/audit plus pre-flight check (theme lock, motion motivated, contrast, no banned patterns) against frontend/src/components/VoiceControl.tsx and frontend/src/pages/ChatPage.tsx
 
 ---
 
@@ -209,7 +209,7 @@ Task: "transcribe() client in frontend/src/services/api.ts"
 
 ## Notes
 
-- Implementation MUST invoke `/frontend-design-pro build` before UI tasks (T019, T020, T024, T027, T028) — enforced by the `before_implement` hook in `.specify/extensions.yml`
+- Implementation MUST run the design build sequence before UI tasks (T019, T020, T024, T027, T028) — enforced by the pre-implementation gate in `.specify/extensions.yml`
 - Audio never touches disk or logs anywhere in these tasks (FR-006/SC-005); keep `multer.memoryStorage()` and size caps exactly as contracted
 - SessionForm.tsx is out of bounds — identification stays typed-only (clarification 2026-07-11)
 - Keep every file ≤ 500 lines (Principle VI); `stt-service.ts` and `VoiceControl.tsx` are the likeliest to grow — split before they cross the line

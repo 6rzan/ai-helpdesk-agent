@@ -33,7 +33,7 @@
 
 - The one deliberate scope call is FR-003 (new conversations require sign-in). It is documented in Assumptions with the exact requirement to revisit via `/speckit-clarify` if the author wants to keep an anonymous chat path.
 - Remote-access IDs are display-only reference data here; any automation stays in feature 005 (boundary stated in Assumptions and Dependencies).
-- A companion `DESIGN-DIRECTION.md` (frontend-design-pro, plan mode) sits next to this spec for `/speckit-plan` to absorb; it contains the design/stack decisions intentionally kept out of the spec.
+- A companion `DESIGN-DIRECTION.md` sits next to this spec for the planning step to absorb; it contains the design/stack decisions intentionally kept out of the spec.
 
 ---
 

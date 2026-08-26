@@ -273,7 +273,7 @@ that a non-staff account cannot reach the surface.
 - [X] T102 [US5] Implement `backend/src/services/metrics/metrics-service.ts` with the aggregation pipelines and the exact metric definitions from research.md R8, including median rather than mean resolution time, computed on demand with no cache, so T099 passes
 - [X] T103 [US5] Implement `GET /staff/metrics` in `backend/src/api/routes/staff-metrics.ts` with the four period presets, so T100 passes
 - [X] T104 [US5] Mount `staff-metrics.ts` in `backend/src/app.ts` behind the staff role guard, with an access test asserting 403 for non-staff (US5 AS4)
-- [X] T105 [US5] Load the `dataviz` skill, then create `frontend/src/components/staff/MetricsSummary.tsx` as stat tiles plus labelled horizontal bar rows backed by real text values, with **no** charting dependency and no filled-track progress bars (Design Direction, research R12)
+- [X] T105 [US5] Apply the data-visualisation conventions, then create `frontend/src/components/staff/MetricsSummary.tsx` as stat tiles plus labelled horizontal bar rows backed by real text values, with **no** charting dependency and no filled-track progress bars (Design Direction, research R12)
 - [X] T106 [US5] Implement the period selector so figures update in place without a manual reload (US5 AS2), with a frontend test
 - [X] T107 [US5] Place the metrics band on `frontend/src/pages/DashboardPage.tsx` alongside the ticket list per IR §1.5, keeping the page under the 500-line ceiling by extracting rather than inflating
 
@@ -318,8 +318,8 @@ visible-degradation and escalation behaviour still holds.
 - [X] T121 [P] Update the architecture, sequence, and ERD/schema diagrams in `docs/` for the three new collections, the two policy files, and the plan → act → observe loop (Principle V)
 - [X] T122 [P] Generate Chapter 5 TC tables from the new suites via `npm --prefix backend run tc-tables` and file the output in `docs/` — filed at `docs/testing/tc-tables.md` (commit `5db1933`); re-verified 2026-08-25 against a full 420/420 run (113 TC rows, content-identical to the filed table apart from per-run timing)
 - [X] T123 [P] Update `README.md` — How to use, Troubleshooting, configuration, API, and roadmap — for the container prerequisite, the new environment variables, the new endpoints, and the remediation feature
-- [X] T124 Run the impeccable refinement sequence on every changed frontend file: `critique → layout → colorize → typeset → polish → audit`, then the taste §14 pre-flight, then the mechanical detector over the changed files, and address the findings (before_implement hook)
-- [X] T125 Audit every new user-visible string for em-dashes and remove them, including the test-account disclosure and the no-data message (Design Direction, taste §9.G)
+- [X] T124 Run the refinement sequence on every changed frontend file: `critique → layout → colorize → typeset → polish → audit`, then the final pre-flight check, then the mechanical detector over the changed files, and address the findings (pre-implementation gate)
+- [X] T125 Audit every new user-visible string for em-dashes and remove them, including the test-account disclosure and the no-data message (Design Direction)
 - [X] T126 [P] Verify accessibility on the new surfaces: WCAG AA contrast on the outcome vocabulary, keyboard operability of the approval queue and its confirmation step, and `prefers-reduced-motion` honoured on every new transition
 - [X] T127 Run all quality gates: `npm --prefix backend run typecheck`, `lint`, `test`, and the same three for `frontend`, and confirm no file exceeds 500 lines
 - [X] T128 Run `graphify update .` to refresh the knowledge graph after implementation

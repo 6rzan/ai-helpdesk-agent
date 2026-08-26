@@ -1,6 +1,6 @@
-# Design Direction (frontend-design-pro) — 005 Constrained Automated Remediation
+# Design Direction — 005 Constrained Automated Remediation
 
-Produced by the `before_plan` extension hook. Absorb into `plan.md`'s Design Direction section; the `before_implement` hook re-validates it and enforces the build rules.
+Produced at planning time. Absorb into `plan.md`'s Design Direction section; the pre-implementation gate re-validates it and enforces the build rules.
 
 Scope note: this feature is an **extension of the established surface**, not a new one. Feature 004's `DESIGN-DIRECTION.md` remains in force; everything below either inherits from it or narrows it. Nothing here re-themes the app.
 
@@ -18,10 +18,10 @@ Reading this as: a **safety and oversight layer added to an existing internal IT
 
 ## Design system / stack decision
 
-- **taste-skill §13 explicitly excludes this surface class**: dashboards, dense product UI, admin panels, and data tables are out of its generation scope. Stated here as §13 requires. Its Section 2.A would normally point at Fluent, Carbon, Atlassian, or Polaris.
-- **That pointer is overridden by the constitution**, which locks the stack to React + Vite + Tailwind and forbids adding a design-system package on this project. So: no new design system. Extend the app's own components and Tailwind conventions, and take the *process* and critique criteria from **impeccable** instead.
-- Installed impeccable is v4.0.4, which does not ship the `reference/product.md` register file. Build-time steps therefore use the reference files that do exist: `craft.md` → `critique.md` → `layout.md` → `colorize.md` → `typeset.md` → `polish.md`, then `audit.md`.
-- Icons stay **@phosphor-icons/react** (already the sole family, per taste §3.C one-family-per-project). Standardise weight globally; do not introduce a second family for "action" or "security" glyphs.
+- **This surface class sits outside landing-page design conventions**: dashboards, dense product UI, admin panels, and data tables are governed by the product register instead. The conventional answer for this class would be a design-system package — Fluent, Carbon, Atlassian, or Polaris.
+- **That answer is overridden by the constitution**, which locks the stack to React + Vite + Tailwind and forbids adding a design-system package on this project. So: no new design system. Extend the app's own components and Tailwind conventions, and take the *process* and critique criteria from the product register instead.
+- Build-time steps follow the refinement sequence: craft → critique → layout → colorize → typeset → polish → audit.
+- Icons stay **@phosphor-icons/react** (already the sole family — one family per project). Standardise weight globally; do not introduce a second family for "action" or "security" glyphs.
 - **No new charting library** for the metrics surface (US5). See "Metrics surface" below.
 
 ## Palette commitment
@@ -58,7 +58,7 @@ The existing accent and semantic assignments are the single source of truth. Ext
 
 A **decision queue**, not another ticket list. It is the highest-urgency thing on the dashboard and must not be a tab that a busy staff member never opens.
 
-- Entry point: a persistent count indicator in the dashboard header when the queue is non-empty. This is the one place a semantic dot is permitted (taste §9.F allows dots that carry real state).
+- Entry point: a persistent count indicator in the dashboard header when the queue is non-empty. This is the one place a semantic dot is permitted (dots are allowed only when they carry real state).
 - Each row carries, in reading order: what the action does in plain words, the exact command in mono, the target endpoint, the ticket reference, the reporter's recorded consent, and the age.
 - Two decisions per row (Approve, Decline), side by side, accent for approve and neutral-outline for decline. **Decline must not be red.** Declining is a legitimate routine outcome, not a destructive one.
 - Approving requires a confirmation step that restates the exact command and target. This is the human-oversight moment NFR-4 exists for, and a single misclick must not be able to change a machine's state.
@@ -95,8 +95,8 @@ This atom is what makes the audit trail defensible in the viva: one component, o
 - Composition: a small row of **stat tiles** (volume, handled without a human, escalation rate, action outcomes, median time to resolve), then **category and status splits** as labelled horizontal bar rows, then the automated-action outcome breakdown reusing the same outcome vocabulary and colours as the audit view.
 - Period selector is a small, explicit control; figures update in place without a manual reload (US5 AS2).
 - **No-data state is designed and worded** ("Nothing recorded in this period"), never a zero-filled frame that looks like real measurement (US5 AS3). This one matters for academic honesty as much as for UX.
-- **Dependency decision: no chart library is added.** `frontend/package.json` currently has no charting dependency, and taste §3.F forbids assuming one. The metric set here is counts, rates, splits, and durations, all of which read better as tiles and bar rows than as chart widgets, and every added megabyte competes with the local model for the demo machine's envelope (NFR-7). Bars are CSS width on a labelled row, backed by real text values, so they stay accessible and screenshot well for Chapter 4. **Escape hatch**: if a genuine time-series trend line is later judged necessary, that is a plan amendment with an explicit dependency decision, not an in-flight import.
-- Charts, bars, and tiles are still visualisations: load the **`dataviz` skill before writing any of that code** at build time.
+- **Dependency decision: no chart library is added.** `frontend/package.json` currently has no charting dependency, and a charting dependency must never be assumed. The metric set here is counts, rates, splits, and durations, all of which read better as tiles and bar rows than as chart widgets, and every added megabyte competes with the local model for the demo machine's envelope (NFR-7). Bars are CSS width on a labelled row, backed by real text values, so they stay accessible and screenshot well for Chapter 4. **Escape hatch**: if a genuine time-series trend line is later judged necessary, that is a plan amendment with an explicit dependency decision, not an in-flight import.
+- Charts, bars, and tiles are still visualisations: apply the project's data-visualisation conventions before writing any of that code.
 
 ### 6. In-chat consent and reporting (employee, US1/US3)
 
@@ -123,7 +123,7 @@ New for 005:
 - **No red for refusals or declines.** Red means an approved action ran and failed. Nothing else.
 - **No edit, delete, or overflow-menu affordance anywhere in the audit trail**, on any surface, including disabled ones. A greyed-out delete button implies a path exists.
 - **No copy-to-clipboard or re-run affordance on command strings.** Commands are evidence in this UI, never an input.
-- **No progress bars with filled tracks** on the metrics surface (taste §9.F). Labelled bar rows with real values instead.
+- **No progress bars with filled tracks** on the metrics surface. Labelled bar rows with real values instead.
 - **No counting-up or animated numerals** on metric tiles.
 - **No second timeline** on the ticket detail page, and no duplication of the existing staff-action trail.
 - **No consent styled as a quick reply**, and no consent buried inside an ordinary agent message bubble.
@@ -153,9 +153,9 @@ Run `graphify update .` after implementation edits.
 
 ## Planned build sequence
 
-`craft → critique → layout → colorize → typeset → polish → audit` (impeccable), executed during `/speckit-implement` under the `before_implement` hook, then taste §14 Final Pre-Flight Check, then the mechanical detector run over the changed frontend files.
+`craft → critique → layout → colorize → typeset → polish → audit`, executed at implementation time under the pre-implementation gate, then the Final Pre-Flight Check, then the mechanical detector run over the changed frontend files.
 
-Load the **`dataviz`** skill before writing the metrics surface. Load nothing new for the other surfaces.
+Apply the data-visualisation conventions before writing the metrics surface. Nothing new is needed for the other surfaces.
 
 ## Housekeeping flagged, not fixed
 
