@@ -115,6 +115,7 @@ export async function tryHandleGuidedReply(ctx: ReplyContext, resumedTicketIds: 
 
   switch (decision.action) {
     case "resolve": {
+      recordAttempt(session, decision.attemptOutcome);
       endSession(session, "resolved");
       await session.save();
       await resolveGuidedTicket(ctx, session);

@@ -10,3 +10,16 @@ export function isPasswordPathEntry(policyEntryId: string): boolean {
 
 export const TEST_ACCOUNT_DISCLOSURE =
   "This applied to a local test account on the test system, not your organisational account or directory.";
+
+/**
+ * Policy entry descriptions (`action-policy.json`) are authored as complete
+ * sentences -- "Clears the endpoint's print queue." -- because the staff
+ * approval queue renders each one as a standalone block. Interpolating one
+ * *mid*-sentence therefore doubles its full stop ("...print queue.. I'll let
+ * you know") or strands it inside a parenthetical. Drop the trailing period
+ * when the description is embedded; leave it alone when it ends the message
+ * (OBS-11).
+ */
+export function asClause(description: string): string {
+  return description.replace(/\s*\.\s*$/, "");
+}

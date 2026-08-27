@@ -14,7 +14,7 @@ export type StepReplyOutcome =
   | "unclear";
 
 export type StepDecision =
-  | { action: "resolve" }
+  | { action: "resolve"; attemptOutcome: "worked" }
   | { action: "advance"; nextStepIndex: number; attemptOutcome: "not_worked" | "already_tried" }
   | { action: "escalate"; attemptOutcome?: "not_worked" | "already_tried" }
   | { action: "hold" };
@@ -30,7 +30,7 @@ export function decideStepTransition(params: {
   const { outcome, currentStepIndex, stepCount } = params;
   switch (outcome) {
     case "worked":
-      return { action: "resolve" };
+      return { action: "resolve", attemptOutcome: "worked" };
     case "wants_human":
       return { action: "escalate" };
     case "question":

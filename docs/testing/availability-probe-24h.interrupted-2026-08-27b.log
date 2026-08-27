@@ -4,5 +4,4 @@ Unattended session+report attempts spread across a 24-hour window, one every 60 
 
 | # | Timestamp (UTC) | Health | Session Created | Report Accepted | Result | Error |
 |---|---|---|---|---|---|---|
-| 1 | 2026-08-27T07:48:39.772Z | ok | true | true | Passed | - |
-| 2 | 2026-08-27T17:28:05.073Z | degraded | true | true | Passed | - |
+| 1 | 2026-08-27T06:54:06.065Z | ok | true | true | Passed | - |

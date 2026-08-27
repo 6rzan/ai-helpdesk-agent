@@ -6,7 +6,7 @@ import { decideStepTransition } from "../../src/services/guidance/guidance-servi
 describe("decideStepTransition", () => {
   it("GT-001: worked resolves the session", () => {
     const decision = decideStepTransition({ outcome: "worked", currentStepIndex: 0, stepCount: 3 });
-    expect(decision).toEqual({ action: "resolve" });
+    expect(decision).toEqual({ action: "resolve", attemptOutcome: "worked" });
   });
 
   it("GT-002: not_worked advances to the next step when steps remain", () => {

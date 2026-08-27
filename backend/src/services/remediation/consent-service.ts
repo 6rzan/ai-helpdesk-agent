@@ -191,9 +191,19 @@ export async function proposeActionForStep(ctx: StepProposalContext): Promise<St
   }
 
   const proposalId = randomUUID();
+  // OBS-11: `tool.description` is the *planner*-facing blurb -- it names the
+  // verification tool ("Verified by print_queue_status.") because the agent
+  // loop needs to know how the action is checked. The reporter must never see
+  // that. `entry.description` is the user-facing one the staff approval queue
+  // and the outcome report already use (approval-service), so the consent path
+  // uses it too and all three surfaces finally agree.
+  const actionDescription = entry.description;
   const offerText =
-    `I can run "${tool.description}" against ${endpoint.label} (a test system, not your own device), ` +
-    "would you like me to?";
+    `I can run an approved action against ${endpoint.label}, a test system, not your own device. ` +
+    // Descriptions are authored as whole sentences, so this stands as its own
+    // sentence rather than being wedged into a noun slot ("I can run "Clears
+    // the endpoint's print queue." against ...", which is what OBS-11 caught).
+    `${actionDescription} Would you like me to?`;
 
   const message = await sendAgentReply(
     { sessionId: ctx.sessionId, conversationId: ctx.conversationId, reporterId: ctx.ticket.reporterId, text: "" },

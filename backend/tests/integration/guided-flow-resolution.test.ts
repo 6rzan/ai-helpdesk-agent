@@ -107,8 +107,11 @@ describe("Guided flow to resolution (US1)", () => {
 
     const detail = await getTicket(ctx, session.sessionId, ticket.reference);
     expect(detail.guidance.state).toBe("resolved");
-    expect(detail.guidance.stepAttempts).toHaveLength(1);
+    // FR-005: both the "didn't work" and the resolving "that worked" outcome
+    // must be recorded (see docs/testing/observations.md OBS-13).
+    expect(detail.guidance.stepAttempts).toHaveLength(2);
     expect(detail.guidance.stepAttempts[0]).toMatchObject({ stepIndex: 0, outcome: "not_worked" });
+    expect(detail.guidance.stepAttempts[1]).toMatchObject({ stepIndex: 1, outcome: "worked" });
   });
 
   it("GF-002: re-reporting the same problem after resolution starts a fresh session on a new ticket, while the prior attempt record stays visible in history", async () => {
@@ -136,7 +139,9 @@ describe("Guided flow to resolution (US1)", () => {
 
     const priorDetail = await getTicket(ctx, session.sessionId, firstTicket.reference);
     expect(priorDetail.guidance.state).toBe("resolved");
-    expect(priorDetail.guidance.stepAttempts).toHaveLength(1);
+    // FR-005: the prior ticket's history keeps both the "didn't work" and the
+    // resolving "that worked" outcome (see docs/testing/observations.md OBS-13).
+    expect(priorDetail.guidance.stepAttempts).toHaveLength(2);
   });
 });
 

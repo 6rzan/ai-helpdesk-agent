@@ -107,7 +107,12 @@ describe("Guided session resumes after restart (US1, FR-011/SC-006)", () => {
     const resolvedSession = await GuidedSession.findOne({ conversationId: session.conversationId });
     expect(resolvedSession?.state).toBe("resolved");
     expect(resolvedSession?.currentStepIndex).toBe(1);
-    expect(resolvedSession?.stepAttempts).toHaveLength(1);
+    // FR-005: the record must include the resolving "worked" outcome too, not
+    // just the earlier "not_worked" attempt (see docs/testing/observations.md).
+    expect(resolvedSession?.stepAttempts).toHaveLength(2);
     expect(resolvedSession?.stepAttempts[0]?.stepIndex).toBe(0);
+    expect(resolvedSession?.stepAttempts[0]?.outcome).toBe("not_worked");
+    expect(resolvedSession?.stepAttempts[1]?.stepIndex).toBe(1);
+    expect(resolvedSession?.stepAttempts[1]?.outcome).toBe("worked");
   });
 });
