@@ -130,10 +130,10 @@ reconciled before it is administered).
 
 ### Scenario script — written and committed before any session (FR-006, V2.4)
 
-- [ ] T024 [US2] Write `docs/testing/uat-scenarios.md` with at least eight scenarios (`SC-01`…`SC-08`+) per data-model.md §2 — one per mandated category (`password_login`, `network`, `printer`, `peripheral`, `slow_performance`, `service_status`), one forcing a guided resolution to completion, one forcing an escalation — each carrying `id`, `situation` (in the tester's own terms, coaching no answer), `targetCategory`, `expectedOutcome`, and `role`
-- [ ] T025 [US2] Add staff-side scenarios to `docs/testing/uat-scenarios.md` covering ticket takeover, approving a remediation, and a `safe-refusal` attempt against an unregistered target (V2.3, V2.5)
-- [ ] T026 [US2] Add the category × exercised-by-tester coverage matrix to the top of `docs/testing/uat-scenarios.md` (research.md Decision 6, SC-004)
-- [ ] T027 [US2] Commit `docs/testing/uat-scenarios.md` **before** the first session so git history shows the script pre-dates every session date (FR-006, V2.4)
+- [X] T024 [US2] Write `docs/testing/uat-scenarios.md` with at least eight scenarios (`SC-01`…`SC-08`+) per data-model.md §2 — one per mandated category (`password_login`, `network`, `printer`, `peripheral`, `slow_performance`, `service_status`), one forcing a guided resolution to completion, one forcing an escalation — each carrying `id`, `situation` (in the tester's own terms, coaching no answer), `targetCategory`, `expectedOutcome`, and `role` — 11 scenarios written (SC-01..SC-11); real system category slugs used (`peripherals`, `performance`) with a note reconciling them against data-model.md's descriptive names
+- [X] T025 [US2] Add staff-side scenarios to `docs/testing/uat-scenarios.md` covering ticket takeover, approving a remediation, and a `safe-refusal` attempt against an unregistered target (V2.3, V2.5) — SC-09/SC-10/SC-11
+- [X] T026 [US2] Add the category × exercised-by-tester coverage matrix to the top of `docs/testing/uat-scenarios.md` (research.md Decision 6, SC-004)
+- [X] T027 [US2] Commit `docs/testing/uat-scenarios.md` **before** the first session so git history shows the script pre-dates every session date (FR-006, V2.4)
 
 ### Sessions
 
