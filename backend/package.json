@@ -18,7 +18,8 @@
     "tc-tables": "tsx scripts/tc-tables.ts",
     "seed:guides": "tsx src/scripts/seed-guides.ts",
     "seed:staff": "tsx src/scripts/seed-staff.ts",
-    "availability-probe": "tsx scripts/availability-probe.ts"
+    "availability-probe": "tsx scripts/availability-probe.ts",
+    "demo-path": "tsx scripts/demo-path.ts"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

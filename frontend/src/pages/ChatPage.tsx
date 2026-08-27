@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "@phosphor-icons/react";
 import { ActionRecordCard } from "../components/ActionRecordCard";
 import { ConsentBlock } from "../components/ConsentBlock";
@@ -139,8 +139,20 @@ export function ChatPage() {
       .finally(() => setIsStarting(false));
   }, []);
 
+  // Guards against a duplicate POST /api/sessions: `isStarting` is state, so
+  // it hasn't re-rendered yet the moment React 18 StrictMode double-invokes
+  // this effect in dev (mount -> cleanup -> mount, synchronously, before the
+  // first startSession()'s setIsStarting(true) flushes) — a ref reads its
+  // latest value immediately instead, so the second invocation sees it and
+  // skips. Reset on account change so switching accounts starts a fresh one.
+  const sessionStartedForAccountRef = useRef<string | null>(null);
   useEffect(() => {
-    if (account && !session && !isStarting) {
+    if (!account) {
+      sessionStartedForAccountRef.current = null;
+      return;
+    }
+    if (!session && !isStarting && sessionStartedForAccountRef.current !== account.id) {
+      sessionStartedForAccountRef.current = account.id;
       startSession();
     }
   }, [account, session, isStarting, startSession]);

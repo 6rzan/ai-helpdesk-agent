@@ -28,6 +28,16 @@ const endpoints = [
 const KEYSCAN_ATTEMPTS = 5;
 const KEYSCAN_RETRY_DELAY_MS = 1_500;
 
+// The container's sshd (OpenSSH 9.2, Debian) offers the post-quantum hybrid
+// KEX sntrup761x25519-sha512@openssh.com, which Windows' bundled
+// C:\Windows\System32\OpenSSH\ssh-keyscan.exe (an older build) doesn't
+// support and refuses outright ("choose_kex: unsupported KEX method ...").
+// PowerShell's default PATH resolves that one ahead of Git for Windows' own
+// ssh-keyscan (which does support it), so plain `ssh-keyscan` on PATH is not
+// reliable when this script runs from reset.ps1. Try known-good candidates
+// before falling back to whatever PATH resolves.
+const KEYSCAN_CANDIDATES = ["C:\\Program Files\\Git\\usr\\bin\\ssh-keyscan.exe", "ssh-keyscan"];
+
 function sleepSync(ms) {
   const target = Date.now() + ms;
   while (Date.now() < target) {
@@ -39,16 +49,24 @@ function sleepSync(ms) {
 }
 
 function scanOnce(host, port) {
-  // ssh-keyscan prints "host key-type base64blob" lines (comments start with '#').
-  const output = execFileSync("ssh-keyscan", ["-p", String(port), "-t", "ed25519", host], {
-    encoding: "utf8",
-    timeout: 10_000,
-  });
-  const line = output.split("\n").find((l) => l.trim() && !l.startsWith("#"));
-  if (!line) {
-    throw new Error(`No host key returned for ${host}:${port}`);
+  let lastError;
+  for (const bin of KEYSCAN_CANDIDATES) {
+    try {
+      // ssh-keyscan prints "host key-type base64blob" lines (comments start with '#').
+      const output = execFileSync(bin, ["-p", String(port), "-t", "ed25519", host], {
+        encoding: "utf8",
+        timeout: 10_000,
+      });
+      const line = output.split("\n").find((l) => l.trim() && !l.startsWith("#"));
+      if (line) {
+        return line;
+      }
+      lastError = new Error(`No host key returned for ${host}:${port} (via ${bin})`);
+    } catch (err) {
+      lastError = err;
+    }
   }
-  return line;
+  throw lastError ?? new Error(`No host key returned for ${host}:${port}`);
 }
 
 function fingerprintFor(host, port) {

@@ -46,6 +46,12 @@ backend/test-endpoints/*/authorized_keys
 
 # Logs
 *.log
+# ...except evidence logs under docs/testing/, which are deliverable artifacts:
+# 006 T017/T018 cite docs/testing/availability-probe-24h.log as the artifact that
+# closes 001 T049, so it has to survive a clone rather than sit only on the demo machine.
+!docs/testing/*.log
+# The probe's raw console echo is not evidence — the .log table above is.
+docs/testing/probe-stdout.log
 
 # OS cruft
 .DS_Store

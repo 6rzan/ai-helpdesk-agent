@@ -1,0 +1,17 @@
+# SC-006 Availability Probe Log
+
+Unattended session+report attempts spread across a 24-hour window, one every 60 minutes.
+
+| # | Timestamp (UTC) | Health | Session Created | Report Accepted | Result | Error |
+|---|---|---|---|---|---|---|
+| 1 | 2026-08-26T19:47:58.466Z | ok | true | true | Passed | - |
+| 2 | 2026-08-26T20:47:58.726Z | ok | true | true | Passed | - |
+| 3 | 2026-08-26T21:47:58.778Z | ok | true | true | Passed | - |
+| 4 | 2026-08-26T22:47:58.926Z | ok | true | true | Passed | - |
+| 5 | 2026-08-26T23:47:58.977Z | ok | true | true | Passed | - |
+| 6 | 2026-08-27T00:47:59.020Z | ok | true | true | Passed | - |
+| 7 | 2026-08-27T01:47:59.061Z | ok | true | true | Passed | - |
+| 8 | 2026-08-27T02:47:59.107Z | ok | true | true | Passed | - |
+| 9 | 2026-08-27T03:47:59.154Z | ok | true | true | Passed | - |
+| 10 | 2026-08-27T04:47:59.203Z | ok | true | true | Passed | - |
+| 11 | 2026-08-27T05:47:56.023Z | ok | true | true | Passed | - |
