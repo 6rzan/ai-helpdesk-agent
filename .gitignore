@@ -52,6 +52,9 @@ backend/test-endpoints/*/authorized_keys
 !docs/testing/*.log
 # The probe's raw console echo is not evidence — the .log table above is.
 docs/testing/probe-stdout.log
+# Supervisor trace + the probe's redirected streams (T086). Same reasoning:
+# runtime noise, and Start-Process truncates its redirect targets.
+docs/testing/.probe-runtime/
 
 # OS cruft
 .DS_Store
