@@ -1,4 +1,5 @@
 import type {
+  AccountDirectoryResponse,
   Account,
   ActionRecord,
   ApiErrorBody,
@@ -21,6 +22,10 @@ import type {
   StaffTicketDetail,
   StaffTicketFilters,
   StaffTicketRow,
+  ProfileFieldHistoryEntry,
+  ProfileFieldName,
+  ProfileFieldsSaveResponse,
+  ProfileFieldSubmission,
   ProfileStaffEntry,
   MyTicket,
   SupportProfile,
@@ -86,12 +91,86 @@ export function getMyTicket(reference: string): Promise<{ ticket: MyTicket & Tic
 }
 
 export function getMyProfile(): Promise<{ profile: SupportProfile }> { return request("/my/profile"); }
-export function updateMyProfile(profile: Pick<SupportProfile, "remoteAccessIds" | "location" | "hardware">): Promise<{ profile: SupportProfile }> {
+
+/**
+ * The owner's own save.
+ *
+ * 007: the response now carries a per-field outcome map alongside the profile. A field
+ * staff took over while the page was open comes back `locked` rather than silently
+ * applied or silently dropped, and the page explains it on that field.
+ */
+/** Partial because the owner sends only the fields they still control (007 FR-021):
+ * submitting a staff-controlled field would come back refused every time and turn a
+ * standing lock into a fresh error message on every save. */
+export function updateMyProfile(
+  profile: Partial<Pick<SupportProfile, "remoteAccessIds" | "location" | "hardware">>,
+): Promise<ProfileFieldsSaveResponse> {
   return request("/my/profile", { method: "PUT", body: JSON.stringify(profile) });
 }
 
 export function getStaffUserProfile(accountId: string): Promise<{ profile: SupportProfile }> {
   return request(`/staff/users/${encodeURIComponent(accountId)}/profile`);
+}
+
+// --- 007 US2: staff-authoritative per-field editing ---------------------------
+//
+// These go through the same shared `request()` helper as everything else on the account
+// axis, which is exactly right here and exactly wrong for the maintainer console: this
+// file sends the session cookie on every call, and the maintainer has no session. The
+// console has its own caller in `maintainerApi.ts` so the key can never reach this file.
+
+/**
+ * Save one or more fields authoritatively.
+ *
+ * Each field carries the `setAt` the page loaded as its concurrency token. A refused
+ * field comes back in `results` on a `200`, not as a thrown error: some fields may have
+ * been saved, and treating the whole response as a failure would discard the rest.
+ */
+export function saveStaffProfileFields(
+  accountId: string,
+  fields: Partial<Record<ProfileFieldName, ProfileFieldSubmission>>,
+): Promise<ProfileFieldsSaveResponse> {
+  return request(`/staff/users/${encodeURIComponent(accountId)}/profile/fields`, {
+    method: "PUT",
+    body: JSON.stringify({ fields }),
+  });
+}
+
+/** Hand a field back to the account owner. */
+export function releaseStaffProfileField(
+  accountId: string,
+  field: ProfileFieldName,
+): Promise<{ profile: SupportProfile }> {
+  return request(
+    `/staff/users/${encodeURIComponent(accountId)}/profile/fields/${encodeURIComponent(field)}/release`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+/** One field's history, newest first. Staff only: there is no owner-facing equivalent
+ * call here because there is no owner-facing route to call (FR-018). */
+export function getStaffProfileFieldHistory(
+  accountId: string,
+  field: ProfileFieldName,
+): Promise<{ history: ProfileFieldHistoryEntry[] }> {
+  return request(
+    `/staff/users/${encodeURIComponent(accountId)}/profile/fields/${encodeURIComponent(field)}/history`,
+  );
+}
+
+/** The staff account directory (007 T043, FR-030 to FR-032).
+ *
+ * The term is **debounced at the caller**, not here: this module stays a thin map of the
+ * HTTP surface, and a timer hidden inside a request function would fire for every caller
+ * whether or not they were typing. `AccountDirectoryPage` owns the delay because it owns
+ * the keystrokes.
+ *
+ * An empty result is a `200` with an empty array, so there is no error path to handle
+ * for "nobody matched".
+ */
+export function listStaffAccounts(term?: string): Promise<AccountDirectoryResponse> {
+  const query = term?.trim() ? `?q=${encodeURIComponent(term.trim())}` : "";
+  return request(`/staff/accounts${query}`);
 }
 
 export function appendStaffProfileEntry(

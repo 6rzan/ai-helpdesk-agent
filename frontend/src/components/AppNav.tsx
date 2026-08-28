@@ -30,6 +30,12 @@ export function AppNav() {
                 <Link to="/staff" className="text-blue-600 hover:underline">
                   Dashboard
                 </Link>
+                {/* Staff only, and rendered inside the same role check as the dashboard
+                    link rather than beside it: the directory lists every account, so it
+                    must never appear for a reporter (007 FR-030, FR-033). */}
+                <Link to="/staff/accounts" className="text-blue-600 hover:underline">
+                  Accounts
+                </Link>
                 <label className="flex items-center gap-1.5 text-gray-600">
                   <span className="sr-only">Availability</span>
                   <span

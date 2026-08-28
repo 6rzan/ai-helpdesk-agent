@@ -6,6 +6,14 @@ export const STAFF_ACTIONS = [
   "status_change",
   "resolve",
   "profile_append",
+  // 007 T029. `profile_append` stays for notes, which are still appended alongside a
+  // value. These two are for the authoritative path: `profile_edit` records staff
+  // setting a field's value, `profile_release` records handing it back to the owner.
+  // Kept as separate values rather than one "profile_change" because the audit is read
+  // to answer "who took this field over" and "who gave it back", and one value would
+  // make both queries a details-field scan.
+  "profile_edit",
+  "profile_release",
   "credential_reset",
   "import_apply",
   // 005: staff decisions over automated remediation (data-model.md §3, FR-022).

@@ -7,3 +7,10 @@ Unattended session+report attempts spread across a 24-hour window, one every 60 
 | 1 | 2026-08-28T08:21:28.675Z | ok | true | true | Passed | - |
 | 2 | 2026-08-28T09:21:29.118Z | ok | true | true | Passed | - |
 | 3 | 2026-08-28T10:21:29.128Z | ok | true | true | Passed | - |
+| 4 | 2026-08-28T11:21:29.291Z | unreachable | false | false | Failed | fetch failed |
+| 5 | 2026-08-28T12:21:29.305Z | unreachable | false | false | Failed | fetch failed |
+| 6 | 2026-08-28T13:21:30.913Z | unreachable | false | false | Failed | fetch failed |
+| 7 | 2026-08-28T14:21:30.928Z | unreachable | false | false | Failed | fetch failed |
+| 8 | 2026-08-28T15:21:30.940Z | unreachable | false | false | Failed | fetch failed |
+| 9 | 2026-08-28T16:21:30.954Z | unreachable | false | false | Failed | fetch failed |
+| 10 | 2026-08-28T17:21:30.975Z | unreachable | false | false | Failed | fetch failed |

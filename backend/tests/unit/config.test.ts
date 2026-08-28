@@ -68,3 +68,46 @@ describe("envSchema — remediation and provider-chain config", () => {
     }
   });
 });
+
+// T004 (007): the maintainer sign-in throttle settings. Defaults are asserted with an
+// explicit `undefined` override rather than ambient process.env, for the same reason the
+// SSH-key test above does: a developer .env that sets either value would otherwise turn
+// the default assertion into an assertion about that machine.
+describe("envSchema — maintainer sign-in throttle config", () => {
+  function parse(overrides: Record<string, string | undefined> = {}) {
+    const result = envSchema.safeParse({ ...process.env, ...overrides });
+    if (!result.success) {
+      throw new Error(result.error.message);
+    }
+    return result.data;
+  }
+
+  it("defaults MAINTAINER_SIGNIN_MAX_FAILURES to 5", () => {
+    const config = parse({ MAINTAINER_SIGNIN_MAX_FAILURES: undefined });
+    expect(config.MAINTAINER_SIGNIN_MAX_FAILURES).toBe(5);
+  });
+
+  it("defaults MAINTAINER_SIGNIN_COOLDOWN_SECONDS to 300", () => {
+    const config = parse({ MAINTAINER_SIGNIN_COOLDOWN_SECONDS: undefined });
+    expect(config.MAINTAINER_SIGNIN_COOLDOWN_SECONDS).toBe(300);
+  });
+
+  it("accepts an override for MAINTAINER_SIGNIN_MAX_FAILURES", () => {
+    const config = parse({ MAINTAINER_SIGNIN_MAX_FAILURES: "3" });
+    expect(config.MAINTAINER_SIGNIN_MAX_FAILURES).toBe(3);
+  });
+
+  it("accepts an override for MAINTAINER_SIGNIN_COOLDOWN_SECONDS", () => {
+    const config = parse({ MAINTAINER_SIGNIN_COOLDOWN_SECONDS: "60" });
+    expect(config.MAINTAINER_SIGNIN_COOLDOWN_SECONDS).toBe(60);
+  });
+
+  it("refuses a zero or negative threshold rather than disabling the throttle silently", () => {
+    expect(
+      envSchema.safeParse({ ...process.env, MAINTAINER_SIGNIN_MAX_FAILURES: "0" }).success,
+    ).toBe(false);
+    expect(
+      envSchema.safeParse({ ...process.env, MAINTAINER_SIGNIN_COOLDOWN_SECONDS: "-1" }).success,
+    ).toBe(false);
+  });
+});

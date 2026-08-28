@@ -11,10 +11,12 @@ import { MyTicketDetailPage, MyTicketsPage } from "./pages/MyTicketsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { UserProfilePage } from "./pages/staff/UserProfilePage";
+import { AccountDirectoryPage } from "./pages/staff/AccountDirectoryPage";
 import { ImportPage } from "./pages/staff/ImportPage";
 import { ApprovalsPage } from "./pages/staff/ApprovalsPage";
 import { AuditPage } from "./pages/staff/AuditPage";
 import { RemediationPage } from "./pages/staff/RemediationPage";
+import { MaintainerConsolePage } from "./pages/maintainer/MaintainerConsolePage";
 
 function AppLayout() {
   return (
@@ -32,6 +34,15 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/*
+            The maintainer console sits **outside** `AppLayout` on purpose (007 FR-015).
+            Every other route renders `AppNav`; this one cannot, because there is no
+            account signed in on this axis and nothing in the application for a
+            maintainer to navigate to. Nesting it under the layout would put a nav bar
+            with Tickets, Staff, and Sign out above a screen that has no session behind
+            any of them.
+          */}
+          <Route path="/maintainer" element={<MaintainerConsolePage />} />
           <Route element={<AppLayout />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -45,7 +56,8 @@ export default function App() {
             <Route element={<RequireStaff />}>
               <Route path="/staff" element={<DashboardPage />} />
               <Route path="/staff/tickets/:reference" element={<TicketDetailPage />} />
-              <Route path="/staff/users/:accountId/profile" element={<UserProfilePage />} />
+              <Route path="/staff/accounts" element={<AccountDirectoryPage />} />
+<Route path="/staff/users/:accountId/profile" element={<UserProfilePage />} />
               <Route path="/staff/import" element={<ImportPage />} />
               <Route path="/staff/approvals" element={<ApprovalsPage />} />
               <Route path="/staff/audit" element={<AuditPage />} />

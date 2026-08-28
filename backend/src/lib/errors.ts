@@ -17,8 +17,11 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string, code = "VALIDATION_ERROR") {
-    super(400, code, message);
+  // `details` carries what the client needs to put the message where the person is
+  // looking: `entryIndex` for a half-filled remote access row, `field` for a value that
+  // breached its own limit. Without it the caller can only say "something is wrong".
+  constructor(message: string, code = "VALIDATION_ERROR", details?: Record<string, unknown>) {
+    super(400, code, message, details);
     this.name = "ValidationError";
   }
 }
@@ -62,6 +65,15 @@ export class UnauthorizedError extends AppError {
   constructor(message: string, code = "UNAUTHORIZED") {
     super(401, code, message);
     this.name = "UnauthorizedError";
+  }
+}
+
+/** 429. Carries the caller-visible cooling-off period in `details`, which the error
+ * handler merges into the top level of the body (007 FR-034). */
+export class TooManyRequestsError extends AppError {
+  constructor(message: string, code = "TOO_MANY_REQUESTS", details?: Record<string, unknown>) {
+    super(429, code, message, details);
+    this.name = "TooManyRequestsError";
   }
 }
 

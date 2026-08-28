@@ -1,7 +1,38 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.2.0 → 1.3.0 (MINOR, 2026-08-21): feature 005 (Constrained Automated
+Version change: 1.3.0 → 1.4.0 (MINOR, 2026-08-28): a seventh Construction increment is
+declared. Feature 007 (Maintainer Admin Console & Staff-Authoritative Account Editing)
+was specified on 2026-08-28 while 006 was still in progress, which Principle VII's
+remaining-order clause permits only with supervisor agreement. That agreement was given
+and recorded on 2026-08-28 (gate condition G1) covering the specification, plan, and
+tasks as well as the implementation; this amendment is gate condition G2, and follows G1
+rather than preceding it, so the constitution never runs ahead of the decision it records.
+Modified principles:
+  - VII. RUP-Aligned Iterative Delivery — three changes. (a) `006` is stated in the
+    delivery record as **in progress**, not shipped: 30 of its 89 tasks are complete and
+    the remainder are UAT sessions with recruited testers, demo-machine screen capture,
+    and the 24-hour availability window — none of which a code change can close.
+    Recording it as shipped would have been the stale-plan failure this principle already
+    names. (b) `007` is declared as increment 7 with its requirement tracing (FR-2 and
+    FR-9 enhanced; NFR-5 extended to two new staff-only surfaces). (c) The clause naming
+    the refining phase "next and last" is reconciled: refining remains the **final**
+    phase, but it is no longer the only remaining one, and the conditions under which an
+    increment may be declared alongside it are now stated rather than implied.
+Added sections: none. No new principle; the existing delivery record is extended.
+Removed sections: none.
+Templates:
+  - `.specify/templates/plan-template.md` — no change needed. Its Constitution Check
+    already routes a Principle I enhancement through Complexity Tracking, which is the
+    mechanism that produced gate conditions G1 and G2 for this very feature.
+  - `.specify/templates/spec-template.md`, `.specify/templates/tasks-template.md` — no
+    change needed; nothing mandatory was added or removed.
+Other artifacts:
+  - `specs/007-admin-console-account-editing/spec.md` § Risks and
+    `docs/testing/observations.md` § Feature 007 gate records carry the dated G1 and G2
+    records this amendment is the constitutional half of.
+Follow-up TODOs: none. The Compliance Debt Register remains empty.
+Previous: 1.2.0 → 1.3.0 (MINOR, 2026-08-21): feature 005 (Constrained Automated
 Remediation) shipped, with its closing evidence gathered during the T117 quickstart
 validation pass. Both Compliance Debt Register entries are struck — the register is now
 empty, satisfying the "MUST be empty before final submission" clause ahead of Transition.
@@ -361,15 +392,49 @@ Chapter 3, realised as speckit cycles.
      activates NFR-4 in substance rather than vacuously (policy engine, endpoint
      registry, executor, tool registry, audit trail, staff approval and kill-switch
      control) — shipped.
-- **Remaining order:**
-  6. **Refining / Transition phase** — system-wide testing, the Objective-4 evaluation
+- **In progress:**
+  6. `006` Refining / Transition — system-wide testing, the Objective-4 evaluation
      (Principle IV), UAT with at least 3 testers, feedback-driven tuning within
-     experimental boundaries, and role-specific user guidance drafts. This is the next
-     phase; nothing may be specified ahead of it without supervisor agreement.
-- The refining phase MUST NOT be specified until every feature has shipped. It is a
-  system-wide phase, not an early increment; specifying it sooner produces polish work
-  against a moving target. Per-feature tests remain mandatory throughout (Principle IV)
-  and are never deferred into this phase.
+     experimental boundaries, and role-specific user guidance drafts. **In progress, not
+     shipped**: its convergence and defect work is done, and its remaining tasks are the
+     ones no code change can close — UAT sessions with recruited testers, demo-machine
+     screen capture, and the completion of the 24-hour availability window. It is stated
+     here as in progress rather than moved into the delivery record, because a delivery
+     record that overstates is the stale-plan failure this principle exists to prevent.
+  7. `007` Maintainer Admin Console & Staff-Authoritative Account Editing — **enhancement
+     increment**, not a new objective. Requirement tracing: **FR-2 enhanced** (the
+     maintainer category and guide administration delivered in `003` becomes reachable
+     through a screen instead of hand-crafted requests carrying two custom headers);
+     **FR-9 enhanced** (staff gain authoritative, attributed, per-field editing of a
+     user's location, hardware, and remote-access details, plus a directory reaching any
+     account rather than only reporters of an open ticket); **NFR-5 extended** (the
+     account directory and the profile-field routes are two new surfaces the
+     role-restricted access rule must cover, tested by refusal rather than asserted).
+     No new objective, no third role, no new safety surface: Principle III's locked
+     two-role model is untouched, and the maintainer remains a shared-secret header on a
+     different axis with no account and no session.
+- The refining phase is the **final** phase and MUST NOT be declared complete until every
+  feature has shipped. It is a system-wide phase, not an early increment; specifying it
+  sooner produces polish work against a moving target. Per-feature tests remain mandatory
+  throughout (Principle IV) and are never deferred into this phase.
+- **Declaring an increment alongside the refining phase.** Nothing may be specified ahead
+  of the refining phase without supervisor agreement. Where agreement is given, three
+  conditions bind, and `007` is the first increment to have been declared under them:
+  1. The agreement MUST be dated and recorded in the repository, not only spoken, and it
+     MUST state explicitly whether it covers the artifacts already produced or only the
+     implementation that follows them. An increment specified before agreement has
+     artifacts that need covering, and an agreement silent on them leaves the breach
+     unaddressed while appearing to resolve it.
+  2. The increment MUST enhance an existing IR requirement rather than introduce a new
+     one (Principle I), and MUST NOT consume the refining phase's Objective-4 evaluation
+     or UAT time — enhancements are permitted "never at the expense of completing" an IR
+     requirement.
+  3. This constitution MUST be amended to declare the increment **after** the agreement,
+     never before. An undeclared increment leaves the delivery record disagreeing with
+     the repository; a declaration made first would put the constitution ahead of a
+     decision that had not yet been taken.
+  If agreement is refused, the increment's artifacts are withdrawn or parked by dated
+  decision rather than left specified and unimplemented.
 - Transition-phase activities are scheduled work items, not afterthoughts.
 - Supervisor checkpoints: minimum 3 logged meetings this semester on official log
   sheets, each preceded by a passing demo path (Principle IV).
@@ -379,7 +444,10 @@ enacted; speckit cycles are its concrete, auditable implementation in this repos
 The delivery record replaces the original forecast order because the forecast diverged
 from what was built (guided troubleshooting shipped for all six categories at once, and
 the dashboard preceded remediation), and a stale plan is worse evidence than an accurate
-history.
+history. The same reasoning governs how `006` and `007` are recorded above: an increment
+is listed at the status it actually holds, and a seventh increment declared alongside the
+refining phase is written into the record with the conditions that permitted it, so a
+reader can audit the decision rather than infer it.
 
 ### VIII. Agent Core & Prompt Engineering Discipline
 
@@ -541,4 +609,4 @@ reviewed at every phase gate (see Governance) and MUST be empty before final sub
 - Runtime development guidance for agents lives in repository-local agent instruction
   files; where they conflict, this constitution wins.
 
-**Version**: 1.3.0 | **Ratified**: 2026-07-07 | **Last Amended**: 2026-08-21
+**Version**: 1.4.0 | **Ratified**: 2026-07-07 | **Last Amended**: 2026-08-28

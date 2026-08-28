@@ -61,23 +61,148 @@ describe("Support profiles", () => {
     expect(forbidden.body.profile).toBeUndefined();
   });
 
-  it("TC-US4-03: a staff correction is attributed and never overwrites the owner's value", async () => {
+  it("TC-US4-03: the correction write path is retired; staff set the value itself (007 FR-016, T031)", async () => {
+    // Superseded by 007. A correction existed to record a value staff believed was right
+    // *beside* an owner value they could not change. Staff can now set the value, so a
+    // new correction would be writing down a disagreement the system no longer has to
+    // have — and would leave the reader deciding which of two values to believe, which
+    // is the arrangement 007 exists to end.
     const owner = await account("user", "Owner");
     const staff = await account("staff", "Case Manager");
     await request(ctx.app).put("/api/my/profile").set(as(owner.token)).send({ location: "Building A" });
 
-    const append = await request(ctx.app)
+    const refused = await request(ctx.app)
       .post(`/api/staff/users/${owner.account._id}/profile/entries`)
       .set(as(staff.token))
       .send({ kind: "correction", field: "location", value: "Asset record says Building B" });
-    expect(append.status).toBe(201);
-    expect(append.body.profile.location).toBe("Building A");
-    expect(append.body.profile.staffEntries[0]).toMatchObject({ kind: "correction", field: "location", staffName: "Case Manager" });
-    expect(Date.parse(append.body.profile.staffEntries[0].at)).not.toBeNaN();
+    expect(refused.status).toBe(400);
+
+    // The note path is untouched: a note is still an annotation beside a value, and that
+    // is still a thing staff need to write.
+    const note = await request(ctx.app)
+      .post(`/api/staff/users/${owner.account._id}/profile/entries`)
+      .set(as(staff.token))
+      .send({ kind: "note", value: "Please call before connecting." });
+    expect(note.status).toBe(201);
+    expect(note.body.profile.location).toBe("Building A");
+    expect(note.body.profile.staffEntries[0]).toMatchObject({ kind: "note", staffName: "Case Manager" });
+    expect(await StaffActionRecord.exists({ action: "profile_append", targetId: owner.account._id })).toBeTruthy();
+  });
+
+  it("TC-US4-03b: a staff-set value becomes the owner's value, carrying who set it (007 FR-016)", async () => {
+    const owner = await account("user", "Owner");
+    const staff = await account("staff", "Case Manager");
+    await request(ctx.app).put("/api/my/profile").set(as(owner.token)).send({ location: "Building A" });
+
+    // Staff load the profile first, which is where the concurrency token comes from.
+    const loaded = await request(ctx.app)
+      .get(`/api/staff/users/${owner.account._id}/profile`)
+      .set(as(staff.token));
+    expect(loaded.body.profile.location).toBe("Building A");
+
+    const saved = await request(ctx.app)
+      .put(`/api/staff/users/${owner.account._id}/profile/fields`)
+      .set(as(staff.token))
+      .send({
+        fields: {
+          location: {
+            value: "Building B",
+            expectedSetAt: loaded.body.profile.fieldState.location.setAt as string,
+          },
+        },
+      });
+
+    expect(saved.status).toBe(200);
+    expect(saved.body.results.location.outcome).toBe("applied");
+    // The staff value *is* the value now, rather than sitting beside a stale one.
+    expect(saved.body.profile.location).toBe("Building B");
+    expect(saved.body.profile.fieldState.location.setByName).toBe("Case Manager");
+    expect(saved.body.profile.fieldState.location.controlledBy).toBe("staff");
 
     const ownerRead = await request(ctx.app).get("/api/my/profile").set(as(owner.token));
-    expect(ownerRead.body.profile.staffEntries).toHaveLength(1);
-    expect(await StaffActionRecord.exists({ action: "profile_append", targetId: owner.account._id })).toBeTruthy();
+    expect(ownerRead.body.profile.location).toBe("Building B");
+  });
+
+  it("TC-US4-03b2: a staff save with a stale token is a 200 carrying a conflict, never a 4xx", async () => {
+    // A mixed or refused field is not a failed request: reporting it as one would tell
+    // the client to discard everything the staff member typed.
+    const owner = await account("user", "Owner");
+    const staff = await account("staff", "Case Manager");
+    await request(ctx.app).put("/api/my/profile").set(as(owner.token)).send({ location: "Building A" });
+
+    const stale = await request(ctx.app)
+      .put(`/api/staff/users/${owner.account._id}/profile/fields`)
+      .set(as(staff.token))
+      .send({ fields: { location: { value: "Building B", expectedSetAt: null } } });
+
+    expect(stale.status).toBe(200);
+    expect(stale.body.results.location.outcome).toBe("conflict");
+    expect(stale.body.results.location.currentValue).toBe("Building A");
+    expect(stale.body.profile.location).toBe("Building A");
+  });
+
+  it("TC-US4-03c: an owner read carries provenance and control but never history (007 FR-017, FR-018)", async () => {
+    const owner = await account("user", "Owner");
+    const staff = await account("staff", "Case Manager");
+
+    await request(ctx.app)
+      .put(`/api/staff/users/${owner.account._id}/profile/fields`)
+      .set(as(staff.token))
+      .send({ fields: { location: { value: "Building B", expectedSetAt: null } } });
+
+    const read = await request(ctx.app).get("/api/my/profile").set(as(owner.token));
+    expect(read.status).toBe(200);
+    // The owner needs `controlledBy` to know what is editable and `setBy*` to know who to
+    // ask. Both are the same shape staff get: two shapes would be two chances for a
+    // byline to disagree with itself.
+    expect(read.body.profile.fieldState.location.controlledBy).toBe("staff");
+    expect(read.body.profile.fieldState.location.setByName).toBe("Case Manager");
+    // FR-018: history is staff-only, and its absence here is the enforcement.
+    expect(read.body.profile.history).toBeUndefined();
+    expect(JSON.stringify(read.body)).not.toContain("changeKind");
+  });
+
+  it("TC-US4-03d: an owner write to a staff-controlled field is refused with an explanation, not dropped (007 FR-021)", async () => {
+    const owner = await account("user", "Owner");
+    const staff = await account("staff", "Case Manager");
+
+    await request(ctx.app)
+      .put(`/api/staff/users/${owner.account._id}/profile/fields`)
+      .set(as(staff.token))
+      .send({ fields: { location: { value: "Building B", expectedSetAt: null } } });
+
+    const attempt = await request(ctx.app)
+      .put("/api/my/profile")
+      .set(as(owner.token))
+      .send({ location: "Building A", hardware: "My own laptop" });
+
+    expect(attempt.status).toBe(200);
+    expect(attempt.body.results.location).toMatchObject({
+      outcome: "locked",
+      currentSetByName: "Case Manager",
+    });
+    // The field the owner still controls in the same request is applied.
+    expect(attempt.body.results.hardware.outcome).toBe("applied");
+    expect(attempt.body.profile.location).toBe("Building B");
+    expect(attempt.body.profile.hardware).toBe("My own laptop");
+    // An owner write never moves control and never writes an audit record. The one
+    // `profile_edit` on record is the staff save above, not the owner's own write.
+    expect(attempt.body.profile.fieldState.hardware.controlledBy).toBe("owner");
+    const edits = await StaffActionRecord.find({ action: "profile_edit" }).lean();
+    expect(edits).toHaveLength(1);
+    expect(edits[0]?.staffName).toBe("Case Manager");
+  });
+
+  it("TC-US4-03e: an owner write records the owner as the field's author (007 FR-024)", async () => {
+    const owner = await account("user", "Owner");
+    const res = await request(ctx.app)
+      .put("/api/my/profile")
+      .set(as(owner.token))
+      .send({ location: "Building A" });
+
+    expect(res.body.results.location.outcome).toBe("applied");
+    expect(res.body.profile.fieldState.location.setByKind).toBe("owner");
+    expect(res.body.profile.fieldState.location.setByName).toBe("Owner");
   });
 
   it("TC-US4-04: credential status is minimal and a reset invalidates old sessions with attribution", async () => {

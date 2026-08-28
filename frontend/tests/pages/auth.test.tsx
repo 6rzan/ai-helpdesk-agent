@@ -5,6 +5,7 @@ import { AuthProvider } from "../../src/context/AuthContext";
 import { RequireAuth, RequireStaff } from "../../src/components/RouteGuards";
 import { LoginPage } from "../../src/pages/LoginPage";
 import { RegisterPage } from "../../src/pages/RegisterPage";
+import { AppNav } from "../../src/components/AppNav";
 import type { Account } from "../../src/lib/types";
 
 const getMe = vi.fn();
@@ -38,6 +39,7 @@ function renderApp(initialPath: string) {
           </Route>
           <Route element={<RequireStaff />}>
             <Route path="/staff" element={<div>Staff area</div>} />
+            <Route path="/staff/accounts" element={<div>Account directory</div>} />
           </Route>
         </Routes>
       </MemoryRouter>
@@ -120,5 +122,43 @@ describe("auth pages and route guards", () => {
     getMe.mockResolvedValue(STAFF);
     renderApp("/staff");
     await screen.findByText(/staff area/i);
+  });
+
+  it("007 T045: blocks a signed-in non-staff user from the account directory", async () => {
+    getMe.mockResolvedValue(USER);
+    renderApp("/staff/accounts");
+    await screen.findByText(/only available to it staff/i);
+    expect(screen.queryByText(/account directory/i)).not.toBeInTheDocument();
+  });
+
+  it("007 T045: lets a staff account into the account directory", async () => {
+    getMe.mockResolvedValue(STAFF);
+    renderApp("/staff/accounts");
+    await screen.findByText(/account directory/i);
+  });
+
+  it("007 T045: shows the directory link to staff and to nobody else", async () => {
+    getMe.mockResolvedValue(STAFF);
+    const staffView = render(
+      <AuthProvider>
+        <MemoryRouter>
+          <AppNav />
+        </MemoryRouter>
+      </AuthProvider>,
+    );
+    const staffLink = await staffView.findByRole("link", { name: /^accounts$/i });
+    expect(staffLink.getAttribute("href")).toBe("/staff/accounts");
+    staffView.unmount();
+
+    getMe.mockResolvedValue(USER);
+    const userView = render(
+      <AuthProvider>
+        <MemoryRouter>
+          <AppNav />
+        </MemoryRouter>
+      </AuthProvider>,
+    );
+    await userView.findByRole("link", { name: /alex/i });
+    expect(userView.queryByRole("link", { name: /^accounts$/i })).toBeNull();
   });
 });

@@ -24,16 +24,37 @@ interface TcRow {
   durationMs: string;
 }
 
-const RESULTS_PATH = path.resolve("tests/.results/vitest-results.json");
+/** Both packages emit the same vitest JSON report. The frontend's is read when it exists
+ * so Chapter 5's table covers the whole test suite rather than only the backend half
+ * (007 T053); a missing frontend report is skipped rather than treated as an error, so a
+ * backend-only run still regenerates the table. */
+const REPORT_SOURCES = [
+  { label: "backend", root: path.resolve("."), file: path.resolve("tests/.results/vitest-results.json") },
+  { label: "frontend", root: path.resolve("../frontend"), file: path.resolve("../frontend/tests/.results/vitest-results.json") },
+];
 const OUTPUT_PATH = path.resolve("../docs/testing/tc-tables.md");
-const TC_PATTERN = /^(TC-\d+)\s*[:\-]?\s*(.*)$/;
+/**
+ * A case id at the start of a test name.
+ *
+ * Widened from `TC-\d+` in 007: that feature's suites name their cases with their own
+ * prefixes (`SPF-`, `FS-`, `PP-`, `AD-` and so on) because a single global TC counter
+ * across nine files is unmaintainable by hand. The table is generated from whatever the
+ * tests actually call themselves, which is the point of generating it at all — a
+ * hand-written row can disagree with the test it claims to describe, and a generated one
+ * cannot.
+ */
+const TC_PATTERN = /^([A-Z]{2,5}-\d+[a-z]?\d*)\s*[:\-]?\s*(.*)$/;
 
-async function loadReport(): Promise<VitestJsonReport> {
-  const raw = await readFile(RESULTS_PATH, "utf-8");
-  return JSON.parse(raw) as VitestJsonReport;
+async function loadReport(file: string): Promise<VitestJsonReport | null> {
+  try {
+    const raw = await readFile(file, "utf-8");
+    return JSON.parse(raw) as VitestJsonReport;
+  } catch {
+    return null;
+  }
 }
 
-function toRows(report: VitestJsonReport): TcRow[] {
+function toRows(report: VitestJsonReport, label: string, root: string): TcRow[] {
   const rows: TcRow[] = [];
   for (const suite of report.testResults) {
     for (const assertion of suite.assertionResults) {
@@ -46,13 +67,12 @@ function toRows(report: VitestJsonReport): TcRow[] {
       rows.push({
         tcNo,
         description,
-        suite: path.relative(process.cwd(), suite.name).split(path.sep).join("/"),
+        suite: `${label}/${path.relative(root, suite.name).split(path.sep).join("/")}`,
         status: assertion.status === "passed" ? "Passed" : "Failed",
         durationMs: assertion.duration != null ? assertion.duration.toFixed(1) : "-",
       });
     }
   }
-  rows.sort((a, b) => a.tcNo.localeCompare(b.tcNo, undefined, { numeric: true }));
   return rows;
 }
 
@@ -68,8 +88,16 @@ function toMarkdown(rows: TcRow[]): string {
 }
 
 async function main(): Promise<void> {
-  const report = await loadReport();
-  const rows = toRows(report);
+  const rows: TcRow[] = [];
+  for (const source of REPORT_SOURCES) {
+    const report = await loadReport(source.file);
+    if (!report) {
+      console.warn(`No ${source.label} report at ${source.file}; skipped.`);
+      continue;
+    }
+    rows.push(...toRows(report, source.label, source.root));
+  }
+  rows.sort((a, b) => a.tcNo.localeCompare(b.tcNo, undefined, { numeric: true }));
   const markdown = `# Chapter 5 Test Case Traceability\n\n${toMarkdown(rows)}`;
   await mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
   await writeFile(OUTPUT_PATH, markdown, "utf-8");

@@ -58,6 +58,12 @@ export const envSchema = z.object({
   STT_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
   VOICE_MAX_SECONDS: z.coerce.number().int().positive().default(120),
   MAINTAINER_KEY: z.string().optional(),
+  // 007 R13/FR-035: the maintainer sign-in throttle. The console authenticates on a
+  // shared secret with no account behind it, so the only available brake on guessing is
+  // a per-client refusal count over a time window. Both settings are read by
+  // services/maintainer/signin-throttle-service.ts.
+  MAINTAINER_SIGNIN_MAX_FAILURES: z.coerce.number().int().positive().default(5),
+  MAINTAINER_SIGNIN_COOLDOWN_SECONDS: z.coerce.number().int().positive().default(300),
 });
 
 export type AppMode = z.infer<typeof appModeSchema>;

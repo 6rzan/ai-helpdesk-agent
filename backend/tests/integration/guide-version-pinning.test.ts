@@ -81,7 +81,7 @@ describe("Guide version pinning across a mid-session publish (US4, FR-017/SC-008
 
     // Maintainer publishes v2 while session A is still active on v1.
     const publish = await request(ctx.app)
-      .post("/api/admin/categories/printer/guide")
+      .post("/api/maintainer/categories/printer/guide")
       .set(ADMIN_HEADERS)
       .send({ steps: [{ instruction: "PINNING_TEST_V2_STEP: try the newer fix instead.", successHint: "It prints." }] });
     expect(publish.status).toBe(201);

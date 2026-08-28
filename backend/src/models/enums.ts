@@ -77,3 +77,24 @@ export const REFUSAL_REASONS = [
   "step_cap_reached",
 ] as const;
 export type RefusalReason = (typeof REFUSAL_REASONS)[number];
+
+// 007 data-model.md §3.2 / §4. Who set a profile field's value, and who currently
+// controls it. Both live here rather than beside either model, because
+// `support-profile.ts` and `profile-field-history.ts` each need them and importing one
+// from the other would make the two models cyclic.
+export const FIELD_ACTOR_KINDS = ["owner", "staff"] as const;
+export type FieldActorKind = (typeof FIELD_ACTOR_KINDS)[number];
+
+export const FIELD_CONTROLS = ["owner", "staff"] as const;
+export type FieldControl = (typeof FIELD_CONTROLS)[number];
+
+// 007 data-model.md §4. A history entry records either a value change or a control
+// transfer; a staff write over an owner-controlled field produces one of each.
+export const FIELD_CHANGE_KINDS = ["value", "control"] as const;
+export type FieldChangeKind = (typeof FIELD_CHANGE_KINDS)[number];
+
+// 007 FR-028. The support profile holds these three fields and no others. Here rather
+// than only in `support-profile.ts` so the history model can validate against the same
+// list without importing the model it records changes for.
+export const PROFILE_FIELDS = ["remoteAccessIds", "location", "hardware"] as const;
+export type ProfileField = (typeof PROFILE_FIELDS)[number];

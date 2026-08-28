@@ -145,6 +145,18 @@ A staff member imports the organisation's existing user records from an Excel fi
 - **FR-010**: Signed-in users MUST be able to view a list of their own tickets with current status and handling mode; users MUST NOT be able to access tickets, conversations, or profiles belonging to others.
 - **FR-011**: Signed-in users MUST be able to maintain a self-service support profile limited to support-relevant fields: remote-access ID(s) (e.g. TeamViewer/UltraViewer), location/desk, and hardware details.
 - **FR-012**: Staff MUST be able to view any user's profile and append details in hybrid form: attributed free-text notes, and corrected values recorded alongside (never overwriting) the user's own field values. Staff-appended entries MUST be attributed, timestamped, visibly distinct from the user's own entries, and visible to the profile's owner. Staff-appended content is itself limited to support-relevant information (NFR-5 applies to notes exactly as to profile fields).
+  > **Superseded in part on 2026-08-29 by feature 007 (FR-016 and FR-025).** "Never overwriting"
+  > no longer describes how staff set a support field's value: staff now write `location`,
+  > `hardware`, and `remoteAccessIds` directly and authoritatively, taking control of the field
+  > from the account owner, and the retired `correction` entry kind is refused by the server
+  > (`CORRECTION_WRITE_RETIRED`). The rest of FR-012 stands unchanged. Recorded `staffEntries`
+  > and free-text notes are still never overwritten and never deleted, staff-appended content is
+  > still attributed, timestamped, visibly distinct, and visible to the profile's owner, and
+  > NFR-5 still applies to notes exactly as to fields. Correction entries written before 007
+  > continue to render, labelled as the earlier notes they are. The change of a field's value is
+  > itself append-only in a different place: `ProfileFieldHistory` records what the field held
+  > before, so nothing is lost by the value being set rather than annotated (`research.md` R9).
+
 - **FR-013**: When staff open an escalated ticket, the reporter's current profile MUST be displayed automatically on the ticket view; if none exists, the view MUST say so explicitly.
 - **FR-014**: Tickets that predate accounts MUST remain visible and manageable on the dashboard, clearly marked as having no linked account.
 - **FR-015**: The profile MUST NOT request or store personal details unnecessary for IT support, and profile access MUST be restricted to the profile's owner and staff (data minimisation, NFR-5).

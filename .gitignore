@@ -10,6 +10,7 @@ SEM_2_SESSION_3_PRESENTATION_FYP_PRESENTATION.pdf
 .serena/
 graphify-out/
 backend/tests/.results/
+frontend/tests/.results/
 
 # Stray generated Vitest JSON reports (canonical output is ignored above)
 backend/**/*vitest*.json
