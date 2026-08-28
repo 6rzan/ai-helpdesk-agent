@@ -1,7 +1,6 @@
 import type { Types } from "mongoose";
 import { config } from "../../config/index.js";
 import { clock } from "../../lib/clock.js";
-import { logger } from "../../lib/logger.js";
 import { Conversation, type ConversationDoc } from "../../models/conversation.js";
 import type { EscalationReason, InputOrigin, IssueCategory } from "../../models/enums.js";
 import { Message } from "../../models/message.js";
@@ -15,6 +14,7 @@ import { transitionHandlingMode, transitionStatus, type TransitionableTicket } f
 import { createTicket } from "../ticket/ticket-service.js";
 import { maybeOfferActionForStep, sendAgentReply, startGuidedFlowForTicket, tryHandleGuidedReply, toTicketSummary } from "./conversation-guidance.js";
 import { handleAdHocRemediationRequest, handleAmbiguousRemediationReply } from "./adhoc-remediation.js";
+import { enqueueReply } from "./reply-queue.js";
 
 const GREETING_PATTERN =
   /^(hi+|hello|hey+|hiya|yo|greetings|good\s?(morning|afternoon|evening))[\s!.,]*$/i;
@@ -130,40 +130,6 @@ export interface HandleIncomingMessageInput {
 
 export interface HandleIncomingMessageResult {
   messageId: string;
-}
-
-// processReply is fire-and-forget per message (the route returns 202 before it
-// resolves), and it reads/writes conversation-scoped state (pendingDuplicate,
-// guided-session progress, ticket creation) with no transaction spanning the
-// whole turn. Two messages arriving close together on the same conversation —
-// a fast typist, a double-tap, or a scripted/automated caller — would run two
-// overlapping processReply chains with no ordering between them: each reads
-// the conversation's state independently, so the second can create its own
-// ticket while unaware of the first, or generate a reply text (including a
-// freshly-reserved reference) whose underlying write can still lose a race
-// against the other chain. Chaining each conversation's turns onto the same
-// promise serializes them without blocking the 202 response or other
-// conversations. Found via T019's manual quickstart walkthrough (five
-// same-session reports back to back reproduced two agent replies quoting
-// ticket references — HD-0060, HD-0061 — that GET /api/tickets/:reference
-// then reported as TICKET_NOT_FOUND).
-const conversationQueues = new Map<string, Promise<void>>();
-
-function enqueueReply(conversationId: Types.ObjectId, run: () => Promise<void>): void {
-  const key = conversationId.toString();
-  const previous = conversationQueues.get(key) ?? Promise.resolve();
-  const next = previous.then(run, run).catch((err: unknown) => {
-    logger.error({ err, conversationId: key }, "failed to process agent reply");
-  });
-  conversationQueues.set(
-    key,
-    next.finally(() => {
-      // Only clear the slot if nothing queued behind us while we ran.
-      if (conversationQueues.get(key) === next) {
-        conversationQueues.delete(key);
-      }
-    }),
-  );
 }
 
 export interface ReplyContext {

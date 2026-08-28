@@ -143,6 +143,22 @@ describe("state-changing actions never execute without consent AND approval (SC-
     expect(approvals).toHaveLength(1);
     expect(approvals[0]?.status).toBe("pending");
     expect(approvals[0]?.policyEntryId).toBe("unlock-account");
+
+    // T085 (OBS-11): the two messages the reporter actually sees embed the
+    // description mid-sentence, so neither may double the authored full stop
+    // nor carry the planner-facing "Verified by ..." blurb.
+    const reporterMessages = await Message.find({ conversationId: fixture.conversationId }).sort({ _id: 1 });
+    const decision = reporterMessages.find((m) => m.text.startsWith("Yes, go ahead:"));
+    const signOff = reporterMessages.find((m) => m.text.startsWith("That needs IT staff sign-off first:"));
+
+    expect(decision?.text).toBe("Yes, go ahead: Unlocks a locked local test account on the endpoint");
+    expect(signOff?.text).toBe(
+      "That needs IT staff sign-off first: Unlocks a locked local test account on the endpoint. I'll let you know as soon as it's decided.",
+    );
+    for (const message of [decision, signOff]) {
+      expect(message?.text).not.toContain("..");
+      expect(message?.text).not.toContain("Verified by");
+    }
   });
 
   it("declining a state-changing proposal raises no approval request at all: only the decline is recorded (US3 AS4)", async () => {

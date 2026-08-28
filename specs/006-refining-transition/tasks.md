@@ -386,3 +386,39 @@ T013 — the 24-hour probe runs unattended while Phases 3–7 proceed.
   published artifact (Constitution § Development Workflow)
 </content>
 </invoke>
+
+---
+
+## Phase 9: Convergence
+
+**Purpose**: Close the gaps `/speckit-converge` found between this feature's artifacts and
+the current state of the repository on 2026-08-28. Every item below traces to a requirement,
+a plan decision, or a constitution principle. The three `Constitution VI` items are
+**CRITICAL** and are listed first: two source files crossed the 500-line limit during this
+phase's own work, and one function shipped with no callers.
+
+- [X] T082 **CRITICAL** — Split `backend/scripts/demo-path.ts` (currently 625 lines) into single-responsibility modules each at or under 500 lines, keeping `LEG_ORDER`, `allLegsPassed`, and `buildLog` exported so `backend/tests/unit/demo-path.test.ts` keeps passing unchanged, per Constitution VI ("Source files ≤ 500 lines") (contradicts)
+- [X] T083 **CRITICAL** — Bring `backend/src/services/conversation/conversation-engine.ts` back under 500 lines (it grew 494 → 526 when the OBS-14 per-conversation reply serialization landed) by extracting the `conversationQueues` / `enqueueReply` concern into its own module under `backend/src/services/conversation/`, with its unit test, per Constitution VI (contradicts)
+- [X] T084 **CRITICAL** — Resolve the dead `asClause()` export at `backend/src/services/remediation/disclosure.ts:23`, which has zero callers in `backend/src` and `backend/tests`: either wire it into the T085 fix or delete it with its rationale, and add the corresponding row to `docs/testing/observations.md` with a severity and disposition so the breach is recorded rather than silently repaired, per Constitution VI ("no dead code") and FR-014 (contradicts)
+- [X] T085 [US4] Finish the `OBS-11` fix, which currently covers only the opening offer text: carry the user-facing `entry.description` (not the planner-facing `tool.description`, which ends "Verified by `print_queue_status`.") through `backend/src/services/remediation/consent-service.ts:218` `pendingActionProposal.description`, the `action_proposed` SSE payload at `:235` that `frontend/src/pages/ChatPage.tsx:113` renders, the "That needs IT staff sign-off first: …" reply at `:350` (which still doubles the full stop), and the `chatReportFor` outcome messages at `:395-408`; then update the `OBS-11` row in `docs/testing/observations.md` to record that a partial fix had already shipped, per FR-019 and FR-004 (partial)
+- [ ] T086 [US1] Make the 24-hour availability probe survive a machine restart before restarting its window: `backend/scripts/availability-probe.ts` restarts its attempt counter at `1` in memory with no persisted state, so all three windows so far were destroyed by reboots or sleep, and `docs/testing/availability-probe-24h.log` currently holds only 2 attempts (2026-08-27T07:48:39Z and 17:28:05Z — a 9h39m gap against a header claiming a 60-minute cadence) with no probe process running. Add resume-from-log support (or an equivalent supervised restart), restart the window, and only then run T017, per FR-003 and SC-009 (partial)
+  - **Partially landed 2026-08-28**: the resume-from-log half is done —
+    `parseResumeState`, `delayUntilNextAttempt`, and `describeGaps` in
+    `backend/scripts/availability-probe.ts` recover the attempt count, pass count, and
+    window bounds from the log so a reboot resumes the window instead of restarting it at
+    attempt 1, the closing summary now reports the real `**Window**` span and names every
+    `**Continuity**` interruption rather than implying an unbroken cadence, a
+    `pathToFileURL` main-module guard stops an import from launching a window
+    (`OBS-16`), and `backend/tests/unit/availability-probe.test.ts` covers all three
+    functions (11 TCs). **Still open**: restarting the 24-hour window, which needs the demo
+    stack up — `GET /api/health` and the LM Studio endpoint are both unreachable as of
+    2026-08-28. T017 stays blocked behind it.
+- [X] T087 [US1] Add the missing observation row to `docs/testing/observations.md` for the defect fixed in `frontend/src/pages/ChatPage.tsx` in commit `83320f9` — a React StrictMode double-invoke issuing a duplicate `POST /api/sessions` — with its severity and disposition; OBS-06…OBS-10 record the other five T015 fixes but not this one, per FR-004 ("recorded as a defect with a severity before a fix is attempted, so the failure remains part of the record") (contradicts)
+- [X] T088 Remove the blank line at `docs/testing/observations.md:65` that splits the register into two markdown tables, leaving `OBS-11`…`OBS-14` rendering without a header row in the phase's single triage artifact, per FR-020 and SC-012 (contradicts)
+- [X] T089 Widen T077's stray-artifact sweep beyond the repository root and delete the 0-byte shell-redirection artifact at `specs/006-refining-transition/Filled` (untracked); root-level `No`, `Filled`, and `will` are already gone, so T077 as written passes without removing this one. Update the `OBS-05` row in `docs/testing/observations.md`, which also names only the root `No`, per FR-020 (partial)
+
+**Checkpoint**: The two oversized files are back under the constitution's limit, no exported
+function is left without a caller, `OBS-11`'s fix reaches every surface it leaks into, the
+availability window can survive the demo machine, and the observations register is both
+complete and well-formed. Re-run the Phase 6 closing gates (T065, T066) after T082–T085,
+since all four touch runtime code.

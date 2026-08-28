@@ -1,5 +1,6 @@
-import { appendFile, mkdir, stat } from "node:fs/promises";
+import { appendFile, mkdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 interface ProbeAttempt {
   timestamp: string;
@@ -150,36 +151,175 @@ async function ensureLogFile(): Promise<void> {
   }
 }
 
+// T086: three separate 24-hour windows were destroyed by demo-machine reboots
+// and sleep, because the attempt counter lived only in memory -- a restart
+// began again at attempt 1 and the partial log had to be thrown away. The
+// counter now lives in the log itself, so a restart picks the window back up
+// where it stopped instead of discarding it.
+
+export interface ResumeState {
+  /** Attempts already recorded in the log. */
+  completed: number;
+  /** How many of those passed. */
+  passed: number;
+  /** Timestamp of the first recorded attempt (the window's real start). */
+  firstTimestamp: string | null;
+  /** Timestamp of the last recorded attempt (what the next one is spaced from). */
+  lastTimestamp: string | null;
+  /** True once a run has written its closing summary — nothing left to resume. */
+  finished: boolean;
+}
+
+const ROW_PATTERN = /^\|\s*(\d+)\s*\|\s*(\S+)\s*\|[^|]*\|[^|]*\|[^|]*\|\s*(Passed|Failed)\s*\|/;
+
+/** Recovers the window's progress from a log written by an earlier process. */
+export function parseResumeState(log: string): ResumeState {
+  const state: ResumeState = {
+    completed: 0,
+    passed: 0,
+    firstTimestamp: null,
+    lastTimestamp: null,
+    finished: /^\*\*Summary\*\*:/m.test(log),
+  };
+
+  for (const line of log.split("\n")) {
+    const match = ROW_PATTERN.exec(line.trim());
+    if (!match) {
+      continue;
+    }
+    state.completed += 1;
+    if (match[3] === "Passed") {
+      state.passed += 1;
+    }
+    state.firstTimestamp ??= match[2] ?? null;
+    state.lastTimestamp = match[2] ?? null;
+  }
+
+  return state;
+}
+
+/**
+ * Milliseconds to wait before the next attempt. Spacing is measured from the
+ * *last recorded* attempt, not from process start, so a machine that was off
+ * for hours resumes on the next interval rather than firing every missed slot
+ * back to back — which would compress the window and misrepresent the spread
+ * the evidence claims.
+ */
+export function delayUntilNextAttempt(lastTimestamp: string | null, intervalMs: number, now: number): number {
+  if (!lastTimestamp) {
+    return 0;
+  }
+  const last = Date.parse(lastTimestamp);
+  if (Number.isNaN(last)) {
+    return 0;
+  }
+  return Math.max(0, last + intervalMs - now);
+}
+
+/** Spans longer than 1.5 intervals mean the probe was not running — the window
+ * has a hole in it, and the log has to say so rather than imply an unbroken
+ * hourly cadence. */
+export function describeGaps(log: string, intervalMs: number): string[] {
+  const timestamps: string[] = [];
+  for (const line of log.split("\n")) {
+    const match = ROW_PATTERN.exec(line.trim());
+    if (match?.[2]) {
+      timestamps.push(match[2]);
+    }
+  }
+
+  const gaps: string[] = [];
+  for (let i = 1; i < timestamps.length; i += 1) {
+    const previous = Date.parse(timestamps[i - 1] ?? "");
+    const current = Date.parse(timestamps[i] ?? "");
+    if (Number.isNaN(previous) || Number.isNaN(current)) {
+      continue;
+    }
+    if (current - previous > intervalMs * 1.5) {
+      const hours = ((current - previous) / 3_600_000).toFixed(1);
+      gaps.push(`${timestamps[i - 1]} → ${timestamps[i]} (${hours} h, probe not running)`);
+    }
+  }
+  return gaps;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function main(): Promise<void> {
   const totalAttempts = MAX_ATTEMPTS_OVERRIDE ?? Math.floor((DURATION_HOURS * 60) / INTERVAL_MINUTES) + 1;
+  const intervalMs = INTERVAL_MINUTES * 60_000;
   await ensureLogFile();
 
-  let passed = 0;
-  for (let i = 1; i <= totalAttempts; i += 1) {
+  const existingLog = await readFile(OUTPUT_PATH, "utf-8").catch(() => "");
+  const resumed = parseResumeState(existingLog);
+
+  if (resumed.finished) {
+    console.log(`Window already closed (${resumed.passed}/${resumed.completed} attempts). Log: ${OUTPUT_PATH}`);
+    return;
+  }
+
+  let passed = resumed.passed;
+  if (resumed.completed > 0) {
+    console.log(
+      `Resuming at attempt ${resumed.completed + 1}/${totalAttempts} — ${resumed.passed}/${resumed.completed} recorded so far, window opened ${resumed.firstTimestamp}.`,
+    );
+  }
+
+  for (let i = resumed.completed + 1; i <= totalAttempts; i += 1) {
+    const wait = i === resumed.completed + 1 ? delayUntilNextAttempt(resumed.lastTimestamp, intervalMs, Date.now()) : intervalMs;
+    if (wait > 0) {
+      await sleep(wait);
+    }
+
     const attempt = await probeOnce();
     if (attempt.sessionCreated && attempt.messageAccepted) {
       passed += 1;
     }
     await appendFile(OUTPUT_PATH, `${toRow(attempt, i)}\n`, "utf-8");
     console.log(`[${i}/${totalAttempts}] ${attempt.timestamp} -> ${attempt.error ?? "ok"}`);
-
-    if (i < totalAttempts) {
-      await sleep(INTERVAL_MINUTES * 60_000);
-    }
   }
 
-  await appendFile(OUTPUT_PATH, `\n**Summary**: ${passed}/${totalAttempts} attempts succeeded.\n`, "utf-8");
-  console.log(`Done. ${passed}/${totalAttempts} attempts succeeded. Log: ${OUTPUT_PATH}`);
+  // The window's real span, not the one the header assumes: a resumed run that
+  // lost hours to a reboot covers more than DURATION_HOURS, and SC-006 is
+  // judged on what the log actually evidences.
+  const finalLog = await readFile(OUTPUT_PATH, "utf-8").catch(() => "");
+  const final = parseResumeState(finalLog);
+  const gaps = describeGaps(finalLog, intervalMs);
+  const spanHours =
+    final.firstTimestamp && final.lastTimestamp
+      ? ((Date.parse(final.lastTimestamp) - Date.parse(final.firstTimestamp)) / 3_600_000).toFixed(1)
+      : "0.0";
+
+  const summary = [
+    "",
+    `**Summary**: ${passed}/${totalAttempts} attempts succeeded.`,
+    `**Window**: ${final.firstTimestamp} → ${final.lastTimestamp} (${spanHours} h).`,
+    gaps.length === 0
+      ? "**Continuity**: no gap longer than one interval — the probe ran uninterrupted."
+      : `**Continuity**: ${gaps.length} interruption(s) — ${gaps.join("; ")}.`,
+    "",
+  ].join("\n");
+
+  await appendFile(OUTPUT_PATH, summary, "utf-8");
+  console.log(`Done. ${passed}/${totalAttempts} attempts succeeded over ${spanHours} h. Log: ${OUTPUT_PATH}`);
   if (passed !== totalAttempts) {
     process.exitCode = 1;
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+// OBS-16: this script used to call main() unconditionally at module load. Now
+// that T086 exports pure functions from it, importing it for a unit test would
+// otherwise start a live 24-hour probe run and write a log file as a side
+// effect. Same guard, and the same Windows reasoning, as demo-path.ts: use
+// pathToFileURL rather than string concatenation, because a naive
+// `file://${process.argv[1]}` never equals the real drive-lettered URL.
+const isMainModule = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isMainModule) {
+  main().catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

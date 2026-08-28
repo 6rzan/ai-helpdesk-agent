@@ -14,6 +14,7 @@ import { escalateTicketForGuidance, sendAgentReply } from "../conversation/conve
 import { getLlmProvider } from "../llm/factory.js";
 import type { ConversationTurn } from "../llm/types.js";
 import { recordAction } from "./audit-service.js";
+import { asClause } from "./disclosure.js";
 import { isRemediationAvailable } from "./availability-service.js";
 import { attemptAction } from "./policy-engine.js";
 import { raiseApprovalRequest } from "./approval-service.js";
@@ -215,7 +216,14 @@ export async function proposeActionForStep(ctx: StepProposalContext): Promise<St
     toolName: tool.name,
     policyEntryId: tool.policyEntryId,
     tier: entry.tier,
-    description: tool.description,
+    // OBS-11 (T085): the *stored* description is the user-facing one too. Every
+    // downstream reader of `pendingActionProposal.description` -- the consent
+    // decision message, the sign-off notice, the outcome report, the audit
+    // summary, and the frontend's `action_proposed` payload -- shows it to the
+    // reporter, so storing `tool.description` leaked the planner blurb into all
+    // of them. `remediation-state-changing.test.ts` already encoded the entry
+    // description as the expected fixture value.
+    description: actionDescription,
     arguments: result.arguments,
     endpointId: endpoint.id,
     endpointLabel: endpoint.label,
@@ -232,7 +240,7 @@ export async function proposeActionForStep(ctx: StepProposalContext): Promise<St
     ticketId: ctx.ticket.reference,
     proposalId,
     tier: entry.tier,
-    description: tool.description,
+    description: actionDescription,
     endpointLabel: endpoint.label,
   });
 
@@ -300,8 +308,8 @@ export async function recordConsent(input: ConsentDecisionInput): Promise<Consen
     conversationId: ticket.conversationId,
     author: "user",
     text: input.granted
-      ? `Yes, go ahead: ${proposal.description}`
-      : `No, don't run that: ${proposal.description}`,
+      ? `Yes, go ahead: ${asClause(proposal.description)}`
+      : `No, don't run that: ${asClause(proposal.description)}`,
     inputOrigin: "typed",
   });
 
@@ -347,7 +355,7 @@ export async function recordConsent(input: ConsentDecisionInput): Promise<Consen
       consent: consentInput,
     });
 
-    await sendAgentReply(replyCtx, `That needs IT staff sign-off first: ${proposal.description}. I'll let you know as soon as it's decided.`);
+    await sendAgentReply(replyCtx, `That needs IT staff sign-off first: ${asClause(proposal.description)}. I'll let you know as soon as it's decided.`);
 
     return { outcome: "pending_approval", observedOutput: null, description: proposal.description, approvalId: request._id.toString() };
   }
@@ -393,19 +401,23 @@ export async function recordConsent(input: ConsentDecisionInput): Promise<Consen
 }
 
 function chatReportFor(description: string, outcome: string, refusalReason?: RefusalReason): string {
+  // OBS-11 (T085): each of these wedges the description into a parenthetical or
+  // ahead of a full stop, so the authored trailing period has to come off first
+  // ("(Clears the endpoint's print queue.) and it completed successfully.").
+  const clause = asClause(description);
   switch (outcome) {
     case "succeeded":
-      return `I ran that check (${description}) and it completed successfully.`;
+      return `I ran that check (${clause}) and it completed successfully.`;
     case "failed":
-      return `I tried that (${description}) but it didn't succeed. I'm bringing in a person to help from here.`;
+      return `I tried that (${clause}) but it didn't succeed. I'm bringing in a person to help from here.`;
     case "timed_out":
-      return `I tried that (${description}) but the test system didn't respond in time. I'm bringing in a person to help from here.`;
+      return `I tried that (${clause}) but the test system didn't respond in time. I'm bringing in a person to help from here.`;
     case "attempted_unverified":
-      return `I ran that (${description}) but couldn't confirm the result. I'm bringing in a person to help from here.`;
+      return `I ran that (${clause}) but couldn't confirm the result. I'm bringing in a person to help from here.`;
     case "refused":
-      return `I wasn't able to do that (${refusalReason ?? "refused"}): ${description}.`;
+      return `I wasn't able to do that (${refusalReason ?? "refused"}): ${clause}.`;
     default:
-      return `${description}: ${outcome}`;
+      return `${clause}: ${outcome}`;
   }
 }
 
