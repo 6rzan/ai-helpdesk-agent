@@ -14,3 +14,22 @@ Unattended session+report attempts spread across a 24-hour window, one every 60 
 | 8 | 2026-08-28T15:21:30.940Z | unreachable | false | false | Failed | fetch failed |
 | 9 | 2026-08-28T16:21:30.954Z | unreachable | false | false | Failed | fetch failed |
 | 10 | 2026-08-28T17:21:30.975Z | unreachable | false | false | Failed | fetch failed |
+| 11 | 2026-08-28T18:21:30.981Z | unreachable | false | false | Failed | fetch failed |
+| 12 | 2026-08-28T19:21:30.998Z | unreachable | false | false | Failed | fetch failed |
+| 13 | 2026-08-28T20:21:31.016Z | ok | true | true | Passed | - |
+| 14 | 2026-08-28T21:21:31.596Z | ok | true | true | Passed | - |
+| 15 | 2026-08-28T22:21:31.670Z | ok | true | true | Passed | - |
+| 16 | 2026-08-28T23:21:32.419Z | ok | true | true | Passed | - |
+| 17 | 2026-08-29T00:21:32.487Z | ok | true | true | Passed | - |
+| 18 | 2026-08-29T01:21:32.556Z | ok | true | true | Passed | - |
+| 19 | 2026-08-29T02:21:43.072Z | ok | true | true | Passed | - |
+| 20 | 2026-08-29T03:21:43.145Z | ok | true | true | Passed | - |
+| 21 | 2026-08-29T04:21:43.202Z | ok | true | true | Passed | - |
+| 22 | 2026-08-29T05:21:55.191Z | ok | true | true | Passed | - |
+| 23 | 2026-08-29T06:21:55.564Z | ok | true | true | Passed | - |
+| 24 | 2026-08-29T07:21:55.610Z | ok | true | true | Passed | - |
+| 25 | 2026-08-29T08:22:07.598Z | ok | true | true | Passed | - |
+
+**Summary**: 16/25 attempts succeeded.
+**Window**: 2026-08-28T08:21:28.675Z → 2026-08-29T08:22:07.598Z (24.0 h).
+**Continuity**: no gap longer than one interval — the probe ran uninterrupted.
