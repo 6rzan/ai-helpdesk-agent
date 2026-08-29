@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type {
-  MaintainerCategory,
-} from "../../lib/types";
+import type { MaintainerCategory } from "../../lib/maintainerTypes";
 import {
   createMaintainerCategory,
   listMaintainerCategories,

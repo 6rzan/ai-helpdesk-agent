@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CategoryListPage } from "../../src/pages/maintainer/CategoryListPage";
-import type { MaintainerCategory } from "../../src/lib/types";
+import type { MaintainerCategory } from "../../src/lib/maintainerTypes";
 
 // T019 (007). FR-006 to FR-012.
 //

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MaintainerGuideStep } from "../../lib/types";
+import type { MaintainerGuideStep } from "../../lib/maintainerTypes";
 import { MaintainerApiError } from "../../services/maintainerApi";
 
 /**

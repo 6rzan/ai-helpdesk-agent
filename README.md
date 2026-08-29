@@ -11,7 +11,7 @@ This is a B.Sc. (Hons) Computer Science Final Year Project at Asia Pacific Unive
 **Reporting and troubleshooting**
 
 - Natural-language IT issue reporting with automatic ticket creation and a quotable reference such as `HD-0012`.
-- Six seeded support categories — password/login, network, printer, peripherals, performance, and service status — plus `unclassified` as the safety fallback. Categories are stored in the database, not hardcoded: a maintainer can add, edit, or retire one through the admin API and classification picks it up without a code change.
+- Six seeded support categories — password/login, network, printer, peripherals, performance, and service status — plus `unclassified` as the safety fallback. Categories are stored in the database, not hardcoded: a maintainer can add, edit, or retire one from the maintainer console at `/maintainer` and classification picks it up without a code change.
 - Deterministic, versioned troubleshooting guides. The language model interprets the user’s reply, but never invents, reorders, or skips a troubleshooting step.
 - Clarification and escalation safeguards: uncertain classifications, missing guides, and explicit requests for a person all preserve the case for staff rather than silently guessing.
 - Live chat and ticket updates through Server-Sent Events (SSE).
@@ -26,15 +26,22 @@ This is a B.Sc. (Hons) Computer Science Final Year Project at Asia Pacific Unive
 **Employee self-service**
 
 - Personal ticket history at `/tickets`, scoped to the signed-in account, with a per-ticket detail view and its own SSE stream.
-- A self-service support profile (remote-access IDs, location, hardware notes) that staff see on escalated tickets, plus an account settings page.
+- A self-service support profile (remote-access IDs, location, hardware notes) that staff see on escalated tickets, plus an account settings page. Every field names who last set it and when; a field IT staff have set is shown read-only with the reason stated on the field itself, and the rest stay self-service.
 
 **Staff workspace**
 
 - A staff-only ticket dashboard with status/category filters, sorting, and a separate escalated-ticket group.
 - Staff ticket detail with the conversation, classification context, status history, permitted status changes, takeover, reassignment, and any available reporter support profile.
 - Staff availability controls and advisory workload-aware assignment suggestions. Assignment always requires a deliberate staff confirmation.
-- Staff-appended profile notes and corrections on a reporter’s profile, and an initial-password reset that revokes that account’s sessions.
+- An account directory at `/staff/accounts` that reaches any account by name or email, including one that has never raised a ticket.
+- Staff-authoritative profile editing: a value staff save on `location`, `hardware`, or the remote-access list **becomes** the account's value everywhere the profile is shown, carrying who set it and when. Control of that field passes to staff until a staff member releases it back, the previous values stay readable in a staff-only field history, and two staff saving at once conflict per field rather than per profile. Free-text staff notes and an initial-password reset that revokes that account's sessions remain available alongside.
 - Excel (`.xlsx`) user import with column mapping, a dry-run preview, and a transactional apply step. Every staff action is written to an append-only `StaffActionRecord` audit trail.
+
+**Maintainer administration**
+
+- A maintainer console at `/maintainer` for the category and guide administration that previously existed only as an API: create a category with its first guide, reword a classification description, publish a new guide version with a change note, read the attributed version history, and retire a category that is no longer used. The six mandated categories offer no retire action at all.
+- The console is not a role and not an account. It is a shared `MAINTAINER_KEY` plus a self-declared name, held in memory only for as long as the page is open, sent per request, and never written to browser storage. Nothing links to the console from anywhere in the application, and it can reach no ticket, conversation, account, or role.
+- Repeated wrong keys are throttled from the same client for a configurable cooling-off period, checked before the key is compared. Every refused attempt is recorded with a timestamp and a hashed client identity; the supplied key is never stored.
 
 **Constrained automated remediation**
 
@@ -196,8 +203,8 @@ Open `http://localhost:5173`. The health endpoint is available at `http://localh
 | Role | How it is obtained | What it unlocks |
 |---|---|---|
 | `user` | Assigned automatically to every registration. `POST /auth/register` hardcodes it and ignores any role supplied in the request body. | Chat, own ticket history, own support profile, account settings |
-| `staff` | The maintainer-run `npm run seed:staff` script only. | Everything a `user` can do, plus `/staff` dashboard, ticket detail, takeover/reassignment, roster, reporter profiles, credential resets, and Excel import |
-| maintainer | Not an account. A shared `MAINTAINER_KEY` sent as a request header. | Category and guide administration at `/api/admin` — cannot read tickets or alter accounts |
+| `staff` | The maintainer-run `npm run seed:staff` script only. | Everything a `user` can do, plus `/staff` dashboard, ticket detail, takeover/reassignment, roster, the account directory, authoritative profile editing on any account, per-field history, credential resets, and Excel import |
+| maintainer | Not an account. A shared `MAINTAINER_KEY` sent as a request header, entered with a display name in the console at `/maintainer`. No session is created and the key is never stored in the browser. | Category and guide administration at `/api/maintainer` — cannot read tickets, conversations, or accounts, and cannot alter roles |
 
 ### Employees
 
@@ -207,6 +214,7 @@ Open `http://localhost:5173`. The health endpoint is available at `http://localh
    - When the agent proposes a whitelisted diagnostic action, it explains in plain language what will run and where, and waits for explicit consent in the chat before doing anything. Declining is always safe: it is refused and recorded, never a hard error. Read-only actions run the moment consent is granted; state-changing actions additionally wait on a staff approval decision, and the reporter is told which is happening.
 4. Review past cases under **My tickets** (`/tickets`), which lists only tickets reported by the signed-in account. Each ticket's detail view includes its own action history: every attempted action and its outcome, in plain language.
 5. Fill in the support profile at `/profile` — remote-access tool IDs, location, hardware notes — so staff have that context on escalation. Change the account password at `/settings`.
+   - Each field shows who last set it and when. If IT staff have set a field, it is shown read-only with a one-line explanation on the field itself: staff hold it, and asking in the chat is how to get it corrected or handed back. Fields staff have not touched stay self-service exactly as before.
 
 The conversation flow remains deliberately conservative. If the agent cannot confidently classify the issue, a guide is unavailable, or the user asks for staff, it escalates rather than improvising.
 
@@ -236,7 +244,21 @@ Staff can also set their availability to `available`, `busy`, or `away` in the t
 8. Turn automated remediation off — globally or for one endpoint — at **Automation** (`/staff/remediation`). The toggle takes effect immediately and blocks new proposals across every session.
 9. Review attempted/succeeded/refused/failed action counts by category and endpoint, for a selectable period, at **Metrics** (`/staff/metrics`).
 
-On a reporter's profile page (`/staff/users/:accountId/profile`) staff can append notes or corrections without overwriting what the employee entered, and issue a new initial password — which immediately revokes that account's sessions and forces a change at next sign-in. Bulk profile data is loaded through **Import** (`/staff/import`): upload an `.xlsx` workbook, map its columns, review the dry-run preview, then apply. Apply runs in a MongoDB transaction and therefore requires a replica-set deployment (see Prerequisites). Every one of these actions is recorded in the staff-action audit trail.
+10. Reach any account — not only reporters of an open ticket — at **Accounts** (`/staff/accounts`). Search by part of a name or email and open that person's profile directly, including an account that has never raised a ticket.
+
+On a profile page (`/staff/users/:accountId/profile`) staff set the location, hardware specification, and remote-access entries **authoritatively**: what staff save becomes the profile's value everywhere it is shown, including on the owner's own `/profile` page, rather than a note sitting beside a stale entry. Each field carries who last set it and when, and the previous values stay readable in a staff-only history behind a disclosure. Once staff set a field the owner can no longer edit it — the field stays visible to them with a plain explanation of why and how to get it changed — until a staff member releases it back. The remote-access list counts as one field: it is locked, released, and recorded as a whole. Two staff saving at once conflict per field, so an edit to a field nobody else touched still saves, and the one that moved underneath is refused by name with the value it would have overwritten. Free-text notes and any corrections recorded before this behaviour shipped remain readable exactly as they were. Staff can also issue a new initial password from this page — which immediately revokes that account's sessions and forces a change at next sign-in. Bulk profile data is loaded through **Import** (`/staff/import`): upload an `.xlsx` workbook, map its columns, review the dry-run preview, then apply. Apply runs in a MongoDB transaction and therefore requires a replica-set deployment (see Prerequisites). Every one of these actions is recorded in the staff-action audit trail.
+
+### Maintainer console
+
+Category and guide administration has its own screen at `/maintainer`. It is deliberately unlinked: no navigation anywhere in the application points at it, and it renders outside the application shell, because it is not a role an account can hold.
+
+1. Set `MAINTAINER_KEY` in `backend/.env` and restart the backend.
+2. Open `/maintainer`, and enter the key together with your own name. The name is what the guide version history attributes changes to.
+3. The category list shows every category with its classification description, whether it is one of the six mandated ones, whether it is retired, and its active guide version.
+4. Add a category with its first guide, reword a description so classification picks up new phrasing, publish a corrected guide version with a change note, or read the version history. A rejected guide reports the problem on the step and field at fault.
+5. Retire a category that is no longer used. The confirmation states the consequence first: existing tickets keep the category, only future classification stops. The six mandated categories offer no retire action at all.
+
+The console refuses in three distinct ways, and each says which it is: a wrong key, administration switched off (`MAINTAINER_KEY` unset — no sign-in form is shown at all), and cooling off after repeated wrong keys. The key is held in memory for as long as the console is open and is never written to browser storage, so reloading the page means entering it again. If the key is rotated mid-session, the next action returns you to the sign-in form with an explanation rather than a dead screen.
 
 ## Configuration
 
@@ -265,7 +287,9 @@ Copy [`.env.example`](.env.example) to `backend/.env` to override defaults. The 
 | `REMEDIATION_CONNECT_TIMEOUT_MS` | `5000` | SSH connection timeout |
 | `REMEDIATION_COMMAND_TIMEOUT_MS` | `15000` | Remote command execution timeout |
 | `REMEDIATION_APPROVAL_TTL_MINUTES` | `30` | How long a state-changing action waits for staff approval before it expires and is refused |
-| `MAINTAINER_KEY` | unset | Enables and protects `/api/admin/*`. Leave unset and the admin routes are never mounted. |
+| `MAINTAINER_KEY` | unset | Enables and protects `/api/maintainer/*`. Leave unset and those routes are never mounted — absent, not merely guarded. `GET /api/maintainer/status` is the one exception and stays mounted either way, so the console can say administration is switched off instead of showing a generic error. |
+| `MAINTAINER_SIGNIN_MAX_FAILURES` | `5` | Consecutive failed console sign-ins from one client before further attempts are refused for a cooling-off period |
+| `MAINTAINER_SIGNIN_COOLDOWN_SECONDS` | `300` | Length of that cooling-off period, and the window the failure count is measured over |
 
 For an OpenAI-compatible server, set `LLM_PROVIDER=openai_compat`, `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL`. The complete annotated reference, including speech-to-text options, is in [`.env.example`](.env.example).
 
@@ -278,7 +302,7 @@ cd backend
 npm run seed:guides
 ```
 
-This populates the `categories` collection. Further categories and guide versions are managed at runtime through the maintainer API rather than by editing the seed script — set `MAINTAINER_KEY`, restart the backend, and use the `/api/admin` endpoints listed below.
+This populates the `categories` collection. Further categories and guide versions are managed at runtime rather than by editing the seed script — set `MAINTAINER_KEY`, restart the backend, and open the maintainer console at `/maintainer`. The `/api/maintainer` endpoints listed below are what the console calls, and remain available directly.
 
 The remediation action whitelist and endpoint registry are versioned data files, not code: [`backend/src/policy/action-policy.json`](backend/src/policy/action-policy.json) and [`backend/src/policy/test-endpoints.json`](backend/src/policy/test-endpoints.json). No SSH key material is ever committed — `backend/.keys/` and the test endpoints' `authorized_keys` files are git-ignored, regenerated build inputs produced by `backend/test-endpoints/reset.ps1`.
 
@@ -331,8 +355,12 @@ All routes are prefixed with `/api`. Authenticated browser requests use the sess
 | `POST /staff/tickets/:reference/assignee` | staff | Explicit reassignment |
 | `GET /staff/roster` | staff | Roster, availability, workload, and suggested assignee |
 | `PUT /staff/availability` | staff | Set the signed-in staff member’s availability |
-| `GET /staff/users/:id/profile` | staff | Read a reporter’s support profile |
-| `POST /staff/users/:id/profile/entries` | staff | Append a staff note or correction to a profile |
+| `GET /staff/accounts?q=` | staff | List every user account — display name, email, role, and nothing else — narrowed by a case-insensitive substring of name or email. No match is a `200` with an empty array, not a `404` |
+| `GET /staff/users/:id/profile` | staff | Read a reporter’s support profile, with each field’s author, timestamp, and controller. An account with no profile yet returns an empty, owner-controlled profile rather than a `404` |
+| `PUT /staff/users/:id/profile/fields` | staff | Set `location`, `hardware`, or `remoteAccessIds` authoritatively. Always `200` with a per-field outcome map, including when one field was refused |
+| `POST /staff/users/:id/profile/fields/:field/release` | staff | Hand one field back to the account owner. `409 FIELD_NOT_STAFF_CONTROLLED` if the owner already controls it |
+| `GET /staff/users/:id/profile/fields/:field/history` | staff | One field’s previous values and control transfers, newest first. Staff only — there is no owner-facing equivalent route |
+| `POST /staff/users/:id/profile/entries` | staff | Append a free-text staff note to a profile. The pre-007 `correction` entry kind is retired and refused (`CORRECTION_WRITE_RETIRED`); staff now set the field’s value itself |
 | `GET /staff/users/:id/credentials` | staff | Whether the account is still on its initial password |
 | `POST /staff/users/:id/credentials/reset` | staff | Set a new initial password and revoke that account's sessions |
 | `POST /staff/imports` | staff | Upload an `.xlsx` workbook and detect its columns |
@@ -350,16 +378,19 @@ All routes are prefixed with `/api`. Authenticated browser requests use the sess
 
 ### Maintainer
 
-Mounted at `/api/admin` and only when `MAINTAINER_KEY` is set — otherwise the routes are absent, not merely guarded. Requires `x-maintainer-key` and `x-maintainer-name` headers.
+Mounted at `/api/maintainer` and only when `MAINTAINER_KEY` is set — otherwise the routes are absent, not merely guarded. Requires `x-maintainer-key` and `x-maintainer-name` headers; the name is attribution for the version history, never authentication. Session cookies are ignored here, and no maintainer route can reach a ticket, a conversation, an account, or a role.
 
 | Endpoint | Access | Purpose |
 |---|---|---|
-| `GET /admin/categories` | maintainer | List categories with their active guide version |
-| `POST /admin/categories` | maintainer | Create a category and its first guide |
-| `PUT /admin/categories/:name` | maintainer | Update category metadata |
-| `DELETE /admin/categories/:name` | maintainer | Retire a category |
-| `POST /admin/categories/:name/guide` | maintainer | Publish a new guide version |
-| `GET /admin/categories/:name/guide/versions` | maintainer | List guide version history |
+| `GET /maintainer/status` | public | Whether maintainer administration is enabled. Mounted even when `MAINTAINER_KEY` is unset, and returns only `{ "enabled": boolean }` |
+| `GET /maintainer/categories` | maintainer | List categories with their active guide version |
+| `POST /maintainer/categories` | maintainer | Create a category and its first guide |
+| `PUT /maintainer/categories/:name` | maintainer | Update category metadata |
+| `DELETE /maintainer/categories/:name` | maintainer | Retire a category — it stays readable and keeps its existing tickets, it is not deleted. Refused with `403 MANDATED_CATEGORY_UNDELETABLE` for the six mandated ones |
+| `POST /maintainer/categories/:name/guide` | maintainer | Publish a new guide version. A rejected guide names the offending step and field (`GUIDE_STEP_INVALID` with `stepIndex` and `field`) |
+| `GET /maintainer/categories/:name/guide/versions` | maintainer | List guide version history. Versions are immutable — there is no revert, edit, or delete route |
+
+Sign-in is throttled: after `MAINTAINER_SIGNIN_MAX_FAILURES` refusals from one client inside `MAINTAINER_SIGNIN_COOLDOWN_SECONDS`, further attempts return `429 MAINTAINER_SIGNIN_THROTTLED` with `retryAfterSeconds`, checked *before* the key is compared so the throttle cannot be used as an oracle. Every refused attempt is recorded with a hashed client identity and a timestamp; the supplied key is never written, to the record or to any log. An invalid key always returns the same `401 MAINTAINER_KEY_INVALID` message regardless of its length or shape.
 
 A `PATCH /test-support/...` router is additionally mounted when `APP_MODE` is `test` or `demo`. It is absent in `development` and production.
 
@@ -405,6 +436,8 @@ Feature 004 covers account authentication, staff-role enforcement, dashboard tic
 
 Feature 005 covers constrained automated remediation: the versioned action whitelist and default-deny policy engine, the SSH executor against isolated test endpoints, per-proposal reporter consent, staff approval for state-changing actions, the immutable action audit trail, the global/per-endpoint kill switch, outcome metrics, and the ordered LLM provider fallback chain with degraded-model refusal. See [`specs/005-constrained-remediation/tasks.md`](specs/005-constrained-remediation/tasks.md).
 
+Feature 007 covers the maintainer console and staff-authoritative account editing: the `/maintainer` screen for category and guide administration with its enabled-status probe, sign-in throttle, and refused-attempt record; staff-set profile values that become the account's values, with per-field provenance, control transfer and release, staff-only field history, and per-field conflict detection; and the staff account directory that reaches any account rather than only reporters of an open ticket. See [`specs/007-admin-console-account-editing/tasks.md`](specs/007-admin-console-account-editing/tasks.md).
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
@@ -414,7 +447,12 @@ Feature 005 covers constrained automated remediation: the versioned action white
 | Chat requests fail | Backend is not running | Start `npm run dev` in `backend` and check `/api/health`. |
 | A staff route returns 401 or 403 | 401 = no valid session cookie; 403 = signed in but the account role is `user` | For 401, sign in again (the cookie may have expired, or the request omitted credentials). For 403, provision or promote the account with `npm run seed:staff` and sign in again so the session reflects the new role. |
 | `/staff` shows “This area is only available to IT staff.” | The SPA route guard read `role: "user"` from `GET /auth/me` | Same fix as above. The guard mirrors the server check; the API refuses the call regardless of what the SPA renders. |
-| `/api/admin/...` returns 404 | `MAINTAINER_KEY` is unset, so the admin router was never mounted | Set `MAINTAINER_KEY` in `backend/.env` and restart. A 401 instead of 404 means the key is set but the `x-maintainer-key` header did not match. |
+| `/api/maintainer/...` returns 404 | `MAINTAINER_KEY` is unset, so the maintainer router was never mounted | Set `MAINTAINER_KEY` in `backend/.env` and restart. A 401 instead of 404 means the key is set but the `x-maintainer-key` header did not match. `GET /api/maintainer/status` answers either way, which is how the console tells the two apart. |
+| `/api/admin/...` returns 404 | The namespace moved to `/api/maintainer` (feature 007) | Use `/api/maintainer/...`. There is no admin role and never was; the path was renamed so it stops implying one. |
+| The console at `/maintainer` says administration is not enabled | `MAINTAINER_KEY` is unset in the running backend | Set it in `backend/.env` and restart. No sign-in form is offered until it is set, which is deliberate rather than a failure to render. |
+| The console refuses a correct key and reports a cooling-off period | `MAINTAINER_SIGNIN_MAX_FAILURES` refusals came from this client inside `MAINTAINER_SIGNIN_COOLDOWN_SECONDS` | Wait the reported number of seconds. The pause applies before the key is compared, so a correct key is refused too while it is in force. |
+| A staff profile save reports a conflict on one field but saved the others | Another staff member changed that field after this page was opened | Expected behaviour. The refused field shows the current value, who set it, and when; re-enter the change over that value if it is still right. Nothing typed is discarded. |
+| An employee cannot edit a field on their own `/profile` | A staff member set that field, which moves control to staff | Expected behaviour. Staff either correct the value or release the field back on `/staff/users/:accountId/profile`. |
 | All issues escalate as unclassified | LLM provider is unavailable | Check `/api/health`, then verify `LLM_PROVIDER`, `LLM_MODEL`, and provider URL settings. |
 | Microphone is unavailable | Permission, device, or local model issue | Allow browser microphone access; verify `STT_MODEL_DIR` if local transcription fails. Typing remains available. |
 | Tests initially fail while downloading MongoDB binaries | `mongodb-memory-server` is preparing its binary | Run the suite again after the download completes. |

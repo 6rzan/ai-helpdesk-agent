@@ -1,5 +1,5 @@
+import type { ApiErrorBody } from "../lib/types";
 import type {
-  ApiErrorBody,
   MaintainerCategoriesResponse,
   MaintainerCategory,
   MaintainerCategoryCreateRequest,
@@ -8,7 +8,7 @@ import type {
   MaintainerGuidePublishResponse,
   MaintainerGuideVersionsResponse,
   MaintainerStatus,
-} from "../lib/types";
+} from "../lib/maintainerTypes";
 
 /**
  * The maintainer console's API client (007 T017, FR-014, FR-015, research.md R3).

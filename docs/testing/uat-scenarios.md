@@ -41,6 +41,8 @@ research.md Decision 6). `Exercised by` takes tester pseudonyms as sessions comp
 | *(staff — ticket takeover)* | SC-09 | | ☐ |
 | *(staff — remediation approval)* | SC-10 | | ☐ |
 | *(staff — safe refusal)* | SC-11 | | ☐ |
+| *(maintainer — category + guide, 007 SC-008)* | SC-12 | | ☐ |
+| *(staff — profile correction, 007 SC-008)* | SC-13 | | ☐ |
 
 V2.1 (all six categories) and V2.2 (≥ 1 guided-resolution, ≥ 1 escalation) are each
 satisfiable from SC-01…SC-06 alone (all scripted as `guided-resolution`), with SC-07/SC-08
@@ -92,6 +94,55 @@ Principle II) — score it `Passed`, not a defect.
 
 ---
 
+## Feature 007 scenarios (SC-008)
+
+Added on 2026-08-29 for feature 007 (`specs/007-admin-console-account-editing`, tasks T055
+and T059), before any session had run — `docs/testing/uat-sessions.md` did not yet exist at
+the time of this commit, so V2.4 holds for these two exactly as it does for SC-01…SC-11.
+
+**007 SC-008 is a stricter bar than the rest of this script and must be run as written**:
+**three** acceptance testers each complete **both** tasks below, **unaided** and **on first
+attempt**, without asking what a field means. Demographics are recorded (pseudonyms
+allowed). Results go to `docs/testing/feature-007-uat.md`, not to the 006 session log, since
+they answer a different feature's success criterion. Facilitator gives no hints; a question
+asked is itself the finding and is recorded verbatim.
+
+| id | situation | targetCategory | expectedOutcome | role |
+|---|---|---|---|---|
+| SC-12 | You look after which kinds of problem this help desk knows how to handle. A new kind has started coming up that isn't on the list yet. Add it, along with the steps someone should try when it happens, and then check that a person reporting that problem actually gets routed to it. | `maintainer-console` | `category-published` | `maintainer` |
+| SC-13 | An employee's record has the wrong desk location and the wrong machine listed, and the remote-access ID is out of date. You know the correct details. Put them right on their record so the next person handling their case sees the real ones. | `staff-workflow` | `profile-corrected` | `staff` |
+
+Notes for the facilitator, not for the tester:
+
+- **SC-12** is quickstart Scenario 1 (`specs/007-admin-console-account-editing/quickstart.md`)
+  put into a tester's language. The tester is given the `MAINTAINER_KEY` and the console
+  address and nothing else — not the request format, and not a terminal. Scored `Passed` when
+  they reach a published category that classifies a matching report. **Do not tell them the
+  key must be re-entered after a reload**; if they discover it themselves that is the correct
+  behaviour (FR-014), and if it confuses them that is a finding worth recording.
+- **SC-13** is quickstart Scenario 3. Score it `Passed` when all three fields hold the correct
+  values and each names the tester as the person who set it. The tester is **not** told in
+  advance that saving takes the field away from the employee — whether they notice, and what
+  they expect to happen next, is the interesting part.
+- **SC-009 is measured inside SC-13, on a different person.** After the tester finishes,
+  show the *account owner's* own `/profile` page to someone who has not seen it before and
+  ask them, unaided, why the field cannot be edited and how to get it changed (quickstart
+  Scenario 4, step 7). **Record the answer verbatim**, not as a pass/fail — the wording is
+  the evidence, and a near-miss answer tells the developer more than a tick does.
+- Neither scenario is scored against a clock. 007's SC-001 (under 5 minutes) and SC-003
+  (under 60 seconds) are developer walkthrough measurements taken in T049, not tester
+  measurements; timing an unaided first attempt would measure the stopwatch rather than the
+  interface.
+
+**Note on the R14 evidence review**: `research.md` R14 lists this file as needing its
+profile-editing steps revised for staff-authoritative editing. On inspection there were none
+to revise — SC-01…SC-11 exercise chat, guided steps, escalation, takeover, approval, and
+refusal, and no scenario touched the profile surface at all. The obligation is therefore
+discharged by the addition above rather than by an edit, and this note records that the file
+was checked rather than skipped.
+
+---
+
 ## Validation checklist
 
 - **V2.1** All six mandated categories are `targetCategory` of at least one scenario: ✅
@@ -102,4 +153,10 @@ Principle II) — score it `Passed`, not a defect.
   verifiable from git history; no session has run as of this commit.
 - **V2.5** SC-11's refusal is scored as a pass, not a defect, when it occurs.
 
-Cardinality: 11 scenarios ≥ 8 required (research.md Decision 6).
+Cardinality: 13 scenarios ≥ 8 required (research.md Decision 6).
+
+**Feature 007 SC-008** (separate criterion, separate record): satisfied only when three
+testers have each completed **both** SC-12 and SC-13 unaided on first attempt, with
+demographics and the verbatim SC-009 answers written to `docs/testing/feature-007-uat.md`.
+It is not satisfied by SC-12 and SC-13 appearing in the coverage matrix above, and it is not
+carried by the 006 session count.

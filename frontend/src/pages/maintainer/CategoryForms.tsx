@@ -3,7 +3,7 @@ import type {
   MaintainerCategory,
   MaintainerGuideStep,
   MaintainerGuideVersion,
-} from "../../lib/types";
+} from "../../lib/maintainerTypes";
 import {
   MaintainerApiError,
   listMaintainerGuideVersions,
