@@ -54,6 +54,7 @@ function substitute(command: string, args: Record<string, string>): string {
  * exactly one whitelisted, endpoint-permitted action? No side effects, no
  * execution, no audit write — callers decide what to do with the result.
  */
+// VIVA_POLICY_MATCH: Default-deny allowlist: action ID, argument names/values and endpoint permission must match.
 export function matchAction(policyEntryId: string, args: Record<string, string>, endpointId: string): MatchResult {
   const policy = getPolicy();
 
@@ -163,6 +164,7 @@ function judgeVerification(policyEntryId: string, output: string | null): Verifi
  * tier-appropriate authorisation, then — and only then — the executor. Every
  * outcome, executed or refused, is audited (FR-009, FR-010).
  */
+// VIVA_EXECUTION_GATES: Execution funnel: degraded-model refusal, policy match, availability, consent and approval before executor.
 export async function attemptAction(input: AttemptActionInput): Promise<AttemptActionResult> {
   // US6 AS4: no automated action executes on a classification produced while
   // the system is in a degraded model state. Checked before matching so a
@@ -286,6 +288,7 @@ export async function attemptAction(input: AttemptActionInput): Promise<AttemptA
   let outcome: ActionOutcome = result.outcome;
   let verification: { entryId: string; outcome: ActionOutcome; observedOutput: string | null } | null = null;
 
+  // VIVA_VERIFY_RESULT: Successful command exit is followed by the policy verification action; output determines confirmed versus unverified.
   if (entry.tier === "state_changing" && result.outcome === "succeeded") {
     if (!entry.verifiedBy) {
       outcome = "attempted_unverified";

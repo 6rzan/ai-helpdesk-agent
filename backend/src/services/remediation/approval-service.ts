@@ -262,6 +262,7 @@ export async function decideApproval(input: DecideApprovalInput): Promise<Decide
     throw new ConflictError("This action is no longer applicable", "APPROVAL_NO_LONGER_APPLICABLE");
   }
 
+  // VIVA_APPROVAL_RACE: Atomic pending-to-approved claim: only the winning update proceeds to attemptAction.
   const claimed = await ApprovalRequest.findOneAndUpdate(
     { _id: current._id, status: "pending" },
     { status: "approved", decidedAt: new Date(), decidedBy: { accountId: input.staff._id, displayName: input.staff.displayName } },

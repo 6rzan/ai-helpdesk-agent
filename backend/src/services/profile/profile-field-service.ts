@@ -167,6 +167,7 @@ export interface SetFieldsResult {
  * staff correction sat beside a stale owner value and the reader had to decide which one
  * to believe (FR-016, research.md R5).
  */
+// VIVA_PROFILE_FIELDS: Staff field edits check expected timestamps, store provenance/control and append prior values to history.
 export async function setFieldsAsStaff(input: {
   accountId: Types.ObjectId;
   staff: FieldActor;

@@ -114,6 +114,7 @@ export async function tryHandleGuidedReply(ctx: ReplyContext, resumedTicketIds: 
   });
 
   switch (decision.action) {
+    // VIVA_FIXED_MISSING_ATTEMPT: OBS-13 fix: record the successful step attempt before marking the guided session resolved.
     case "resolve": {
       recordAttempt(session, decision.attemptOutcome);
       endSession(session, "resolved");

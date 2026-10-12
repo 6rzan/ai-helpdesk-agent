@@ -40,6 +40,7 @@ const registerBodySchema = z.object({
   password: z.string().min(8),
 });
 
+// VIVA_REGISTRATION: Registration explicitly creates role user; staff is not selected from the request body.
 authRouter.post("/auth/register", validate({ body: registerBodySchema }), (req, res, next) => {
   const { email, displayName, password } = req.body as z.infer<typeof registerBodySchema>;
 

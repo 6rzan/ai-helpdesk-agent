@@ -52,6 +52,7 @@ export class ChainedLlmProvider implements LlmProvider {
     return this.runWithFallback("interpretStepReply", (provider) => provider.interpretStepReply(input), null);
   }
 
+  // VIVA_MODEL_FALLBACK: Fallback action proposals carry degraded: true so downstream automation can refuse them.
   async proposeAction(input: ProposeActionInput): Promise<ProposeActionResult> {
     const attempted: string[] = [];
     for (let i = 0; i < this.chain.length; i += 1) {

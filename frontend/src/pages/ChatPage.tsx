@@ -167,6 +167,7 @@ export function ChatPage() {
     setDraft(value);
   }, [draft, hasTranscriptContent]);
 
+  // VIVA_VOICE_DRAFT: Transcription updates an editable draft; a separate Send handler submits it and records typed/voice/mixed origin.
   const handleTranscript = useCallback((transcript: string) => {
     setVoiceError(undefined);
     setHasTranscriptContent(true);

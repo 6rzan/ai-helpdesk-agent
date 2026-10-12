@@ -69,6 +69,7 @@ const actionRecordSchema = new Schema(
 // R7: no route, service, or repository function may update or delete an
 // action record, from any surface, under any role. These hooks make that a
 // property of the schema rather than a property of every caller's discipline.
+// VIVA_AUDIT: Application audit protection: selected Mongoose update/delete operations are rejected by schema hooks.
 const MUTATION_ERROR = "ActionRecord is append-only: updates and deletes are not permitted (Constitution Principle II)";
 
 function rejectMutation(this: unknown): never {

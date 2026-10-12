@@ -13,6 +13,7 @@ export const transcriptionsRouter = Router();
 const MAX_UPLOAD_BYTES = 16 * 1024 * 1024;
 const GRACE_SECONDS = 5;
 
+// VIVA_VOICE_UPLOAD: Audio stays in upload memory; validate WAV and duration, bound size and concurrent transcription per session.
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_UPLOAD_BYTES } });
 
 const paramsSchema = z.object({ sessionId: z.string().min(1) });

@@ -36,6 +36,7 @@ function renderApp(initialPath: string) {
           <Route path="/register" element={<RegisterPage />} />
           <Route element={<RequireAuth />}>
             <Route path="/" element={<div>Chat home</div>} />
+            <Route path="/settings" element={<div>Settings screen</div>} />
           </Route>
           <Route element={<RequireStaff />}>
             <Route path="/staff" element={<div>Staff area</div>} />
@@ -135,6 +136,26 @@ describe("auth pages and route guards", () => {
     getMe.mockResolvedValue(STAFF);
     renderApp("/staff/accounts");
     await screen.findByText(/account directory/i);
+  });
+
+  it("forces an account on its initial password to /settings instead of the chat home", async () => {
+    getMe.mockResolvedValue({ ...USER, usingInitialPassword: true });
+    renderApp("/");
+    await screen.findByText(/settings screen/i);
+    expect(screen.queryByText(/chat home/i)).not.toBeInTheDocument();
+  });
+
+  it("forces a staff account on its initial password to /settings instead of the staff area", async () => {
+    getMe.mockResolvedValue({ ...STAFF, usingInitialPassword: true });
+    renderApp("/staff");
+    await screen.findByText(/settings screen/i);
+    expect(screen.queryByText(/staff area/i)).not.toBeInTheDocument();
+  });
+
+  it("lets an account past /settings once its password is no longer the initial one", async () => {
+    getMe.mockResolvedValue(USER);
+    renderApp("/");
+    await screen.findByText(/chat home/i);
   });
 
   it("007 T045: shows the directory link to staff and to nobody else", async () => {

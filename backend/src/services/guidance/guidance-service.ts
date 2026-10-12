@@ -22,6 +22,7 @@ export type StepDecision =
 // Pure decision function: no DB/LLM/network I/O and no imports of any executor or
 // command-running module — every branch only ever returns text-shaping instructions
 // for the caller to apply. This keeps the guided flow strictly advisory (Constitution).
+// VIVA_GUIDED_STEPS: Model interprets a reply; this pure switch decides resolve, advance, hold or escalate.
 export function decideStepTransition(params: {
   outcome: StepReplyOutcome;
   currentStepIndex: number;
@@ -90,6 +91,7 @@ export async function getActiveSession(
 
 // Guide version is pinned on the session (FR-017), so a mid-session guide edit
 // never disturbs an in-flight session — always resolve via (categoryName, guideVersion).
+// VIVA_GUIDE_VERSION: Read the exact category and version pinned to the session, not whichever guide is newest.
 export async function getGuideForSession(
   session: Pick<GuidedSessionDoc, "categoryName" | "guideVersion">,
 ): Promise<GuideDoc | null> {

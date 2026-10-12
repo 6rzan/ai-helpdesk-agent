@@ -9,6 +9,7 @@
 # queue was never reported as such. Check the captured output instead.
 set -eu
 echo "printer=test-printer"
+# VIVA_FIXED_PRINT_CHECK: OBS-09 fix: inspect job output rather than treating lpstat exit zero as proof that jobs remain.
 jobs=$(lpstat -o test-printer 2>/dev/null || true)
 if [ -z "$jobs" ]; then
   echo "queue_empty=true"

@@ -1,6 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { getMe, login as apiLogin, logout as apiLogout, register as apiRegister } from "../services/api";
-import type { Account, LoginRequest, RegisterRequest } from "../lib/types";
+import {
+  changePassword as apiChangePassword,
+  getMe,
+  login as apiLogin,
+  logout as apiLogout,
+  register as apiRegister,
+} from "../services/api";
+import type { Account, ChangePasswordRequest, LoginRequest, RegisterRequest } from "../lib/types";
 
 interface AuthContextValue {
   account: Account | null;
@@ -9,6 +15,7 @@ interface AuthContextValue {
   register: (payload: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  changePassword: (payload: ChangePasswordRequest) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -45,8 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccount(null);
   }, []);
 
+  const changePassword = useCallback(async (payload: ChangePasswordRequest) => {
+    const me = await apiChangePassword(payload);
+    setAccount(me);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ account, isLoading, login, register, logout, refresh }}>
+    <AuthContext.Provider value={{ account, isLoading, login, register, logout, refresh, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

@@ -32,6 +32,7 @@ export function setClientFactoryForTest(factory: ClientFactory | undefined): voi
  * registered endpoint. Called only from policy-engine.ts (FR-002, FR-006) —
  * nothing here decides *whether* to run; it only runs what it is given.
  */
+// VIVA_SSH: Transport boundary: pinned SSH host key, registered host/port/user and bounded connection/command waits.
 export function executeViaSsh(request: ExecutionRequest): Promise<ExecutionResult> {
   const startedAt = Date.now();
   const client = clientFactory();

@@ -32,6 +32,7 @@ export interface StaffEventHandlers {
   onRemediationAvailabilityChanged?: (data: RemediationAvailabilityChangedEvent) => void;
 }
 
+// VIVA_LIVE_UPDATES: EventSource receives server events; cleanup closes the connection when the effect is disposed.
 export function useEvents(sessionId: string | undefined, handlers: EventHandlers): void {
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;

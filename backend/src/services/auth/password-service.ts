@@ -10,6 +10,7 @@ export interface HashedPassword {
   passwordSalt: string;
 }
 
+// VIVA_PASSWORDS: Passwords use random salt and scrypt; verification derives a key and compares it with timingSafeEqual.
 export async function hashPassword(plainPassword: string): Promise<HashedPassword> {
   const passwordSalt = randomBytes(16).toString("hex");
   const derivedKey = (await scryptAsync(plainPassword, passwordSalt, KEY_LENGTH)) as Buffer;

@@ -27,6 +27,7 @@ export const envSchema = z.object({
       message: "must start with http:// or https://",
     })
     .optional(),
+  // VIVA_THRESHOLDS: Viva defaults: confidence 0.70, two clarification rounds; nearby agent and approval limits are configurable.
   CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.7),
   MAX_CLARIFICATION_ROUNDS: z.coerce.number().int().min(0).default(2),
   // R4: ordered fallback chain, mirroring STT_PROVIDERS. Absent means "derive from

@@ -271,6 +271,7 @@ export interface ConsentDecisionResult {
  * that ever lets a state-changing action reach the executor from there.
  * Declining is refused with `missing_consent` — recorded, nothing raised.
  */
+// VIVA_CONSENT: Reporter-specific consent consumes the pending proposal; state-changing consent raises staff approval.
 export async function recordConsent(input: ConsentDecisionInput): Promise<ConsentDecisionResult> {
   const ticket = await Ticket.findOne({ reference: input.reference });
   if (!ticket) {

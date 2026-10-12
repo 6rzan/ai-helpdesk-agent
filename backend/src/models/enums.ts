@@ -27,6 +27,7 @@ export type MessageAuthor = (typeof MESSAGE_AUTHORS)[number];
 export const ACTORS = ["agent", "user", "system", "staff"] as const;
 export type Actor = (typeof ACTORS)[number];
 
+// VIVA_ESCALATION_REASONS: Seven stored escalation reasons; the presentation groups the situations more broadly.
 export const ESCALATION_REASONS = [
   "user_request",
   "low_confidence",

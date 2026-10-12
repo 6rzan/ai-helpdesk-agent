@@ -177,9 +177,13 @@ export function appendStaffProfileEntry(
   accountId: string,
   entry: Pick<ProfileStaffEntry, "kind" | "field" | "value">,
 ): Promise<{ profile: SupportProfile }> {
+  // A general note carries no field. The server treats `field` as optional, and its
+  // schema rejects an explicit null, so omit the key rather than sending one.
+  const { field, ...rest } = entry;
+  const body = field ? { ...rest, field } : rest;
   return request(`/staff/users/${encodeURIComponent(accountId)}/profile/entries`, {
     method: "POST",
-    body: JSON.stringify(entry),
+    body: JSON.stringify(body),
   });
 }
 

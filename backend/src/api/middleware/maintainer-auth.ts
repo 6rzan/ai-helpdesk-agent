@@ -56,6 +56,7 @@ function timingSafeCompare(a: string, b: string): boolean {
  * Mounting is conditional on MAINTAINER_KEY being set (app.ts) — the `!expected`
  * branch here is a defense-in-depth fallback, not the primary "routes absent" guard.
  */
+// VIVA_MAINTAINER: Maintainer checks throttle, shared key, then attribution name; name is not proof of personal identity.
 export function maintainerAuth(req: Request, _res: Response, next: NextFunction): void {
   (async () => {
     const clientKey = clientKeyFor(req.ip);

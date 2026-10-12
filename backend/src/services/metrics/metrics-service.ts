@@ -91,6 +91,7 @@ function bucketResolutionTimes(minutesList: number[]): MetricsSplit[] {
  * figures (volume, splits, resolution) are scoped by ticket `createdAt`; action
  * records and provider fallbacks are scoped by their own `at` -- an action taken
  * this week on a ticket opened last month still belongs in this week's figures. */
+// VIVA_METRICS: Compute period metrics from stored records; inspect denominators and resolved-only behavior before explaining percentages.
 export async function getMetricsSummary(presetInput: string): Promise<MetricsSummary> {
   if (!isMetricsPeriodPreset(presetInput)) {
     throw new ValidationError(`Unknown period preset "${presetInput}"`, "METRICS_PERIOD_INVALID");

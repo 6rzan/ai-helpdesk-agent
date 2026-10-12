@@ -16,6 +16,7 @@ function expiryFromNow(): Date {
   return new Date(clock.now().getTime() + config.AUTH_SESSION_TTL_MINUTES * 60_000);
 }
 
+// VIVA_AUTH_SESSION: Issue an opaque random token; keep its SHA-256 hash in the server-side session record.
 export async function issueSession(accountId: Types.ObjectId): Promise<string> {
   const token = randomBytes(32).toString("hex");
   await AuthSession.create({

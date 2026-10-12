@@ -1,26 +1,36 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+
+const PASSWORD_CHANGE_PATH = "/settings";
 
 export function RequireAuth() {
   const { account, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return null;
   }
   if (!account) {
     return <Navigate to="/login" replace />;
+  }
+  if (account.usingInitialPassword && location.pathname !== PASSWORD_CHANGE_PATH) {
+    return <Navigate to={PASSWORD_CHANGE_PATH} replace />;
   }
   return <Outlet />;
 }
 
 export function RequireStaff() {
   const { account, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return null;
   }
   if (!account) {
     return <Navigate to="/login" replace />;
+  }
+  if (account.usingInitialPassword && location.pathname !== PASSWORD_CHANGE_PATH) {
+    return <Navigate to={PASSWORD_CHANGE_PATH} replace />;
   }
   if (account.role !== "staff") {
     return (

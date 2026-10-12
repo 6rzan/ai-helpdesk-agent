@@ -44,6 +44,7 @@ function toMyTicket(ticket: TicketDoc) {
   };
 }
 
+// VIVA_TICKET_OWNERSHIP: Account-scoped history and detail ownership checks prevent access through another ticket reference.
 myRouter.get("/my/tickets", (req, res, next) => {
   Ticket.find({ reporterAccountId: req.account!._id }).sort({ createdAt: -1 })
     .then((tickets) => res.status(200).json({ tickets: tickets.map((ticket) => toMyTicket(ticket as TicketDoc)) }))

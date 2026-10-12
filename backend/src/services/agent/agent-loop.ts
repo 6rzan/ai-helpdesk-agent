@@ -42,6 +42,7 @@ function proposalKey(proposal: ToolCallProposal): string {
  * authorisation, and execution from there. Never runs more than `maxSteps`
  * iterations (FR-011); escalates on the cap or on no progress (FR-012).
  */
+// VIVA_AGENT_LOOP: Bounded proposal loop: validate tool arguments, stop repeated proposals, enforce the configured step cap.
 export async function runAgentLoop(
   planner: Planner,
   tools: ReadonlyMap<string, ToolLike>,

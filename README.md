@@ -227,7 +227,7 @@ cd backend
 npm run seed:staff -- staff@example.com "Support Engineer"
 ```
 
-The generated initial password is written to the backend log. Share it through a secure channel; the staff member should change it after first sign-in. No browser API can assign the staff role.
+The generated initial password is written to the backend log. Share it through a secure channel. Any account still on its initial password is sent to Settings after sign-in and cannot reach the chat or staff pages until it sets a new password. No browser API can assign the staff role.
 
 ### Staff workflow
 

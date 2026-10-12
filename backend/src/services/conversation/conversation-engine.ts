@@ -268,6 +268,7 @@ async function processReply(ctx: ReplyContext): Promise<void> {
       return;
     }
 
+    // VIVA_TICKET_CREATION: Successful intake: persist the classified ticket, reset clarification state, publish it and start a guide.
     const ticket = await createTicket({
       reporterId: ctx.reporterId,
       reporterAccountId: conversation.accountId ?? null,

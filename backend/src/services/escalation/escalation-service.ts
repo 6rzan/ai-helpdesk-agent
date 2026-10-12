@@ -20,6 +20,7 @@ function escalate(reason: EscalationReason): EscalationDecision {
   return { action: "escalate", reason, handlingMode: "human_involved", escalated: true };
 }
 
+// VIVA_ESCALATION: Explicit decision order: human request, scope, model availability, then bounded clarification.
 export function decideEscalation(input: EscalationDecisionInput): EscalationDecision {
   if (input.userRequestedHuman) {
     return escalate("user_request");

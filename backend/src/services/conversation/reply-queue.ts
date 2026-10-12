@@ -29,6 +29,7 @@ const conversationQueues = new Map<string, Promise<void>>();
  * settled. Never rejects: a failing turn is logged and the queue continues, so
  * one bad turn cannot wedge the conversation.
  */
+// VIVA_REPLY_QUEUE: OBS-14/15 fixes: serialize turns per conversation and remove the same promise slot when it drains.
 export function enqueueReply(conversationId: Types.ObjectId, run: () => Promise<void>): void {
   const key = conversationId.toString();
   const previous = conversationQueues.get(key) ?? Promise.resolve();

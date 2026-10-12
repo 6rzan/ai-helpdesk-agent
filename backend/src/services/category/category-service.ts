@@ -7,6 +7,7 @@ export interface ClassificationCategoryOption {
 }
 
 // R2: assembled at runtime so new categories classify without a code change.
+// VIVA_DYNAMIC_CATEGORIES: Read non-retired category definitions at runtime so classifier options can change without a code deployment.
 export async function listClassificationCategories(): Promise<ClassificationCategoryOption[]> {
   const categories = await Category.find({ retired: false }).sort({ name: 1 }).lean();
   return categories.map((c) => ({ name: c.name, classificationDescription: c.classificationDescription }));

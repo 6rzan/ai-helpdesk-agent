@@ -8,6 +8,7 @@ const counterSchema = new Schema({
 type CounterDoc = InferSchemaType<typeof counterSchema>;
 const Counter: Model<CounterDoc> = (mongoose.models.Counter as Model<CounterDoc> | undefined) ?? model<CounterDoc>("Counter", counterSchema);
 
+// VIVA_TICKET_REFERENCE: MongoDB atomic increment allocates the reference sequence; no application read-then-increment.
 export async function nextSequence(name: string): Promise<number> {
   const doc = await Counter.findByIdAndUpdate(
     name,

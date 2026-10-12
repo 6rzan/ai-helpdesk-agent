@@ -117,6 +117,7 @@ export async function preview(id: string) {
   return { importId: id, outcomes };
 }
 
+// VIVA_IMPORT_TRANSACTION: Claim a previewed import, apply accepted row writes in a MongoDB transaction, retain retry behavior.
 export async function applyImport(id: string) {
   const importId = validateId(id);
   const lock = await ProfileImport.findOneAndUpdate(

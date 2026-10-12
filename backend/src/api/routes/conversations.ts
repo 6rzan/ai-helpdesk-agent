@@ -17,6 +17,7 @@ const bodySchema = z.object({
   inputOrigin: z.enum(INPUT_ORIGINS).default("typed"),
 });
 
+// VIVA_INTAKE: Message boundary: validate text, session ownership, then accept queued work with HTTP 202.
 conversationsRouter.post(
   "/conversations/:conversationId/messages",
   validate({ params: paramsSchema, body: bodySchema }),

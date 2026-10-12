@@ -8,6 +8,7 @@ export interface ClassificationCategoryInput {
 // R2: category list is assembled at runtime from the categories collection
 // instead of being a hardcoded literal, so new categories classify without a
 // code change (FR-014).
+// VIVA_PROMPT: Prompt uses category definitions and asks vague reports to receive low confidence; enforcement remains in code.
 export function buildClassificationPrompt(categories: ClassificationCategoryInput[]): string {
   const categoryLines = categories.map((c) => `- ${c.name}: ${c.classificationDescription}`).join("\n");
   const categoryNames = categories.map((c) => c.name).join(", ");

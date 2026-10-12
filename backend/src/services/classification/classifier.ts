@@ -10,6 +10,7 @@ export type ClassifyOutcome =
   | { outcome: "needs_clarification"; reply: string }
   | { outcome: "llm_unavailable" };
 
+// VIVA_CLASSIFICATION: Accept only a live category at the configured confidence threshold; otherwise clarify or report model failure.
 export async function classify(
   input: Omit<ClassifyAndReplyInput, "categories">,
   provider: LlmProvider = getLlmProvider(),

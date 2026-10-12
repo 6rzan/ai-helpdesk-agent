@@ -10,6 +10,7 @@ import { publishStaffEvent } from "../../api/sse/event-bus.js";
 // uncached — always reads the current document, so a disable takes effect
 // against anything not already running (R6), and this must be the very last
 // check before the executor is called (policy-engine.ts).
+// VIVA_KILL_SWITCH: Read current global and per-endpoint settings; disabling is an admission gate, not cancellation of a running command.
 export async function isRemediationAvailable(endpointId: string): Promise<boolean> {
   const settings = await getOrCreateRemediationSettings();
   if (!settings.globallyEnabled) {

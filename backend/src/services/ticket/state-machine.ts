@@ -16,6 +16,7 @@ export interface TransitionableTicket {
   history: TransitionRecordLike[];
 }
 
+// VIVA_TICKET_STATES: Explicit lifecycle table rejects invalid transitions and records actor, time, previous and next values.
 const STATUS_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
   open: ["in_progress", "closed"],
   in_progress: ["resolved"],

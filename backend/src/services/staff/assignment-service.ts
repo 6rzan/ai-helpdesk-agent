@@ -19,6 +19,7 @@ const OPEN_CASE_STATUSES = ["open", "in_progress"];
  * wins; a concurrent second takeover matches nothing and is refused with the current
  * assignee (US2-5).
  */
+// VIVA_STAFF_TAKEOVER: Claim only a currently unassigned, actionable ticket; a losing concurrent claim receives a conflict.
 export async function takeoverTicket(reference: string, staff: Staff) {
   const assignee = { accountId: staff._id, displayName: staff.displayName, since: new Date() };
 

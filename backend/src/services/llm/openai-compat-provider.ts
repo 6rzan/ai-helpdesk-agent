@@ -143,6 +143,7 @@ export class OpenAiCompatProvider implements LlmProvider {
     return headers;
   }
 
+  // VIVA_LLM_VALIDATION: Provider boundary: constrained JSON response, timeout, JSON parsing and runtime Zod validation.
   async classifyAndReply(input: ClassifyAndReplyInput): Promise<ClassifyAndReplyResult> {
     if (this.missingApiKey()) {
       logger.warn({ baseUrl: this.baseUrl }, "openai-compat provider has no LLM_API_KEY configured");

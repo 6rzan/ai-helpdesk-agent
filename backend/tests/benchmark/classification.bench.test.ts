@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { classify } from "../../src/services/classification/classifier.js";
 import { OllamaProvider } from "../../src/services/llm/ollama-provider.js";
 import { OpenAiCompatProvider } from "../../src/services/llm/openai-compat-provider.js";
+import { startTestApp, stopTestApp } from "../helpers/test-app.js";
 import type { IssueCategory } from "../../src/models/enums.js";
 
 interface BenchmarkFixture {
@@ -25,9 +26,17 @@ const provider = process.env.LLM_BASE_URL ? new OpenAiCompatProvider() : new Oll
 describe("classification benchmark (real local LLM, opt-in)", () => {
   let ollamaReachable = false;
 
+  // classify() validates the model's answer against the live category collection,
+  // so the benchmark needs a seeded database of its own — the running server's
+  // connection is not shared with this process.
   beforeAll(async () => {
+    await startTestApp();
     ollamaReachable = await provider.health();
-  }, 15_000);
+  }, 90_000);
+
+  afterAll(async () => {
+    await stopTestApp();
+  }, 30_000);
 
   it(
     "TC-025: classifies the benchmark set at >=80% accuracy with <=5% confident misclassification, within SC-008 latency",
@@ -70,6 +79,7 @@ describe("classification benchmark (real local LLM, opt-in)", () => {
         }
       }
 
+      // VIVA_BENCHMARK: Benchmark definitions: correct/total, confidently-wrong/total and nearest-rank p90; read provider reachability guard too.
       const total = fixtures.length;
       const accuracy = correct / total;
       const confidentWrongRate = confidentlyWrong / total;
