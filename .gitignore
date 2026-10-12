@@ -19,11 +19,9 @@ backend/**/*vitest*.json
 backend/models/stt/
 
 # Local development tooling — not part of the published project
-.specify/extensions.yml
-.specify/init-options.json
-.specify/integration.json
-.specify/integrations/
-.specify/workflows/
+.specify/
+.codex/
+.agents/skills/
 
 # Dependencies
 node_modules/
